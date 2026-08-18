@@ -1,0 +1,241 @@
+{
+  "schema_version": "1.2.0",
+  "notes": "Cryonav microclimate fixtures. Each city defines a ~10 mi2 FortyGuard coverage tile with urban-heat-island sources, canopy/water cooling sinks, municipal cooling infrastructure and demo route presets. Radii are metres, intensities are degrees Fahrenheit.",
+  "cities": [
+    {
+      "id": "phoenix",
+      "name": "Phoenix",
+      "region": "Arizona, USA",
+      "country_code": "US",
+      "timezone": "America/Phoenix",
+      "center": [33.4520, -112.0740],
+      "tile_half_extent_deg": [0.0225, 0.0269],
+      "climate": {
+        "season": "July peak heat event",
+        "air_temp_max_f": 112.0,
+        "air_temp_min_f": 89.0,
+        "relative_humidity_pct": 17.0,
+        "wind_speed_mph": 7.0,
+        "sky_clearness": 0.96,
+        "asphalt_uplift_f": 52.0,
+        "peak_hour": 15.5
+      },
+      "heat_islands": [
+        { "name": "Downtown surface-parking district", "center": [33.4498, -112.0715], "radius_m": 780, "intensity_f": 6.4, "surface_boost_f": 15.0 },
+        { "name": "Grand Ave / I-17 asphalt corridor", "center": [33.4602, -112.0948], "radius_m": 920, "intensity_f": 5.6, "surface_boost_f": 17.5 },
+        { "name": "Chase Field concrete apron", "center": [33.4455, -112.0667], "radius_m": 520, "intensity_f": 4.8, "surface_boost_f": 13.0 },
+        { "name": "Van Buren St industrial strip", "center": [33.4520, -112.0880], "radius_m": 700, "intensity_f": 4.2, "surface_boost_f": 12.0 },
+        { "name": "Capitol Mall parking flats", "center": [33.4483, -112.0968], "radius_m": 560, "intensity_f": 3.9, "surface_boost_f": 11.0 }
+      ],
+      "canopy_zones": [
+        { "name": "Margaret T. Hance Park", "center": [33.4592, -112.0736], "radius_m": 620, "cooling_f": 7.2, "canopy_pct": 74 },
+        { "name": "Encanto Park", "center": [33.4726, -112.0870], "radius_m": 780, "cooling_f": 8.4, "canopy_pct": 82 },
+        { "name": "Civic Space Park", "center": [33.4520, -112.0745], "radius_m": 300, "cooling_f": 5.1, "canopy_pct": 61 },
+        { "name": "Roosevelt Row shade corridor", "center": [33.4576, -112.0710], "radius_m": 420, "cooling_f": 4.6, "canopy_pct": 58 },
+        { "name": "Central Ave mature mesquite alley", "center": [33.4650, -112.0740], "radius_m": 520, "cooling_f": 5.8, "canopy_pct": 66 },
+        { "name": "Wesley Bolin Memorial Plaza lawns", "center": [33.4487, -112.0942], "radius_m": 340, "cooling_f": 4.0, "canopy_pct": 52 },
+        { "name": "Grand Canalscape shaded path", "center": [33.4562, -112.0898], "radius_m": 520, "cooling_f": 6.5, "canopy_pct": 71 }
+      ],
+      "heat_corridors": [
+        { "name": "Van Buren St arterial", "path": [[33.4520, -112.1009], [33.4520, -112.0471]], "width_m": 150, "intensity_f": 5.0, "surface_boost_f": 18.0 },
+        { "name": "7th Ave arterial", "path": [[33.4295, -112.0825], [33.4745, -112.0825]], "width_m": 140, "intensity_f": 4.6, "surface_boost_f": 17.0 },
+        { "name": "7th St arterial", "path": [[33.4295, -112.0655], [33.4745, -112.0655]], "width_m": 140, "intensity_f": 4.6, "surface_boost_f": 17.0 },
+        { "name": "Washington St transit asphalt", "path": [[33.4478, -112.1009], [33.4478, -112.0471]], "width_m": 130, "intensity_f": 4.2, "surface_boost_f": 15.0 },
+        { "name": "Grand Ave / I-17 diagonal", "path": [[33.4440, -112.1009], [33.4745, -112.0785]], "width_m": 175, "intensity_f": 5.4, "surface_boost_f": 19.0 }
+      ],
+      "canopy_corridors": [
+        { "name": "Central Ave mesquite spine", "path": [[33.4295, -112.0740], [33.4745, -112.0740]], "width_m": 120, "cooling_f": 6.8, "canopy_pct": 78 },
+        { "name": "3rd St shaded bikeway", "path": [[33.4400, -112.0700], [33.4745, -112.0700]], "width_m": 100, "cooling_f": 5.6, "canopy_pct": 70 },
+        { "name": "Portland St green street", "path": [[33.4600, -112.0980], [33.4600, -112.0600]], "width_m": 110, "cooling_f": 6.2, "canopy_pct": 74 },
+        { "name": "Grand Canalscape path", "path": [[33.4530, -112.1009], [33.4645, -112.0700]], "width_m": 130, "cooling_f": 6.6, "canopy_pct": 76 },
+        { "name": "Adams St arcade", "path": [[33.4508, -112.0688], [33.4508, -112.0600]], "width_m": 90, "cooling_f": 5.8, "canopy_pct": 87 }
+      ],
+      "water_bodies": [
+        { "name": "Encanto lagoon", "center": [33.4738, -112.0885], "radius_m": 260, "cooling_f": 3.4, "humidity_boost_pct": 9 }
+      ],
+      "shelters": [
+        { "id": "phx-burton-barr", "name": "Burton Barr Central Library", "type": "cooling_center", "center": [33.4638, -112.0729], "air_conditioned": true, "water": true, "hours": "09:00-20:00", "capacity": 400, "indoor_temp_f": 72 },
+        { "id": "phx-convention", "name": "Phoenix Convention Center Cooling Lobby", "type": "cooling_center", "center": [33.4482, -112.0703], "air_conditioned": true, "water": true, "hours": "07:00-22:00", "capacity": 900, "indoor_temp_f": 70 },
+        { "id": "phx-justa", "name": "Justa Center Respite", "type": "cooling_center", "center": [33.4525, -112.0812], "air_conditioned": true, "water": true, "hours": "07:00-15:00", "capacity": 150, "indoor_temp_f": 74 },
+        { "id": "phx-civic-hydration", "name": "Civic Space Park Hydration Station", "type": "hydration_station", "center": [33.4522, -112.0748], "air_conditioned": false, "water": true, "hours": "24/7", "capacity": 60, "indoor_temp_f": null },
+        { "id": "phx-hance-hydration", "name": "Hance Park Misting & Hydration Point", "type": "hydration_station", "center": [33.4594, -112.0742], "air_conditioned": false, "water": true, "hours": "06:00-21:00", "capacity": 80, "indoor_temp_f": null },
+        { "id": "phx-valley-metro", "name": "Valley Metro Van Buren/1st Ave Cooled Platform", "type": "cooled_transit", "center": [33.4508, -112.0744], "air_conditioned": true, "water": false, "hours": "05:00-00:00", "capacity": 120, "indoor_temp_f": 78 },
+        { "id": "phx-heard", "name": "Heard Museum Public Atrium", "type": "mall_refuge", "center": [33.4695, -112.0716], "air_conditioned": true, "water": true, "hours": "09:30-17:00", "capacity": 200, "indoor_temp_f": 71 }
+      ],
+      "presets": [
+        {
+          "id": "phx-delivery-run",
+          "label": "Capitol Mall → Roosevelt Row depot",
+          "origin": { "name": "Capitol Mall Reception", "coords": [33.4485, -112.0962] },
+          "destination": { "name": "Roosevelt Row Depot", "coords": [33.4576, -112.0705] }
+        },
+        {
+          "id": "phx-transit-to-library",
+          "label": "Van Buren transit stop → Central Library",
+          "origin": { "name": "Van Buren/1st Ave Station", "coords": [33.4508, -112.0744] },
+          "destination": { "name": "Burton Barr Central Library", "coords": [33.4638, -112.0729] }
+        },
+        {
+          "id": "phx-ballpark",
+          "label": "Civic Space Park → Chase Field",
+          "origin": { "name": "Civic Space Park", "coords": [33.4520, -112.0745] },
+          "destination": { "name": "Chase Field Gate A", "coords": [33.4452, -112.0669] }
+        }
+      ]
+    },
+    {
+      "id": "dubai",
+      "name": "Dubai",
+      "region": "Dubai, UAE",
+      "country_code": "AE",
+      "timezone": "Asia/Dubai",
+      "center": [25.2050, 55.2720],
+      "tile_half_extent_deg": [0.0225, 0.0248],
+      "climate": {
+        "season": "August humid heat event",
+        "air_temp_max_f": 106.0,
+        "air_temp_min_f": 91.0,
+        "relative_humidity_pct": 55.0,
+        "wind_speed_mph": 9.0,
+        "sky_clearness": 0.88,
+        "asphalt_uplift_f": 47.0,
+        "peak_hour": 15.0
+      },
+      "heat_islands": [
+        { "name": "Sheikh Zayed Road glass canyon", "center": [25.2098, 55.2760], "radius_m": 900, "intensity_f": 7.1, "surface_boost_f": 16.0 },
+        { "name": "Al Quoz industrial slab", "center": [25.1855, 55.2530], "radius_m": 850, "intensity_f": 6.0, "surface_boost_f": 18.0 },
+        { "name": "Downtown podium parking decks", "center": [25.1985, 55.2790], "radius_m": 620, "intensity_f": 5.4, "surface_boost_f": 14.5 },
+        { "name": "Business Bay construction flats", "center": [25.1880, 55.2660], "radius_m": 700, "intensity_f": 5.0, "surface_boost_f": 15.5 }
+      ],
+      "canopy_zones": [
+        { "name": "Burj Park shaded promenade", "center": [25.1950, 55.2740], "radius_m": 480, "cooling_f": 6.2, "canopy_pct": 63 },
+        { "name": "Safa Park north canopy", "center": [25.1868, 55.2478], "radius_m": 760, "cooling_f": 8.8, "canopy_pct": 85 },
+        { "name": "Zabeel Palace gardens", "center": [25.2210, 55.2870], "radius_m": 700, "cooling_f": 7.9, "canopy_pct": 78 },
+        { "name": "Al Wasl Road ghaf tree alley", "center": [25.1955, 55.2600], "radius_m": 520, "cooling_f": 5.4, "canopy_pct": 60 },
+        { "name": "DIFC Gate Avenue covered walkway", "center": [25.2120, 55.2820], "radius_m": 420, "cooling_f": 6.6, "canopy_pct": 92 },
+        { "name": "Burj Boulevard shaded arcade", "center": [25.2042, 55.2836], "radius_m": 430, "cooling_f": 6.4, "canopy_pct": 79 }
+      ],
+      "heat_corridors": [
+        { "name": "Sheikh Zayed Road (E11)", "path": [[25.1830, 55.2600], [25.2270, 55.2900]], "width_m": 220, "intensity_f": 6.0, "surface_boost_f": 19.0 },
+        { "name": "Al Khail service road", "path": [[25.1825, 55.2490], [25.2120, 55.2520]], "width_m": 180, "intensity_f": 5.2, "surface_boost_f": 18.0 },
+        { "name": "Financial Centre Road", "path": [[25.1960, 55.2700], [25.2200, 55.2965]], "width_m": 150, "intensity_f": 4.6, "surface_boost_f": 16.0 },
+        { "name": "Al Quoz industrial haul route", "path": [[25.1825, 55.2472], [25.1900, 55.2660]], "width_m": 165, "intensity_f": 5.0, "surface_boost_f": 18.5 }
+      ],
+      "canopy_corridors": [
+        { "name": "Al Wasl Road ghaf alley", "path": [[25.1835, 55.2500], [25.2150, 55.2700]], "width_m": 130, "cooling_f": 6.4, "canopy_pct": 75 },
+        { "name": "Dubai Water Canal promenade", "path": [[25.1855, 55.2495], [25.1965, 55.2665]], "width_m": 140, "cooling_f": 6.0, "canopy_pct": 67 },
+        { "name": "DIFC to Downtown covered link", "path": [[25.2135, 55.2828], [25.1980, 55.2802]], "width_m": 115, "cooling_f": 7.2, "canopy_pct": 91 },
+        { "name": "Burj Boulevard arcade", "path": [[25.2045, 55.2838], [25.1958, 55.2762]], "width_m": 100, "cooling_f": 6.4, "canopy_pct": 83 }
+      ],
+      "water_bodies": [
+        { "name": "Dubai Water Canal", "center": [25.1902, 55.2556], "radius_m": 420, "cooling_f": 4.1, "humidity_boost_pct": 11 },
+        { "name": "Burj Lake", "center": [25.1965, 55.2760], "radius_m": 300, "cooling_f": 3.6, "humidity_boost_pct": 10 }
+      ],
+      "shelters": [
+        { "id": "dxb-mall", "name": "The Dubai Mall Cooling Atrium", "type": "mall_refuge", "center": [25.1975, 55.2796], "air_conditioned": true, "water": true, "hours": "10:00-00:00", "capacity": 2000, "indoor_temp_f": 70 },
+        { "id": "dxb-financial-metro", "name": "Financial Centre Metro (cooled)", "type": "cooled_transit", "center": [25.2117, 55.2795], "air_conditioned": true, "water": true, "hours": "05:00-01:00", "capacity": 600, "indoor_temp_f": 73 },
+        { "id": "dxb-burj-metro", "name": "Burj Khalifa/Dubai Mall Metro", "type": "cooled_transit", "center": [25.2020, 55.2790], "air_conditioned": true, "water": true, "hours": "05:00-01:00", "capacity": 600, "indoor_temp_f": 73 },
+        { "id": "dxb-labour-rest", "name": "Al Quoz Worker Rest & Hydration Hub", "type": "cooling_center", "center": [25.1868, 55.2555], "air_conditioned": true, "water": true, "hours": "12:00-15:00", "capacity": 300, "indoor_temp_f": 75 },
+        { "id": "dxb-safa-hydration", "name": "Safa Park Hydration Point", "type": "hydration_station", "center": [25.1872, 55.2492], "air_conditioned": false, "water": true, "hours": "06:00-22:00", "capacity": 90, "indoor_temp_f": null },
+        { "id": "dxb-difc-gate", "name": "DIFC Gate Village Cooled Walkway", "type": "cooled_transit", "center": [25.2128, 55.2818], "air_conditioned": true, "water": true, "hours": "24/7", "capacity": 450, "indoor_temp_f": 74 },
+        { "id": "dxb-mosque-wasl", "name": "Al Wasl Mosque Public Rest Hall", "type": "cooling_center", "center": [25.1948, 55.2612], "air_conditioned": true, "water": true, "hours": "04:00-22:00", "capacity": 180, "indoor_temp_f": 74 }
+      ],
+      "presets": [
+        {
+          "id": "dxb-metro-to-mall",
+          "label": "Financial Centre Metro → Dubai Mall",
+          "origin": { "name": "Financial Centre Metro", "coords": [25.2117, 55.2795] },
+          "destination": { "name": "The Dubai Mall", "coords": [25.1975, 55.2796] }
+        },
+        {
+          "id": "dxb-worker-shift",
+          "label": "Al Quoz site → Business Bay handover",
+          "origin": { "name": "Al Quoz Site Gate 4", "coords": [25.1858, 55.2540] },
+          "destination": { "name": "Business Bay Handover Point", "coords": [25.1892, 55.2672] }
+        },
+        {
+          "id": "dxb-canal-walk",
+          "label": "Safa Park → Burj Park",
+          "origin": { "name": "Safa Park North Gate", "coords": [25.1872, 55.2492] },
+          "destination": { "name": "Burj Park Promenade", "coords": [25.1950, 55.2742] }
+        }
+      ]
+    },
+    {
+      "id": "abu_dhabi",
+      "name": "Abu Dhabi",
+      "region": "Abu Dhabi, UAE",
+      "country_code": "AE",
+      "timezone": "Asia/Dubai",
+      "center": [24.4780, 54.3560],
+      "tile_half_extent_deg": [0.0225, 0.0248],
+      "climate": {
+        "season": "August coastal heat event",
+        "air_temp_max_f": 108.0,
+        "air_temp_min_f": 90.0,
+        "relative_humidity_pct": 52.0,
+        "wind_speed_mph": 11.0,
+        "sky_clearness": 0.9,
+        "asphalt_uplift_f": 45.0,
+        "peak_hour": 14.5
+      },
+      "heat_islands": [
+        { "name": "Airport Road asphalt spine", "center": [24.4712, 54.3702], "radius_m": 880, "intensity_f": 6.6, "surface_boost_f": 16.5 },
+        { "name": "Al Danah block parking flats", "center": [24.4905, 54.3648], "radius_m": 640, "intensity_f": 5.2, "surface_boost_f": 14.0 },
+        { "name": "Hamdan St retail canyon", "center": [24.4880, 54.3540], "radius_m": 700, "intensity_f": 5.7, "surface_boost_f": 13.5 },
+        { "name": "Al Zahiyah service yards", "center": [24.4950, 54.3745], "radius_m": 560, "intensity_f": 4.5, "surface_boost_f": 12.5 }
+      ],
+      "canopy_zones": [
+        { "name": "Capital Gardens", "center": [24.4692, 54.3662], "radius_m": 640, "cooling_f": 8.1, "canopy_pct": 80 },
+        { "name": "Corniche palm promenade", "center": [24.4832, 54.3402], "radius_m": 900, "cooling_f": 6.9, "canopy_pct": 68 },
+        { "name": "Qasr Al Hosn shaded plaza", "center": [24.4816, 54.3543], "radius_m": 420, "cooling_f": 5.5, "canopy_pct": 62 },
+        { "name": "Al Nahyan neighbourhood canopy", "center": [24.4745, 54.3752], "radius_m": 560, "cooling_f": 5.9, "canopy_pct": 64 },
+        { "name": "Electra St arcade colonnade", "center": [24.4862, 54.3612], "radius_m": 380, "cooling_f": 6.3, "canopy_pct": 88 }
+      ],
+      "heat_corridors": [
+        { "name": "Airport Road (Sheikh Rashid bin Saeed St)", "path": [[24.4555, 54.3688], [24.5005, 54.3762]], "width_m": 200, "intensity_f": 5.6, "surface_boost_f": 18.0 },
+        { "name": "Hamdan bin Mohammed St", "path": [[24.4868, 54.3313], [24.4962, 54.3807]], "width_m": 160, "intensity_f": 4.8, "surface_boost_f": 16.5 },
+        { "name": "Sheikh Zayed the First St", "path": [[24.4790, 54.3313], [24.4884, 54.3807]], "width_m": 155, "intensity_f": 4.4, "surface_boost_f": 15.5 },
+        { "name": "Al Salam St underpass approach", "path": [[24.4700, 54.3790], [24.4990, 54.3807]], "width_m": 170, "intensity_f": 4.9, "surface_boost_f": 17.0 }
+      ],
+      "canopy_corridors": [
+        { "name": "Corniche palm promenade", "path": [[24.4680, 54.3313], [24.4905, 54.3455]], "width_m": 180, "cooling_f": 6.8, "canopy_pct": 73 },
+        { "name": "Al Nahyan green street", "path": [[24.4615, 54.3615], [24.4805, 54.3782]], "width_m": 130, "cooling_f": 6.2, "canopy_pct": 75 },
+        { "name": "Electra St colonnade", "path": [[24.4840, 54.3540], [24.4885, 54.3712]], "width_m": 100, "cooling_f": 6.6, "canopy_pct": 89 },
+        { "name": "Capital Gardens link", "path": [[24.4655, 54.3596], [24.4745, 54.3702]], "width_m": 120, "cooling_f": 6.4, "canopy_pct": 79 }
+      ],
+      "water_bodies": [
+        { "name": "Corniche shoreline", "center": [24.4862, 54.3372], "radius_m": 700, "cooling_f": 4.8, "humidity_boost_pct": 12 }
+      ],
+      "shelters": [
+        { "id": "auh-wtc", "name": "WTC Mall Cooling Concourse", "type": "mall_refuge", "center": [24.4880, 54.3600], "air_conditioned": true, "water": true, "hours": "10:00-22:00", "capacity": 1200, "indoor_temp_f": 71 },
+        { "id": "auh-adm", "name": "Abu Dhabi Mall Atrium", "type": "mall_refuge", "center": [24.4960, 54.3800], "air_conditioned": true, "water": true, "hours": "10:00-22:00", "capacity": 1500, "indoor_temp_f": 70 },
+        { "id": "auh-hosn", "name": "Qasr Al Hosn Visitor Cooling Hall", "type": "cooling_center", "center": [24.4818, 54.3548], "air_conditioned": true, "water": true, "hours": "09:00-19:00", "capacity": 350, "indoor_temp_f": 72 },
+        { "id": "auh-corniche-hydration", "name": "Corniche Hydration & Misting Point 3", "type": "hydration_station", "center": [24.4838, 54.3418], "air_conditioned": false, "water": true, "hours": "24/7", "capacity": 100, "indoor_temp_f": null },
+        { "id": "auh-capital-gardens", "name": "Capital Gardens Shade Pavilion", "type": "hydration_station", "center": [24.4698, 54.3668], "air_conditioned": false, "water": true, "hours": "06:00-22:00", "capacity": 120, "indoor_temp_f": null },
+        { "id": "auh-bus-hub", "name": "Al Zahiyah Cooled Bus Shelter Hub", "type": "cooled_transit", "center": [24.4938, 54.3722], "air_conditioned": true, "water": false, "hours": "05:00-23:00", "capacity": 90, "indoor_temp_f": 77 },
+        { "id": "auh-nahyan-clinic", "name": "Al Nahyan Community Clinic Respite", "type": "cooling_center", "center": [24.4752, 54.3745], "air_conditioned": true, "water": true, "hours": "08:00-20:00", "capacity": 140, "indoor_temp_f": 73 }
+      ],
+      "presets": [
+        {
+          "id": "auh-corniche-to-wtc",
+          "label": "Corniche → WTC Mall",
+          "origin": { "name": "Corniche Hydration Point 3", "coords": [24.4838, 54.3418] },
+          "destination": { "name": "WTC Mall Concourse", "coords": [24.4880, 54.3600] }
+        },
+        {
+          "id": "auh-airport-rd",
+          "label": "Capital Gardens → Al Zahiyah depot",
+          "origin": { "name": "Capital Gardens Pavilion", "coords": [24.4698, 54.3668] },
+          "destination": { "name": "Al Zahiyah Depot", "coords": [24.4948, 54.3742] }
+        },
+        {
+          "id": "auh-hosn-walk",
+          "label": "Qasr Al Hosn → Abu Dhabi Mall",
+          "origin": { "name": "Qasr Al Hosn Plaza", "coords": [24.4816, 54.3543] },
+          "destination": { "name": "Abu Dhabi Mall", "coords": [24.4958, 54.3798] }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,151 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+@theme {
+  --color-void: #0b0f17;
+  --color-panel: #10161f;
+  --color-edge: #1e2937;
+  --color-cool: #22d3ee;
+  --color-cool-deep: #0891b2;
+  --color-hazard: #ef4444;
+  --color-warm: #fb923c;
+  --color-caution: #facc15;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: var(--color-void);
+  color: #e2e8f0;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- glassmorphism shell ------------------------------------------------------------ */
+
+.glass {
+  background: color-mix(in srgb, #10161f 78%, transparent);
+  backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid color-mix(in srgb, #22d3ee 14%, #1e2937);
+  box-shadow: 0 8px 32px -12px rgb(0 0 0 / 0.8), inset 0 1px 0 rgb(255 255 255 / 0.04);
+}
+
+.glass-hot {
+  border-color: color-mix(in srgb, #ef4444 30%, #1e2937);
+}
+
+/* Numeric readouts sit in tabular figures so values stop jittering as they update. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* ---- pulsing heat hazard markers ---------------------------------------------------- */
+
+@keyframes hazard-pulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.85;
+  }
+  70% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+.hazard-marker {
+  position: relative;
+}
+
+.hazard-marker::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: #ef4444;
+  animation: hazard-pulse 2.4s ease-out infinite;
+}
+
+.hazard-core {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: #ef4444;
+  box-shadow: 0 0 12px 2px rgb(239 68 68 / 0.85);
+}
+
+/* ---- cool route flow ---------------------------------------------------------------- */
+
+@keyframes dash-flow {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+.cool-flow {
+  animation: dash-flow 1.4s linear infinite;
+}
+
+/* ---- leaflet dark-mode corrections --------------------------------------------------- */
+
+.leaflet-container {
+  background: #070a10;
+  font-family: inherit;
+}
+
+.leaflet-control-attribution {
+  background: rgb(11 15 23 / 0.75) !important;
+  color: #64748b !important;
+  font-size: 10px !important;
+}
+
+.leaflet-control-attribution a {
+  color: #94a3b8 !important;
+}
+
+.leaflet-control-zoom a {
+  background: #10161f !important;
+  color: #94a3b8 !important;
+  border-color: #1e2937 !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background: #1e2937 !important;
+  color: #22d3ee !important;
+}
+
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: #10161f;
+  color: #e2e8f0;
+  border: 1px solid #1e2937;
+  box-shadow: 0 10px 30px -10px rgb(0 0 0 / 0.9);
+}
+
+.leaflet-popup-content {
+  margin: 10px 12px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Thin scrollbars inside the side panels. */
+.scroll-thin::-webkit-scrollbar {
+  width: 6px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: #1e2937;
+  border-radius: 9999px;
+}
+.scroll-thin::-webkit-scrollbar-track {
+  background: transparent;
+}

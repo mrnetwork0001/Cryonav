@@ -1,0 +1,382 @@
+import { useEffect, useRef } from "react";
+import L from "leaflet";
+import {
+  exposureColor,
+  type CityLayers,
+  type CitySummary,
+  type NavigationResult,
+  type ThermalGrid,
+} from "../lib/api";
+
+interface Props {
+  city: CitySummary;
+  grid: ThermalGrid | null;
+  layers: CityLayers | null;
+  nav: NavigationResult | null;
+  showHeat: boolean;
+  showStandard: boolean;
+  showCool: boolean;
+  showShelters: boolean;
+  showCorridors: boolean;
+  onPickPoint: (which: "origin" | "destination", coords: [number, number]) => void;
+  pickMode: "origin" | "destination" | null;
+}
+
+/**
+ * Leaflet is driven imperatively here rather than through react-leaflet: the wrapper's peer-dep
+ * churn across React majors buys nothing for a map with this few interactions.
+ *
+ * The thermal grid is painted into an offscreen canvas at one pixel per FortyGuard cell and
+ * handed to Leaflet as an image overlay. Letting the browser scale that tiny bitmap gives free
+ * bilinear interpolation -- a smooth heat field instead of visible tiles -- and means the layer
+ * needs no reprojection on pan or zoom, which is where hand-rolled canvas overlays usually break.
+ */
+export default function MapCanvas(props: Props) {
+  const { city, grid, layers, nav, showHeat, showStandard, showCool, showShelters, showCorridors } =
+    props;
+
+  const hostRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const heatRef = useRef<L.ImageOverlay | null>(null);
+  const routeLayerRef = useRef<L.LayerGroup | null>(null);
+  const shelterLayerRef = useRef<L.LayerGroup | null>(null);
+  const corridorLayerRef = useRef<L.LayerGroup | null>(null);
+  const pickRef = useRef(props.pickMode);
+  const onPickRef = useRef(props.onPickPoint);
+
+  pickRef.current = props.pickMode;
+  onPickRef.current = props.onPickPoint;
+
+  // -- map lifecycle -------------------------------------------------------------------
+  useEffect(() => {
+    if (!hostRef.current || mapRef.current) return;
+    const map = L.map(hostRef.current, {
+      center: city.center,
+      zoom: 14,
+      zoomControl: true,
+      attributionControl: true,
+    });
+    mapRef.current = map;
+
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+      attribution: '&copy; OpenStreetMap &copy; CARTO &middot; thermal layer: FortyGuard Temperature API',
+      subdomains: "abcd",
+      maxZoom: 19,
+    }).addTo(map);
+
+    corridorLayerRef.current = L.layerGroup().addTo(map);
+    routeLayerRef.current = L.layerGroup().addTo(map);
+    shelterLayerRef.current = L.layerGroup().addTo(map);
+
+    map.on("click", (e: L.LeafletMouseEvent) => {
+      if (!pickRef.current) return;
+      onPickRef.current(pickRef.current, [e.latlng.lat, e.latlng.lng]);
+    });
+
+    return () => {
+      map.remove();
+      mapRef.current = null;
+    };
+  }, []);
+
+  // -- recenter when the city changes ----------------------------------------------------
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.flyTo(city.center, 14, { duration: 0.8 });
+  }, [city.id]);
+
+  // -- thermal grid overlay --------------------------------------------------------------
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (heatRef.current) {
+      heatRef.current.remove();
+      heatRef.current = null;
+    }
+    if (!grid || !showHeat) return;
+
+    const n = grid.resolution;
+    const canvas = document.createElement("canvas");
+    canvas.width = n;
+    canvas.height = n;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const img = ctx.createImageData(n, n);
+    const { min_exposure_f: lo, max_exposure_f: hi } = grid.stats;
+    const span = Math.max(hi - lo, 0.001);
+
+    for (let row = 0; row < n; row++) {
+      for (let col = 0; col < n; col++) {
+        const srcIdx = row * n + col;
+        // Grid rows run south -> north; canvas rows run top -> bottom.
+        const dstIdx = ((n - 1 - row) * n + col) * 4;
+        const [r, g, b] = exposureColor((grid.exposure_index_f[srcIdx] - lo) / span);
+        img.data[dstIdx] = r;
+        img.data[dstIdx + 1] = g;
+        img.data[dstIdx + 2] = b;
+        img.data[dstIdx + 3] = 255;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+
+    const b = grid.bounds;
+    const overlay = L.imageOverlay(
+      canvas.toDataURL(),
+      [
+        [b.south, b.west],
+        [b.north, b.east],
+      ],
+      { opacity: 0.55, interactive: false, className: "thermal-grid" },
+    );
+    overlay.addTo(map);
+    overlay.bringToBack();
+    heatRef.current = overlay;
+  }, [grid, showHeat]);
+
+  // -- coverage-tile boundary --------------------------------------------------------------
+  // The thermal layer stops at the FortyGuard tile edge. Drawing that edge explicitly reads as
+  // a stated coverage limit instead of a rendering gap -- and refusing to paint colour beyond
+  // it keeps the map honest about where the data actually ends.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !grid) return;
+    const b = grid.bounds;
+    const rect = L.rectangle(
+      [
+        [b.south, b.west],
+        [b.north, b.east],
+      ],
+      {
+        color: "#22d3ee",
+        weight: 1,
+        opacity: 0.3,
+        dashArray: "6 6",
+        fill: false,
+        interactive: false,
+      },
+    ).addTo(map);
+
+    const label = L.marker([b.north, b.west], {
+      interactive: false,
+      icon: L.divIcon({
+        className: "",
+        html: `<div style="white-space:nowrap;transform:translate(6px,6px);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#22d3ee99">FortyGuard coverage tile · ${grid.tile_area_mi2} mi²</div>`,
+        iconSize: [0, 0],
+      }),
+    }).addTo(map);
+
+    // Keep the viewport tethered to the tile so the user cannot pan into unmeasured space.
+    map.setMaxBounds(
+      L.latLngBounds([b.south, b.west], [b.north, b.east]).pad(0.35),
+    );
+
+    return () => {
+      rect.remove();
+      label.remove();
+    };
+  }, [grid?.city_id, grid?.bounds.south, grid?.bounds.west]);
+
+  // -- urban morphology corridors --------------------------------------------------------
+  useEffect(() => {
+    const group = corridorLayerRef.current;
+    if (!group) return;
+    group.clearLayers();
+    if (!layers || !showCorridors) return;
+
+    layers.heat_corridors.forEach((c) => {
+      L.polyline(c.path, {
+        color: "#ef4444",
+        weight: 2,
+        opacity: 0.35,
+        dashArray: "1 7",
+        interactive: false,
+      }).addTo(group);
+    });
+    layers.canopy_corridors.forEach((c) => {
+      L.polyline(c.path, {
+        color: "#4ade80",
+        weight: 2,
+        opacity: 0.4,
+        dashArray: "1 7",
+        interactive: false,
+      }).addTo(group);
+    });
+    layers.canopy_zones.forEach((z) => {
+      L.circle(z.center, {
+        radius: z.radius_m * 0.75,
+        color: "#4ade80",
+        weight: 1,
+        opacity: 0.25,
+        fillOpacity: 0.05,
+        interactive: false,
+      }).addTo(group);
+    });
+  }, [layers, showCorridors]);
+
+  // -- routes, endpoints, hotspots --------------------------------------------------------
+  useEffect(() => {
+    const group = routeLayerRef.current;
+    const map = mapRef.current;
+    if (!group || !map) return;
+    group.clearLayers();
+    if (!nav) return;
+
+    if (showStandard) {
+      const geo = nav.routes.standard.geometry;
+      L.polyline(geo, { color: "#7f1d1d", weight: 11, opacity: 0.35, interactive: false }).addTo(group);
+      L.polyline(geo, {
+        color: "#fb7185",
+        weight: 3.5,
+        opacity: 0.95,
+        dashArray: "9 7",
+      })
+        .bindPopup(
+          popup("Standard Direct Route", [
+            ["Distance", `${nav.routes.standard.metrics.distance_km} km`],
+            ["Duration", `${nav.routes.standard.metrics.duration_min} min`],
+            ["Mean exposure", `${nav.routes.standard.metrics.mean_exposure_index_f} °F`],
+            ["Peak surface", `${nav.routes.standard.metrics.peak_surface_temp_f} °F`],
+            ["Shade coverage", `${nav.routes.standard.metrics.shade_coverage_pct}%`],
+          ]),
+        )
+        .addTo(group);
+    }
+
+    if (showCool) {
+      const geo = nav.routes.cool.geometry;
+      L.polyline(geo, { color: "#22d3ee", weight: 14, opacity: 0.2, interactive: false }).addTo(group);
+      L.polyline(geo, { color: "#0891b2", weight: 7, opacity: 0.55, interactive: false }).addTo(group);
+      L.polyline(geo, {
+        color: "#67e8f9",
+        weight: 3.5,
+        opacity: 1,
+        dashArray: "12 12",
+        className: "cool-flow",
+      })
+        .bindPopup(
+          popup("Cryonav Cool Route", [
+            ["Distance", `${nav.routes.cool.metrics.distance_km} km`],
+            ["Duration", `${nav.routes.cool.metrics.duration_min} min`],
+            ["Mean exposure", `${nav.routes.cool.metrics.mean_exposure_index_f} °F`],
+            ["Shade coverage", `${nav.routes.cool.metrics.shade_coverage_pct}%`],
+            ["Thermal load saved", `${nav.comparison.thermal_load_reduction_f} °F`],
+          ]),
+        )
+        .addTo(group);
+
+      nav.routes.cool.waypoints.forEach((w) => {
+        L.marker(w.coords, { icon: shelterIcon("#22d3ee", true) })
+          .bindPopup(
+            popup(w.name, [
+              ["Type", w.type.replace(/_/g, " ")],
+              ["Indoor", `${w.indoor_temp_f} °F`],
+              ["Thermal relief", `−${w.thermal_relief_f} °F`],
+            ]),
+          )
+          .addTo(group);
+      });
+    }
+
+    // Pulsing hazard markers on the worst traps of the standard corridor.
+    nav.hotspots.forEach((h) => {
+      L.marker(h.at, {
+        icon: L.divIcon({
+          className: "",
+          html: `<div class="hazard-marker" style="width:14px;height:14px"><div class="hazard-core"></div></div>`,
+          iconSize: [14, 14],
+          iconAnchor: [7, 7],
+        }),
+      })
+        .bindPopup(
+          popup("Asphalt thermal trap", [
+            ["Surface", `${h.surface_temp_f} °F`],
+            ["Air @ 2 m", `${h.air_temp_2m_f} °F`],
+            ["Radiant spike", `+${h.asphalt_radiation_spike_f} °F`],
+            ["Risk", h.risk_level.toUpperCase()],
+          ]),
+        )
+        .addTo(group);
+    });
+
+    L.marker(nav.origin, { icon: endpointIcon("#22d3ee", "A") })
+      .bindPopup("<b>Origin</b>")
+      .addTo(group);
+    L.marker(nav.destination, { icon: endpointIcon("#a78bfa", "B") })
+      .bindPopup("<b>Destination</b>")
+      .addTo(group);
+
+    const bounds = L.latLngBounds([
+      ...nav.routes.standard.geometry,
+      ...nav.routes.cool.geometry,
+    ]);
+    map.fitBounds(bounds, { padding: [70, 70], maxZoom: 16 });
+  }, [nav, showStandard, showCool]);
+
+  // -- shelters ---------------------------------------------------------------------------
+  useEffect(() => {
+    const group = shelterLayerRef.current;
+    if (!group) return;
+    group.clearLayers();
+    if (!layers || !showShelters) return;
+
+    layers.shelters.forEach((s) => {
+      const color = s.air_conditioned ? "#38bdf8" : "#4ade80";
+      L.marker(s.center, { icon: shelterIcon(color, false) })
+        .bindPopup(
+          popup(s.name, [
+            ["Type", s.type.replace(/_/g, " ")],
+            ["Hours", s.hours],
+            ["Air conditioned", s.air_conditioned ? "yes" : "no"],
+            ["Drinking water", s.water ? "yes" : "no"],
+            ...(s.indoor_temp_f ? [["Indoor", `${s.indoor_temp_f} °F`] as [string, string]] : []),
+          ]),
+        )
+        .addTo(group);
+    });
+  }, [layers, showShelters]);
+
+  return (
+    <div className="relative h-full w-full">
+      <div ref={hostRef} className="h-full w-full" />
+      {props.pickMode && (
+        <div className="pointer-events-none absolute top-3 left-1/2 z-[1000] -translate-x-1/2 rounded-full border border-cyan-400/40 bg-slate-950/90 px-4 py-1.5 text-xs font-medium text-cyan-300 shadow-lg">
+          Click the map to set the {props.pickMode}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function popup(title: string, rows: [string, string][]): string {
+  const body = rows
+    .map(
+      ([k, v]) =>
+        `<div style="display:flex;justify-content:space-between;gap:16px"><span style="color:#64748b">${k}</span><span style="font-variant-numeric:tabular-nums">${v}</span></div>`,
+    )
+    .join("");
+  return `<div><div style="font-weight:600;margin-bottom:6px;color:#e2e8f0">${title}</div>${body}</div>`;
+}
+
+function endpointIcon(color: string, label: string): L.DivIcon {
+  return L.divIcon({
+    className: "",
+    html: `<div style="width:22px;height:22px;border-radius:9999px;background:${color};display:flex;align-items:center;justify-content:center;color:#0b0f17;font-weight:700;font-size:11px;box-shadow:0 0 0 3px rgba(11,15,23,.9),0 0 14px ${color}">${label}</div>`,
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+  });
+}
+
+function shelterIcon(color: string, emphasised: boolean): L.DivIcon {
+  const size = emphasised ? 18 : 12;
+  return L.divIcon({
+    className: "",
+    html: `<div style="width:${size}px;height:${size}px;border-radius:4px;background:${color};box-shadow:0 0 0 2px rgba(11,15,23,.9)${
+      emphasised ? `,0 0 16px ${color}` : ""
+    };transform:rotate(45deg)"></div>`,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+  });
+}
