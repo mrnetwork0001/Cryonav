@@ -1,5 +1,7 @@
 """FortyGuard integration-layer tests: determinism, tile geometry, live fallback, shelters."""
 
+import json
+
 import pytest
 
 import thermal
@@ -142,7 +144,7 @@ class TestHeatIntelligence:
             service.heat_intelligence([], "phoenix", 15.0)
 
     def test_falls_back_to_simulation_when_live_call_fails(self, monkeypatch):
-        """A hackathon demo must not die on someone's wifi."""
+        """A hackathon demo must not die on someone's wifi -- but it must say so."""
         svc = FortyGuardService(api_key="test-key-not-real")
         assert svc.live is True
 
@@ -152,10 +154,169 @@ class TestHeatIntelligence:
         monkeypatch.setattr(svc, "_call_live", boom)
         out = svc.heat_intelligence([(33.4498, -112.0715)], "phoenix", 15.0)
 
+        # Data is still served...
         assert out["feed"]["source"] == "cryonav_simulation"
-        assert out["feed"]["ok"] is True
-        assert "unavailable" in out["feed"]["detail"]
         assert out["count"] == 1
+        # ...but the feed is explicitly flagged as degraded rather than reported healthy.
+        assert out["feed"]["ok"] is False
+        assert out["feed"]["degraded"] is True
+        assert "upstream failed" in out["feed"]["detail"]
+
+
+class _FakeResponse:
+    """Minimal httpx.Response stand-in for exercising upstream failure modes."""
+
+    def __init__(self, status_code=200, payload=None, text="", content_type="application/json"):
+        self.status_code = status_code
+        self._payload = payload
+        self.text = text or (json.dumps(payload) if payload is not None else "")
+        self.headers = {"content-type": content_type}
+        self.reason_phrase = {200: "OK", 401: "Unauthorized", 403: "Forbidden", 429: "Too Many Requests"}.get(
+            status_code, "Error"
+        )
+
+    def json(self):
+        if self._payload is None:
+            raise ValueError("not json")
+        return self._payload
+
+
+class TestUpstreamFailureModes:
+    """Each of these silently produced wrong or misleading output before being fixed."""
+
+    @staticmethod
+    def _svc_with(monkeypatch, response):
+        import httpx
+
+        svc = FortyGuardService(api_key="test-key-not-real")
+        monkeypatch.setattr(httpx, "post", lambda *a, **k: response)
+        return svc
+
+    def test_auth_failure_surfaces_the_real_status_not_a_green_200(self, monkeypatch):
+        """A 401 previously rendered as a healthy '200 OK' feed pill."""
+        svc = self._svc_with(
+            monkeypatch, _FakeResponse(401, payload={"error": "invalid api key"})
+        )
+        feed = svc.heat_intelligence([(33.4498, -112.0715)], "phoenix", 15.0)["feed"]
+        assert feed["upstream_status_code"] == 401
+        assert feed["status_code"] == 401
+        assert feed["ok"] is False
+        assert feed["degraded"] is True
+        assert "invalid api key" in feed["detail"]
+
+    def test_rate_limit_surfaces_as_429(self, monkeypatch):
+        svc = self._svc_with(monkeypatch, _FakeResponse(429, payload={"error": "quota exceeded"}))
+        feed = svc.heat_intelligence([(33.4498, -112.0715)], "phoenix", 15.0)["feed"]
+        assert feed["upstream_status_code"] == 429
+        assert feed["degraded"] is True
+
+    def test_unrecognised_envelope_degrades_instead_of_erroring(self, monkeypatch):
+        """Regression: an unknown envelope yielded [], skipped the fallback, and 400'd."""
+        svc = self._svc_with(monkeypatch, _FakeResponse(200, payload={"unexpected": {"shape": 1}}))
+        out = svc.heat_intelligence([(33.4498, -112.0715)], "phoenix", 15.0)
+        assert out["count"] == 1  # served from simulation rather than raising
+        assert out["feed"]["degraded"] is True
+        assert "envelope" in out["feed"]["detail"]
+
+    def test_record_count_mismatch_is_refused(self, monkeypatch):
+        """Positional alignment means a short array would mislabel coordinates."""
+        svc = self._svc_with(
+            monkeypatch, _FakeResponse(200, payload={"results": [{"air_temperature_2m": 110.0}]})
+        )
+        out = svc.heat_intelligence(
+            [(33.4498, -112.0715), (33.4592, -112.0736)], "phoenix", 15.0
+        )
+        assert out["feed"]["degraded"] is True
+        assert "expected 2 records" in out["feed"]["detail"]
+        assert out["count"] == 2  # both points still answered, from simulation
+
+    def test_non_json_response_degrades(self, monkeypatch):
+        svc = self._svc_with(
+            monkeypatch, _FakeResponse(200, payload=None, text="<html>gateway</html>", content_type="text/html")
+        )
+        feed = svc.heat_intelligence([(33.4498, -112.0715)], "phoenix", 15.0)["feed"]
+        assert feed["degraded"] is True
+        assert "non-JSON" in feed["detail"]
+
+    def test_successful_live_call_reports_field_provenance(self, monkeypatch):
+        """A partially-populated response must not be presented as fully live."""
+        svc = self._svc_with(
+            monkeypatch,
+            _FakeResponse(200, payload={"results": [{"air_temperature_2m": 109.4, "relative_humidity": 14.0}]}),
+        )
+        out = svc.heat_intelligence([(33.4498, -112.0715)], "phoenix", 15.0)
+        feed = out["feed"]
+        assert feed["source"] == "fortyguard_live"
+        assert feed["ok"] is True
+        assert feed["degraded"] is False
+        assert feed["live_fields"] == ["air_temperature_2m", "relative_humidity"]
+        assert "2/5 metrics present" in feed["detail"]
+        # The upstream air temperature is actually used, not overwritten by the simulation.
+        assert out["readings"][0]["air_temp_2m_f"] == 109.4
+
+    def test_fully_populated_response_reports_no_caveat(self, monkeypatch):
+        svc = self._svc_with(
+            monkeypatch,
+            _FakeResponse(200, payload={"results": [{
+                "air_temperature_2m": 109.4, "surface_temperature": 168.0,
+                "relative_humidity": 14.0, "wind_speed": 6.0, "solar_irradiance": 950.0,
+            }]}),
+        )
+        feed = svc.heat_intelligence([(33.4498, -112.0715)], "phoenix", 15.0)["feed"]
+        assert len(feed["live_fields"]) == 5
+        assert "metrics present" not in feed["detail"]
+
+    def test_fortyguard_error_envelope_is_honoured(self, monkeypatch):
+        """FortyGuard signals failure in-body; an HTTP 200 carrying error:true is not success."""
+        svc = self._svc_with(
+            monkeypatch,
+            _FakeResponse(200, payload={
+                "error": True, "status_code": 401,
+                "details": {"message": "Invalid or unknown API key."},
+            }),
+        )
+        feed = svc.heat_intelligence([(33.4498, -112.0715)], "phoenix", 15.0)["feed"]
+        assert feed["degraded"] is True
+        assert feed["upstream_status_code"] == 401
+        assert "Invalid or unknown API key." in feed["detail"]
+
+    def test_auth_uses_the_api_key_header_not_bearer(self, monkeypatch):
+        """Confirmed against the live API: an Authorization: Bearer token is ignored entirely,
+        and the request is rejected as if no credential were sent."""
+        import httpx
+
+        captured = {}
+
+        def fake_post(url, **kwargs):
+            captured["url"] = url
+            captured["headers"] = kwargs.get("headers", {})
+            return _FakeResponse(200, payload={"results": [{"air_temperature_2m": 108.0}]})
+
+        svc = FortyGuardService(api_key="secret-key")
+        monkeypatch.setattr(httpx, "post", fake_post)
+        svc.heat_intelligence([(33.4498, -112.0715)], "phoenix", 15.0)
+
+        assert captured["headers"].get("api-key") == "secret-key"
+        assert "Authorization" not in captured["headers"]
+        assert captured["url"].endswith("/v1/heat_intelligence")
+
+    def test_endpoint_path_uses_underscore(self):
+        """A hyphenated path 404s, and the 404 hides behind an auth check that fires first."""
+        from fortyguard_service import HEAT_INTELLIGENCE_PATH
+
+        assert HEAT_INTELLIGENCE_PATH == "/v1/heat_intelligence"
+        assert "-" not in HEAT_INTELLIGENCE_PATH.rsplit("/", 1)[-1]
+
+    def test_bare_list_and_nested_envelopes_are_accepted(self, monkeypatch):
+        for payload in (
+            [{"air_temperature_2m": 108.0}],
+            {"readings": [{"air_temperature_2m": 108.0}]},
+            {"data": {"results": [{"air_temperature_2m": 108.0}]}},
+        ):
+            svc = self._svc_with(monkeypatch, _FakeResponse(200, payload=payload))
+            out = svc.heat_intelligence([(33.4498, -112.0715)], "phoenix", 15.0)
+            assert out["feed"]["source"] == "fortyguard_live", payload
+            assert out["readings"][0]["air_temp_2m_f"] == 108.0
 
     def test_prefer_live_false_skips_upstream(self, monkeypatch):
         svc = FortyGuardService(api_key="test-key-not-real")

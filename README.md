@@ -120,9 +120,35 @@ Three of those choices were forced by bugs the test suite caught, and each is do
 - Modulating the UHI and canopy offsets too steeply made air temperature **rise after sunset** — the offsets swung harder than the diurnal curve they ride on.
 - A **linear** thermal penalty could never justify a detour, so the "cool route" silently degenerated into the standard route. Heat-illness risk is convex in exposure; the penalty is now `surplus^2.5`.
 
-### Mock vs live
+### The live FortyGuard integration
 
-With `FORTYGUARD_API_KEY` unset, the simulation serves everything — the full stack runs offline with zero API spend, and readings are a pure function of `(city, lat, lon, hour)` so screenshots and tests reproduce exactly. With a key set, `POST /v1/heat-intelligence` is called for real and **falls back to the simulation on any failure**; a demo should not die on conference wifi.
+Verified directly against `api.fortyguard.com` (run `./scripts/verify_fortyguard.sh` to reproduce):
+
+| | Value | How it was confirmed |
+|---|---|---|
+| Auth header | **`api-key: <key>`** | `Authorization: Bearer` is silently ignored — the API replies "Missing required 'api-key' header" as if nothing were sent |
+| Endpoint | **`POST /v1/heat_intelligence`** (underscore) | recovered from the docs Angular bundle; a hyphenated path 404s |
+| Envelope | `{"error": bool, "status_code": int, "data"/"details": …}` | failure is signalled **in-body**, so an HTTP 200 with `error: true` is not success |
+| Other endpoints | `/v1/env_params`, `/v1/heatmap`, `/v1/satellite`, `/v1/streetview`, `/v1/status/` | same source |
+| Live status | `1.0.1-beta`, `mode: PROD` | unauthenticated `GET /health` |
+
+Both the header name and the endpoint path were originally wrong in this codebase, and neither
+failure was visible: auth is checked *before* routing, so every mistake returns the same 401.
+
+**Still unknown:** the per-location response field names. Auth gates every endpoint, so the
+schema cannot be read without a key. `_reading_from_live` therefore accepts several plausible
+spellings, reports via `feed.live_fields` exactly which ones actually arrived, and degrades
+loudly rather than silently substituting modelled values for missing ones.
+
+**Coverage is US-only.** The Temperature Dashboard® provisions access per US state, so the
+Phoenix tile can be fed live while the Dubai and Abu Dhabi tiles are simulation-only. The
+dashboard labels the feed source per request rather than implying uniform coverage.
+
+With `FORTYGUARD_API_KEY` unset the simulation serves everything — the full stack runs offline
+with zero API spend, and readings are a pure function of `(city, lat, lon, hour)` so screenshots
+and tests reproduce exactly. With a key set the live call is attempted and **falls back to the
+simulation on any failure, flagged as `degraded` with the real upstream status**; a demo should
+not die on conference wifi, but it should never pretend a 401 was a 200.
 
 ---
 
@@ -137,8 +163,9 @@ git clone <this-repo> && cd Cryonav
 Open **http://localhost:5180**. No API key and no Mapbox token required — basemap tiles come from CARTO, thermal data from the built-in simulation.
 
 ```bash
-cd backend && .venv/bin/pytest -q     # 110 tests
+cd backend && .venv/bin/pytest -q     # 121 tests
 ./scripts/smoke_test.sh               # 9 end-to-end API checks
+./scripts/verify_fortyguard.sh        # probe the real FortyGuard API (works without a key)
 ```
 
 To use the real upstream feed:
@@ -162,7 +189,7 @@ Ports are `8008` / `5180` (overridable via `CRYONAV_API_PORT` / `CRYONAV_WEB_POR
 | `GET` | `/api/v1/cities` | Coverage tiles and demo corridors |
 | `GET` | `/api/v1/cities/{id}/grid` | Thermal heat grid for the map overlay |
 | `GET` | `/api/v1/cities/{id}/layers` | Heat/canopy corridors, zones, shelters |
-| `POST` | `/api/v1/fortyguard/heat-intelligence` | FortyGuard proxy + mock generator |
+| `POST` | `/api/v1/fortyguard/heat-intelligence` | FortyGuard proxy (`/v1/heat_intelligence`) + mock generator |
 | `POST` | `/api/v1/navigate/cool-route` | **Path A vs Path B + full agent trace** |
 | `GET` | `/api/v1/shelters/nearby` | Cooling centres, hydration, cooled transit |
 | `POST` | `/api/v1/edge/jetson-kiosk` | Bandwidth-optimised edge payload |
@@ -247,7 +274,7 @@ frontend/
   src/components/         MapCanvas, TopMetricsBar, ExposureCard, ControlPanel, AgentTrace
   src/lib/api.ts          typed client + exposure colour ramp
 data/cities.json          Phoenix / Dubai / Abu Dhabi tiles — corridors, zones, shelters, presets
-scripts/                  setup.sh · dev.sh · smoke_test.sh
+scripts/                  setup.sh · dev.sh · smoke_test.sh · verify_fortyguard.sh
 docs/PROJECT_SPEC.md      original build brief
 ```
 
@@ -261,7 +288,8 @@ Add a city by editing `data/cities.json` — heat corridors, canopy corridors, s
 - **Canopy GIS is hand-authored** from real landmarks, not LiDAR-derived canopy rasters.
 - **Cooling-shelter hours are static fixtures**, not live municipal feeds.
 - **The Jetson tier is simulated**, as described above.
-- **The upstream FortyGuard response schema is inferred** from the published contract. `_reading_from_live` accepts several plausible field spellings and falls back to the simulation on mismatch; it will need a one-line adjustment against the real API.
+- **The upstream FortyGuard *response* schema is still unconfirmed.** The endpoint path, auth header and error envelope are verified against the live API, but auth gates every route so the per-location field names cannot be read without a key. `_reading_from_live` accepts several plausible spellings and `feed.live_fields` reports which ones actually arrived.
+- **Live coverage is US-only**, so the Dubai and Abu Dhabi tiles are simulation-only regardless of key.
 
 ---
 

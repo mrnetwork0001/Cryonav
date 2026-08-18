@@ -191,6 +191,11 @@ export interface NavigationResult {
     ok: boolean;
     latency_ms: number;
     detail: string;
+    /** True when a live feed was configured and attempted but the simulation stood in. */
+    degraded: boolean;
+    upstream_status_code: number | null;
+    /** Metric fields that genuinely came from upstream; the rest were modelled locally. */
+    live_fields: string[];
   };
   sensing: {
     elevation_m: number;

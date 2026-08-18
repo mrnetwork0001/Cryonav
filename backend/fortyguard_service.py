@@ -3,8 +3,9 @@ FortyGuard Temperature API(R) integration layer.
 
 Two interchangeable data paths behind one interface:
 
-  1. **Live**  -- ``POST {FORTYGUARD_BASE_URL}/v1/heat-intelligence`` when ``FORTYGUARD_API_KEY``
-     is present. Requests 2 m above-ground-level readings at 10 mi^2 microclimate resolution.
+  1. **Live**  -- ``POST {FORTYGUARD_BASE_URL}/v1/heat_intelligence`` when ``FORTYGUARD_API_KEY``
+     is present, authenticated with an ``api-key`` request header. Requests 2 m above-ground-level
+     readings at 10 mi^2 microclimate resolution.
   2. **Mock**  -- a deterministic physical simulation of the same payload, so the entire stack
      (routing, agents, dashboard, tests, live demo) runs offline with zero API budget.
 
@@ -35,11 +36,36 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 CITIES_PATH = DATA_DIR / "cities.json"
 
 DEFAULT_BASE_URL = "https://api.fortyguard.com"
-HEAT_INTELLIGENCE_PATH = "/v1/heat-intelligence"
+
+#: Real endpoint paths, recovered from the FortyGuard docs application bundle and confirmed
+#: against the live host. Note the UNDERSCORE: an earlier guess at "/v1/heat-intelligence"
+#: (hyphen) would have 404'd forever behind an auth check that fires before routing.
+HEAT_INTELLIGENCE_PATH = "/v1/heat_intelligence"
+ENV_PARAMS_PATH = "/v1/env_params"
+HEATMAP_PATH = "/v1/heatmap"
+SATELLITE_PATH = "/v1/satellite"
+STREETVIEW_PATH = "/v1/streetview"
+STATUS_PATH = "/v1/status/"
+
+#: FortyGuard authenticates with a bare ``api-key`` request header, NOT an OAuth-style
+#: ``Authorization: Bearer`` token. The live API is explicit about this:
+#:   {"error": true, "status_code": 401, "details": {"message":
+#:    "Missing required 'api-key' header. Send your key in the 'api-key' request header."}}
+API_KEY_HEADER = "api-key"
 
 #: Advertised capability of the FortyGuard Temperature API(R) product we integrate against.
 SENSING_ELEVATION_M = 2.0
 MICROCLIMATE_RESOLUTION_MI2 = 10.0
+
+#: The metrics we ask the upstream for. Also the checklist used to report how much of a
+#: "live" reading was genuinely upstream data versus locally modelled.
+LIVE_METRIC_FIELDS = (
+    "air_temperature_2m",
+    "surface_temperature",
+    "relative_humidity",
+    "wind_speed",
+    "solar_irradiance",
+)
 
 SURFACE_TYPES = ("asphalt", "concrete", "canopy_shade", "covered_walkway", "park_turf", "waterfront")
 
@@ -90,6 +116,18 @@ def _polyline_distance_m(point: Tuple[float, float], path: Sequence[Sequence[flo
 # --------------------------------------------------------------------------------------
 
 
+class FortyGuardUpstreamError(RuntimeError):
+    """An upstream call that failed in a way worth reporting precisely.
+
+    Carries the real HTTP status so the feed pill can say "401 Unauthorized" instead of
+    laundering every failure into a green 200.
+    """
+
+    def __init__(self, message: str, status_code: Optional[int] = None) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+
+
 @dataclass(frozen=True)
 class ThermalReading:
     """A single 2 m AGL microclimate observation, live or simulated."""
@@ -130,6 +168,14 @@ class FeedStatus:
     elevation_m: float = SENSING_ELEVATION_M
     endpoint: str = HEAT_INTELLIGENCE_PATH
     detail: str = ""
+    #: True when a live feed was configured and attempted but the simulation had to stand in.
+    #: Without this a 401 or a wrong endpoint path is indistinguishable from a healthy feed.
+    degraded: bool = False
+    #: The upstream HTTP status actually observed, or None when live was never attempted.
+    upstream_status_code: Optional[int] = None
+    #: Which reading fields genuinely came from the upstream response. Anything absent here
+    #: was synthesised locally, so "live" data is never silently part-simulated.
+    live_fields: List[str] = field(default_factory=list)
     observed_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
     def as_dict(self) -> Dict[str, Any]:
@@ -438,21 +484,38 @@ class FortyGuardService:
 
         if prefer_live and self.live:
             try:
-                readings = self._call_live(points, resolved_city, hour)
+                readings, live_fields = self._call_live(points, resolved_city, hour)
                 status = FeedStatus(
                     source="fortyguard_live",
                     status_code=200,
                     ok=True,
+                    upstream_status_code=200,
+                    live_fields=live_fields,
                     latency_ms=round((time.perf_counter() - started) * 1000, 2),
-                    detail="FortyGuard Temperature API(R) 200 OK",
+                    detail=(
+                        "FortyGuard Temperature API(R) 200 OK"
+                        + ("" if len(live_fields) == len(LIVE_METRIC_FIELDS)
+                           else f" -- {len(live_fields)}/{len(LIVE_METRIC_FIELDS)} metrics present, "
+                                f"remainder modelled locally")
+                    ),
                 )
             except Exception as exc:  # noqa: BLE001 - degrade, never crash the demo
+                # Report the real upstream status. Laundering a 401 or a 404 into a green
+                # "200 OK" is worse than the outage itself: it hides a broken integration
+                # behind data that looks live, which is exactly how a wrong endpoint path
+                # ships unnoticed.
+                upstream = getattr(exc, "status_code", None)
                 status = FeedStatus(
                     source="cryonav_simulation",
-                    status_code=200,
-                    ok=True,
+                    status_code=upstream or 503,
+                    ok=False,
+                    degraded=True,
+                    upstream_status_code=upstream,
                     latency_ms=round((time.perf_counter() - started) * 1000, 2),
-                    detail=f"live feed unavailable ({type(exc).__name__}), served from simulation",
+                    detail=(
+                        f"FortyGuard upstream failed ({upstream or type(exc).__name__}: {exc}); "
+                        f"served from deterministic simulation"
+                    ),
                 )
 
         if readings is None:
@@ -490,39 +553,123 @@ class FortyGuardService:
 
     def _call_live(
         self, points: Sequence[Tuple[float, float]], city_id: str, hour: float
-    ) -> List[ThermalReading]:
-        """Real FortyGuard call. Imported lazily so the offline path has no hard dependency."""
+    ) -> Tuple[List[ThermalReading], List[str]]:
+        """Real FortyGuard call. Imported lazily so the offline path has no hard dependency.
+
+        Returns the readings plus the list of metric fields that genuinely came back from
+        upstream. Every failure mode below raises :class:`FortyGuardUpstreamError` carrying the
+        real HTTP status, because the caller degrades to simulation and must be able to say
+        *why* rather than reporting a healthy feed.
+        """
         import httpx  # noqa: PLC0415
 
         body = {
             "locations": [{"latitude": lat, "longitude": lon} for lat, lon in points],
             "elevation_m": SENSING_ELEVATION_M,
             "resolution_mi2": MICROCLIMATE_RESOLUTION_MI2,
-            "metrics": [
-                "air_temperature_2m",
-                "surface_temperature",
-                "relative_humidity",
-                "wind_speed",
-                "solar_irradiance",
-            ],
+            "metrics": list(LIVE_METRIC_FIELDS),
             "units": "imperial",
         }
-        resp = httpx.post(
-            f"{self.base_url}{HEAT_INTELLIGENCE_PATH}",
-            json=body,
-            headers={
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json",
-                "User-Agent": "Cryonav/1.0 (FortyGuard Hackathon 26)",
-            },
-            timeout=self.timeout_s,
+        url = f"{self.base_url}{HEAT_INTELLIGENCE_PATH}"
+
+        try:
+            resp = httpx.post(
+                url,
+                json=body,
+                headers={
+                    API_KEY_HEADER: self.api_key,
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "User-Agent": "Cryonav/1.0 (FortyGuard Hackathon 26)",
+                },
+                timeout=self.timeout_s,
+            )
+        except httpx.HTTPError as exc:
+            raise FortyGuardUpstreamError(f"transport error contacting {url}: {exc}") from exc
+
+        if resp.status_code >= 400:
+            # Surface the body: an auth or quota rejection almost always explains itself there,
+            # and that message is what tells us whether the key, the path or the plan is wrong.
+            snippet = resp.text[:200].replace("\n", " ").strip()
+            raise FortyGuardUpstreamError(
+                f"{resp.reason_phrase or 'HTTP error'} from {HEAT_INTELLIGENCE_PATH}"
+                + (f" -- {snippet}" if snippet else ""),
+                status_code=resp.status_code,
+            )
+
+        try:
+            payload = resp.json()
+        except ValueError as exc:
+            raise FortyGuardUpstreamError(
+                f"upstream returned non-JSON ({resp.headers.get('content-type', 'unknown type')})",
+                status_code=resp.status_code,
+            ) from exc
+
+        # FortyGuard wraps every response in its own envelope and signals failure with an
+        # in-body flag, e.g.
+        #   {"error": true, "status_code": 401, "details": {"message": "Missing ... 'api-key' ..."}}
+        # An HTTP 200 carrying error:true must not be read as success.
+        if isinstance(payload, dict) and payload.get("error"):
+            details = payload.get("details") or {}
+            message = (
+                details.get("message")
+                if isinstance(details, dict)
+                else str(details)
+            ) or payload.get("message") or "upstream reported an error"
+            raise FortyGuardUpstreamError(
+                str(message), status_code=payload.get("status_code") or resp.status_code
+            )
+
+        records = self._extract_records(payload)
+        if records is None:
+            raise FortyGuardUpstreamError(
+                "unrecognised response envelope: expected a list under 'results', 'data', "
+                f"'readings' or 'locations', got keys {sorted(payload)[:8]}",
+                status_code=resp.status_code,
+            )
+
+        # Records are matched to request points by position, so a length mismatch would
+        # silently attach one location's temperature to another's coordinates. Refusing is the
+        # only safe response -- zip() would just truncate and report a plausible wrong answer.
+        if len(records) != len(points):
+            raise FortyGuardUpstreamError(
+                f"expected {len(points)} records, got {len(records)}; refusing to align "
+                f"readings to coordinates by position",
+                status_code=resp.status_code,
+            )
+
+        live_fields = sorted(
+            {f for rec in records if isinstance(rec, dict) for f in LIVE_METRIC_FIELDS if f in rec}
         )
-        resp.raise_for_status()
-        payload = resp.json()
-        return [
-            self._reading_from_live(city_id, point, record)
-            for point, record in zip(points, payload.get("results", payload.get("data", [])))
+        readings = [
+            self._reading_from_live(city_id, point, record if isinstance(record, dict) else {})
+            for point, record in zip(points, records)
         ]
+        return readings, live_fields
+
+    @staticmethod
+    def _extract_records(payload: Any) -> Optional[List[Any]]:
+        """Locate the per-location record array in an upstream payload.
+
+        The published contract is not pinned down, so several plausible envelope spellings are
+        accepted -- but an unrecognised shape returns ``None`` so the caller can degrade
+        loudly. Previously a missing envelope yielded ``[]``, which skipped the simulation
+        fallback entirely and surfaced as an opaque HTTP 400 from an empty ``max()``.
+        """
+        if isinstance(payload, list):
+            return payload
+        if not isinstance(payload, dict):
+            return None
+        for key in ("results", "data", "readings", "locations", "points", "items"):
+            value = payload.get(key)
+            if isinstance(value, list):
+                return value
+            # Some APIs nest one level: {"data": {"results": [...]}}
+            if isinstance(value, dict):
+                for inner in ("results", "readings", "items"):
+                    if isinstance(value.get(inner), list):
+                        return value[inner]
+        return None
 
     def _reading_from_live(
         self, city_id: str, point: Tuple[float, float], record: Dict[str, Any]

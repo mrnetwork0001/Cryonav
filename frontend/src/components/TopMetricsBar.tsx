@@ -21,6 +21,7 @@ export default function TopMetricsBar({ nav, grid, cityName, hour, loading }: Pr
   const color = ambient?.risk_color ?? "#22d3ee";
   const feedOk = nav?.feed.ok ?? false;
   const live = nav?.feed.source === "fortyguard_live";
+  const degraded = nav?.feed.degraded ?? false;
 
   return (
     <header className="glass z-20 flex flex-wrap items-stretch gap-px overflow-hidden rounded-xl">
@@ -46,23 +47,48 @@ export default function TopMetricsBar({ nav, grid, cityName, hour, loading }: Pr
       <div className="flex min-w-[240px] flex-1 flex-col justify-center px-5 py-3">
         <div className="flex items-center gap-2">
           <span
-            className={`h-1.5 w-1.5 rounded-full ${feedOk ? "bg-emerald-400" : "bg-slate-600"}`}
-            style={feedOk ? { boxShadow: "0 0 8px #34d399" } : undefined}
+            className={`h-1.5 w-1.5 rounded-full ${
+              degraded ? "bg-rose-500" : feedOk ? "bg-emerald-400" : "bg-slate-600"
+            }`}
+            style={
+              degraded
+                ? { boxShadow: "0 0 8px #f43f5e" }
+                : feedOk
+                  ? { boxShadow: "0 0 8px #34d399" }
+                  : undefined
+            }
           />
           <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-slate-400">
             FortyGuard Temperature API
           </span>
+          {degraded && (
+            <span className="rounded bg-rose-500/20 px-1.5 py-px text-[9px] font-bold tracking-wide text-rose-300">
+              DEGRADED
+            </span>
+          )}
         </div>
         <div className="tnum mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-[11px] text-slate-500">
-          <span className="font-semibold text-emerald-400">
-            {nav ? `${nav.feed.status_code} OK` : loading ? "…" : "—"}
+          {/* Never render an upstream error status as a green "OK" -- a hidden broken
+              integration is worse than a visible outage. */}
+          <span className={`font-semibold ${degraded ? "text-rose-400" : "text-emerald-400"}`}>
+            {nav
+              ? degraded
+                ? `${nav.feed.upstream_status_code ?? "ERR"} UPSTREAM FAIL`
+                : `${nav.feed.status_code} OK`
+              : loading
+                ? "…"
+                : "—"}
           </span>
           <span>{nav ? `${nav.sensing.resolution_mi2} mi² resolution` : "10 mi² resolution"}</span>
           <span>{nav ? `${nav.sensing.elevation_m} m AGL` : "2 m AGL"}</span>
           {nav && <span>{nav.feed.latency_ms.toFixed(1)} ms</span>}
         </div>
-        <div className="mt-0.5 text-[10px] text-slate-600">
-          {live ? "live upstream feed" : "deterministic microclimate simulation"}
+        <div className={`mt-0.5 text-[10px] ${degraded ? "text-rose-400/80" : "text-slate-600"}`}>
+          {degraded
+            ? nav?.feed.detail
+            : live
+              ? `live upstream feed · ${nav?.feed.live_fields.length ?? 0}/5 metrics`
+              : "deterministic microclimate simulation"}
         </div>
       </div>
 
