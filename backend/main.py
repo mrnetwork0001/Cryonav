@@ -183,6 +183,9 @@ def health() -> Dict[str, Any]:
             "last_status": service.last_status.as_dict(),
         },
         "cities": service.city_ids(),
+        "calibration": {
+            cid: service.calibration_summary(cid) for cid in service.city_ids()
+        },
     }
 
 

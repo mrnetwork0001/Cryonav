@@ -48,14 +48,14 @@ Measured across all nine demo corridors × three profiles (27 combinations, at 1
 
 | Metric | Range across demo corridors |
 |---|---|
-| Thermal load reduction | **0 – 8.9 °F** |
+| Thermal load reduction | **0 – 5.4 °F** |
 | Heat-stress reduction | **0 – 15.5 %** |
-| Heat-strain dose reduction | **0 – 18.7 %** |
+| Heat-strain dose reduction | **0 – 19.3 %** |
 | Time in high/extreme risk (Phoenix) | **up to −34 %** |
 | Shade coverage gained | **0 – +31 %** |
 | Added walking time | **−5.7 to +4.6 min** |
 
-> **On the numbers.** The brief's headline claim is a 35–50 % exposure reduction. Cryonav does not reach it, and does not round up to it. The closest honest framing is *time spent in the high/extreme risk band* on Phoenix corridors, where the reduction reaches **34 %** — just under the claimed band. On mean thermal load the defensible reduction is **3–9 °F**; on heat-strain dose, **up to 19 %**.
+> **On the numbers.** The brief's headline claim is a 35–50 % exposure reduction. Cryonav does not reach it, and does not round up to it. The closest honest framing is *time spent in the high/extreme risk band* on Phoenix corridors, where the reduction reaches **34 %** — just under the claimed band. On mean thermal load the defensible reduction is **up to 5.4 °F**; on heat-strain dose, **up to 19.3 %**. (These are measured against *live* FortyGuard ambient data, which is flatter through the afternoon than the earlier synthetic curve — so the honest numbers came down when real data arrived.)
 >
 > Several zeroes in those ranges are deliberate. When no admissible route beats the direct path on both detour budget and dose, Cryonav returns the direct path and reports zero saving rather than manufacturing a detour. And in Gulf-city afternoons *every* cell on the tile is already in the extreme band, so the band-time metric there is meaningless and can even read negative — a cooler route that takes longer spends more total minutes in a band that covers the whole city. The win in those cities shows up as thermal load and dose instead, which is why the dashboard leads with those.
 
@@ -135,14 +135,35 @@ Verified directly against `api.fortyguard.com` (run `./scripts/verify_fortyguard
 Both the header name and the endpoint path were originally wrong in this codebase, and neither
 failure was visible: auth is checked *before* routing, so every mistake returns the same 401.
 
-**Still unknown:** the per-location response field names. Auth gates every endpoint, so the
-schema cannot be read without a key. `_reading_from_live` therefore accepts several plausible
-spellings, reports via `feed.live_fields` exactly which ones actually arrived, and degrades
-loudly rather than silently substituting modelled values for missing ones.
+**The enterprise endpoints are asynchronous.** `POST` returns an `activity_id`; the payload is
+collected from `GET /v1/status/{activity_id}` once it flips from `Processing` to `Completed`.
+Two endpoints matter here and they behave very differently:
 
-**Coverage is US-only.** The Temperature Dashboard® provisions access per US state, so the
-Phoenix tile can be fed live while the Dubai and Abu Dhabi tiles are simulation-only. The
-dashboard labels the feed source per request rather than implying uniform coverage.
+| Endpoint | Required body | Settles in | Returns |
+|---|---|---|---|
+| `/v1/heat_intelligence` | `latitude`, `longitude`, `temperature`, `date`, `analysis[]` — literals `geographic`/`environmental`/`urban`/`events`/`anthropogenic` | ~145 s | a **PDF report** (S3 link) |
+| `/v1/env_params` | `latitude`, `longitude`, `temperature`, `date_time{start_date, filter_type: 1‑4}` | ~5 s | **JSON, 24 h hourly series** |
+
+Despite the name, `heat_intelligence` produces an analyst PDF and cannot drive routing.
+**`env_params` is the real data source**: 15 hourly parameters including apparent temperature,
+relative humidity, wet-bulb temperature, cloud cover, clear-sky GHI/DNI/DHI, elevation and air
+quality.
+
+One wrinkle: `env_params` publishes apparent temperature, wet-bulb and RH but no dry-bulb
+series, and apparent temperature already folds humidity in — using it directly as air
+temperature would double-count that term. Wet-bulb plus RH pins dry-bulb uniquely, so Cryonav
+inverts for it (`dry_bulb_from_wet_bulb_f`). That recovers Phoenix's real curve: 91.4 °F at
+06:00 rising to 111.0 °F at 15:00.
+
+**Coverage is global.** The Temperature Dashboard®'s onboarding asks for a US state, which
+looks like a coverage limit but is not one — it gates *dashboard* access, not the API. All three
+tiles calibrate successfully against live data:
+
+| Tile | Live ambient range | Peak | Elevation | Timezone |
+|---|---|---|---|---|
+| Phoenix | 91.4 – 111.0 °F | 15:00 | 332 m | GMT−7 |
+| Dubai | 90.8 – 109.3 °F | 11:00 | 1 m | GMT+4 |
+| Abu Dhabi | 91.8 – 113.6 °F | 14:00 | 6 m | GMT+4 |
 
 With `FORTYGUARD_API_KEY` unset the simulation serves everything — the full stack runs offline
 with zero API spend, and readings are a pure function of `(city, lat, lon, hour)` so screenshots
@@ -166,6 +187,7 @@ Open **http://localhost:5180**. No API key and no Mapbox token required — base
 cd backend && .venv/bin/pytest -q     # 121 tests
 ./scripts/smoke_test.sh               # 9 end-to-end API checks
 ./scripts/verify_fortyguard.sh        # probe the real FortyGuard API (works without a key)
+python scripts/calibrate.py           # pull today's real ambient curve for every tile
 ```
 
 To use the real upstream feed:
@@ -289,7 +311,7 @@ Add a city by editing `data/cities.json` — heat corridors, canopy corridors, s
 - **Cooling-shelter hours are static fixtures**, not live municipal feeds.
 - **The Jetson tier is simulated**, as described above.
 - **The upstream FortyGuard *response* schema is still unconfirmed.** The endpoint path, auth header and error envelope are verified against the live API, but auth gates every route so the per-location field names cannot be read without a key. `_reading_from_live` accepts several plausible spellings and `feed.live_fields` reports which ones actually arrived.
-- **Live coverage is US-only**, so the Dubai and Abu Dhabi tiles are simulation-only regardless of key.
+- **Only the ambient baseline is live.** FortyGuard supplies the real hourly temperature, humidity and solar curve per tile; the 10 m microclimate structure on top of it — canopy, arterials, sky view factor, radiant load — is Cryonav's own model, not observation.
 
 ---
 

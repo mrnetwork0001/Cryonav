@@ -57,7 +57,13 @@ Verified against the live host on day 1 of the hackathon — `./scripts/verify_f
 - Envelope: `{"error": bool, "status_code": int, "data"|"details": …}`. Failure is in-body, so HTTP 200 + `error: true` must not be read as success.
 - `GET /health` needs no key: `1.0.1-beta`, `mode: PROD`.
 - **Response field names remain unconfirmed** — auth gates every route. `feed.live_fields` reports which requested metrics actually arrived.
-- **Coverage is US-only**, provisioned per state in the dashboard. Dubai and Abu Dhabi tiles are simulation-only.
+- **Coverage is global.** The dashboard's "U.S. states only" onboarding gates dashboard access, NOT API coverage — Phoenix, Dubai and Abu Dhabi all calibrate live.
+- **Enterprise endpoints are ASYNC**: POST returns `activity_id`, then `GET /v1/status/{activity_id}` (path param — a query param 400s) until status is `Completed`.
+- **`/v1/heat_intelligence` returns a PDF**, not data, and takes ~145 s. Despite the name it cannot drive routing. Body: `latitude`, `longitude`, `temperature`, `date` (string), `analysis` (list of `geographic`/`environmental`/`urban`/`events`/`anthropogenic`).
+- **`/v1/env_params` is the real data source** (~5 s, JSON, 24 hourly values × 15 parameters). Body: `latitude`, `longitude`, `temperature`, `date_time{start_date, filter_type: 1|2|3|4}`. Only `filter_type: 3` works reliably; 1/2/4 500 without an end date.
+- It has **no dry-bulb series** — invert wet-bulb + RH via `dry_bulb_from_wet_bulb_f`. Never use `apparent_temperature_celsius` as air temperature; it already contains the humidity term.
+- Everything is **Celsius**; `heat_index_celsius` just echoes the `temperature` you sent, so ignore it.
+- `python scripts/calibrate.py` caches ambient curves to `data/calibration/<city>.json`, loaded on startup.
 
 ## Invariants worth not breaking
 

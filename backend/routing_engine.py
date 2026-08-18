@@ -620,11 +620,25 @@ class RoutingEngine:
 
             within_budget = ratio <= max_detour
             lowers_dose = mandated_stop or candidate.thermal_dose_f_min <= standard.thermal_dose_f_min
-            accepted = within_budget and lowers_dose
+            # Peak exposure is not in the objective -- the optimiser minimises integrated dose --
+            # so without an explicit guard a candidate can shave total strain while crossing one
+            # spot hotter than anything on the direct route. Acute heat risk tracks peak as well
+            # as dose, and a "cooler" route that is worse on any reported metric undermines the
+            # whole scoreboard, so peak must not regress either.
+            lowers_peak = (
+                mandated_stop
+                or candidate.peak_exposure_index_f <= standard.peak_exposure_index_f + 1e-9
+            )
+            accepted = within_budget and lowers_dose and lowers_peak
             if not within_budget:
                 reason = f"detour {round((ratio - 1) * 100)}% exceeds {round((max_detour - 1) * 100)}% budget"
             elif not lowers_dose:
                 reason = f"detour fits but raises heat-strain dose by {abs(round(dose_delta_pct, 1))}%"
+            elif not lowers_peak:
+                reason = (
+                    f"detour fits but peak exposure rises "
+                    f"{round(candidate.peak_exposure_index_f - standard.peak_exposure_index_f, 1)} F"
+                )
             else:
                 reason = (
                     f"admissible: {round(dose_delta_pct, 1)}% less dose, "

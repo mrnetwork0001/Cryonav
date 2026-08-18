@@ -34,6 +34,7 @@ from thermal import clamp, haversine_m
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 CITIES_PATH = DATA_DIR / "cities.json"
+CALIBRATION_DIR = DATA_DIR / "calibration"
 
 DEFAULT_BASE_URL = "https://api.fortyguard.com"
 
@@ -202,7 +203,9 @@ class FortyGuardService:
         self.timeout_s = timeout_s
         self._cities: Dict[str, Dict[str, Any]] = {}
         self._dewpoints: Dict[str, float] = {}
+        self._calibration: Dict[str, Dict[str, Any]] = {}
         self._load_cities(cities_path)
+        self._load_calibrations()
         self.last_status: FeedStatus = FeedStatus(
             source=self.mode, status_code=200, ok=True, latency_ms=0.0, detail="initialised"
         )
@@ -387,10 +390,21 @@ class FortyGuardService:
         peak = clim.get("peak_hour", 15.0)
         terr = self.terrain(city_id, lat, lon)
 
+        # Prefer a real FortyGuard-derived ambient curve when this tile has been calibrated;
+        # fall back to the synthetic diurnal model otherwise. Only the *ambient baseline* comes
+        # from upstream -- the microclimate structure below is always locally modelled, because
+        # no ambient feed resolves the 40 deg F that canopy and asphalt add within one block.
+        cal = self._calibration.get(city_id)
+        if cal:
+            peak = cal.get("peak_hour", peak)
+            base_air = self._interp_hourly(cal["air_temp_f"], hour)
+            clearness = self._interp_hourly(cal["sky_clearness"], hour)
+        else:
+            base_air = thermal.diurnal_air_temp_f(
+                clim["air_temp_min_f"], clim["air_temp_max_f"], hour, peak
+            )
+            clearness = clim["sky_clearness"]
         solar = thermal.solar_elevation_factor(hour, peak)
-        base_air = thermal.diurnal_air_temp_f(
-            clim["air_temp_min_f"], clim["air_temp_max_f"], hour, peak
-        )
 
         # Desert-city urban heat island is chiefly a *nocturnal* air-temperature phenomenon:
         # by mid-afternoon the boundary layer is well mixed, while at 22:00 stored asphalt heat
@@ -401,7 +415,12 @@ class FortyGuardService:
         # Both modulations are deliberately shallow. These are offsets riding on the diurnal
         # curve, so if their dusk-to-peak swing exceeds the curve's own amplitude the sum stops
         # being a diurnal cycle at all and air temperature climbs after sunset.
-        uhi_air_weight = 0.55 + 0.45 * (1.0 - solar)
+        # Cubed, not linear: the urban/rural differential is roughly flat through the day and
+        # only opens up sharply once the sun is down and rural ground starts radiating away.
+        # A linear ramp still climbs measurably through the afternoon, and real ambient curves
+        # plateau rather than falling like a sinusoid -- so a linear ramp moves the daily
+        # exposure peak to 18:00 the moment the model is fed real data.
+        uhi_air_weight = 0.55 + 0.45 * (1.0 - solar) ** 3
         air = (
             base_air
             + terr["uhi_uplift_f"] * uhi_air_weight
@@ -414,24 +433,28 @@ class FortyGuardService:
         asphalt_spike = (
             (clim["asphalt_uplift_f"] + terr["surface_boost_f"])
             * solar
-            * clim["sky_clearness"]
+            * clearness
             * exposure_to_sun
         )
         # Thermal mass keeps a residual after sundown.
         residual = 6.0 * (1.0 - solar) * exposure_to_sun if 17.0 <= hour <= 23.0 else 0.0
         surface = air + asphalt_spike + residual
 
-        # RH is derived from a conserved daily dewpoint, not scaled by the sun -- see
-        # thermal.humidity_from_dewpoint for why that ordering matters.
+        # RH is derived from a conserved dewpoint, not scaled by the sun -- see
+        # thermal.humidity_from_dewpoint for why that ordering matters. When calibrated, the
+        # dewpoint comes from the real (ambient temp, RH) pair for this hour, so local RH
+        # correctly rises in canopy shade and falls over hot asphalt.
+        if cal:
+            ambient_rh = self._interp_hourly(cal["relative_humidity_pct"], hour)
+            dew_f = thermal.dewpoint_f(base_air, ambient_rh)
+        else:
+            dew_f = self._dewpoint_f(city_id)
         humidity = clamp(
-            thermal.humidity_from_dewpoint(air, self._dewpoint_f(city_id))
-            + terr["humidity_boost_pct"],
-            4.0,
-            98.0,
+            thermal.humidity_from_dewpoint(air, dew_f) + terr["humidity_boost_pct"], 4.0, 98.0
         )
         # Canopy and buildings slow the wind; open asphalt plazas get more ventilation.
         wind = clim["wind_speed_mph"] * clamp(0.45 + 0.55 * terr["sky_view_factor"], 0.35, 1.0)
-        irradiance = 1000.0 * solar * clim["sky_clearness"] * exposure_to_sun
+        irradiance = 1000.0 * solar * clearness * exposure_to_sun
 
         hi = thermal.heat_index_f(air, humidity)
         mrt = thermal.mean_radiant_temp_f(air, surface, terr["sky_view_factor"])
@@ -457,6 +480,240 @@ class FortyGuardService:
             asphalt_spike_f=round(asphalt_spike + residual, 1),
             surface_type=terr["surface_type"],
         )
+
+    # -- live calibration via /v1/env_params ---------------------------------------------
+
+    def env_params(
+        self,
+        lat: float,
+        lon: float,
+        reference_temp_f: float,
+        date: Optional[str] = None,
+        filter_type: int = 3,
+        poll_timeout_s: float = 120.0,
+        poll_interval_s: float = 4.0,
+    ) -> Dict[str, Any]:
+        """Fetch a real 24 h environmental series from ``POST /v1/env_params``.
+
+        FortyGuard's enterprise endpoints are **asynchronous**: the POST returns an
+        ``activity_id`` and the payload is collected from ``GET /v1/status/{activity_id}``
+        once its status flips from "Processing" to "Completed". ``env_params`` typically
+        settles in a few seconds; ``heat_intelligence`` takes minutes and yields a PDF report
+        rather than machine-readable data, which is why routing calibrates from this endpoint.
+        """
+        import httpx  # noqa: PLC0415
+
+        if not self.api_key:
+            raise FortyGuardUpstreamError("no API key configured", status_code=401)
+
+        headers = {
+            API_KEY_HEADER: self.api_key,
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": "Cryonav/1.0 (FortyGuard Hackathon 26)",
+        }
+        body = {
+            "latitude": lat,
+            "longitude": lon,
+            "temperature": reference_temp_f,
+            "date_time": {
+                "start_date": date or datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+                "filter_type": filter_type,
+            },
+        }
+
+        try:
+            resp = httpx.post(
+                f"{self.base_url}{ENV_PARAMS_PATH}", json=body, headers=headers, timeout=self.timeout_s
+            )
+        except httpx.HTTPError as exc:
+            raise FortyGuardUpstreamError(f"transport error: {exc}") from exc
+
+        payload = self._decode(resp)
+        activity_id = (payload.get("data") or {}).get("activity_id")
+        if not activity_id:
+            raise FortyGuardUpstreamError(
+                f"no activity_id in submit response: {str(payload)[:160]}", status_code=resp.status_code
+            )
+
+        deadline = time.monotonic() + poll_timeout_s
+        while True:
+            try:
+                poll = httpx.get(
+                    f"{self.base_url}/v1/status/{activity_id}", headers=headers, timeout=self.timeout_s
+                )
+            except httpx.HTTPError as exc:
+                raise FortyGuardUpstreamError(f"transport error while polling: {exc}") from exc
+
+            data = self._decode(poll).get("data") or {}
+            status = str(data.get("status", ""))
+            if status.lower() == "completed":
+                result = data.get("result")
+                if not isinstance(result, dict):
+                    raise FortyGuardUpstreamError("completed job carried no result object")
+                return result
+            if status.lower() not in ("processing", "pending", "queued", "running", ""):
+                raise FortyGuardUpstreamError(f"job ended in state '{status}'")
+            if time.monotonic() >= deadline:
+                raise FortyGuardUpstreamError(
+                    f"activity {activity_id} still '{status}' after {poll_timeout_s:.0f}s"
+                )
+            time.sleep(poll_interval_s)
+
+    def _decode(self, resp: Any) -> Dict[str, Any]:
+        """Decode a FortyGuard response, honouring its in-body error envelope."""
+        if resp.status_code >= 400:
+            snippet = resp.text[:200].replace("\n", " ").strip()
+            raise FortyGuardUpstreamError(snippet or "HTTP error", status_code=resp.status_code)
+        try:
+            payload = resp.json()
+        except ValueError as exc:
+            raise FortyGuardUpstreamError("upstream returned non-JSON", status_code=resp.status_code) from exc
+        if isinstance(payload, dict) and payload.get("error"):
+            details = payload.get("details") or {}
+            message = (details.get("message") if isinstance(details, dict) else str(details)) or "upstream error"
+            raise FortyGuardUpstreamError(str(message), status_code=payload.get("status_code"))
+        return payload if isinstance(payload, dict) else {"data": payload}
+
+    @staticmethod
+    def dry_bulb_from_wet_bulb_f(wet_bulb_temp_f: float, humidity_pct: float) -> float:
+        """Recover dry-bulb air temperature by inverting the wet-bulb relation.
+
+        ``env_params`` publishes apparent temperature, wet-bulb and RH but no dry-bulb series.
+        Apparent temperature already folds humidity in, so using it as air temperature would
+        double-count that term downstream. Wet-bulb plus RH pins dry-bulb uniquely, and
+        bisection over a monotonic function is exact enough at ~0.001 deg F in 60 iterations.
+        """
+        lo, hi = 20.0, 160.0
+        for _ in range(60):
+            mid = (lo + hi) / 2.0
+            if thermal.wet_bulb_f(mid, humidity_pct) < wet_bulb_temp_f:
+                lo = mid
+            else:
+                hi = mid
+        return (lo + hi) / 2.0
+
+    def calibrate_city(
+        self, city_id: str, date: Optional[str] = None, persist: bool = True
+    ) -> Dict[str, Any]:
+        """Derive a real 24 h ambient profile for a tile and cache it to disk.
+
+        This is the fusion point of the whole system. FortyGuard supplies the *ambient truth* --
+        the actual hourly dry-bulb curve, humidity and solar load over this city today. Cryonav
+        supplies the *urban form* -- canopy, arterials, sky view factor -- that turns one ambient
+        number into the 10 m microclimate field a pedestrian actually walks through. Neither
+        half is useful alone.
+        """
+        city = self.city(city_id)
+        clim = city["climate"]
+        result = self.env_params(
+            city["center"][0], city["center"][1], clim["air_temp_max_f"], date=date
+        )
+
+        loc = (result.get("locations") or [{}])[0]
+        params = loc.get("parameters") or {}
+        rh = params.get("relative_humidity_percent") or []
+        wb_c = params.get("wet_bulb_temperature_celsius") or []
+        if len(rh) < 24 or len(wb_c) < 24:
+            raise FortyGuardUpstreamError(
+                f"expected 24 hourly samples, got rh={len(rh)} wet_bulb={len(wb_c)}"
+            )
+
+        air_f = [
+            round(self.dry_bulb_from_wet_bulb_f(thermal.c_to_f(wb_c[h]), rh[h]), 2) for h in range(24)
+        ]
+        clouds = params.get("cloud_cover_octas") or []
+        clearness = [
+            round(clamp(1.0 - (clouds[h] / 100.0) * 0.6, 0.35, 1.0), 3) if h < len(clouds) else clim["sky_clearness"]
+            for h in range(24)
+        ]
+        solar = (loc.get("solar_irradiance") or {}).get("clear_sky") or {}
+
+        calibration = {
+            "city_id": city_id,
+            "date": (result.get("metadata") or {}).get("time_range", {}).get("start", date),
+            "source": "fortyguard_env_params",
+            "endpoint": ENV_PARAMS_PATH,
+            "fetched_at": datetime.now(timezone.utc).isoformat(),
+            "center": city["center"],
+            "elevation_m": loc.get("elevation"),
+            "timezone": (result.get("metadata") or {}).get("timezone"),
+            "air_temp_f": air_f,
+            "relative_humidity_pct": [round(float(v), 2) for v in rh[:24]],
+            "wet_bulb_f": [round(thermal.c_to_f(v), 2) for v in wb_c[:24]],
+            "apparent_temp_f": [
+                round(thermal.c_to_f(v), 2) for v in (params.get("apparent_temperature_celsius") or [])[:24]
+            ],
+            "sky_clearness": clearness,
+            "clear_sky_ghi": solar.get("ghi"),
+            "clear_sky_dni": solar.get("dni"),
+            "air_temp_min_f": round(min(air_f), 2),
+            "air_temp_max_f": round(max(air_f), 2),
+            "peak_hour": float(air_f.index(max(air_f))),
+        }
+
+        if persist:
+            CALIBRATION_DIR.mkdir(parents=True, exist_ok=True)
+            path = CALIBRATION_DIR / f"{city_id}.json"
+            with open(path, "w", encoding="utf-8") as fh:
+                json.dump(calibration, fh, indent=2)
+        self._calibration[city_id] = calibration
+        return calibration
+
+    def _load_calibrations(self) -> None:
+        """Load any cached FortyGuard calibration so the demo starts already fused."""
+        if not CALIBRATION_DIR.is_dir():
+            return
+        for path in CALIBRATION_DIR.glob("*.json"):
+            try:
+                with open(path, "r", encoding="utf-8") as fh:
+                    cal = json.load(fh)
+            except (OSError, ValueError):
+                continue
+            if cal.get("city_id") in self._cities and len(cal.get("air_temp_f", [])) == 24:
+                self._calibration[cal["city_id"]] = cal
+
+    def calibration(self, city_id: str) -> Optional[Dict[str, Any]]:
+        return self._calibration.get(city_id)
+
+    def calibration_summary(self, city_id: str) -> Dict[str, Any]:
+        """Provenance of this tile's ambient baseline, for the dashboard to display.
+
+        The distinction matters: a calibrated tile's temperature curve is real FortyGuard
+        observation, while an uncalibrated one is entirely modelled. Presenting both the same
+        way would overstate what the live integration actually contributes.
+        """
+        cal = self._calibration.get(city_id)
+        if not cal:
+            return {
+                "calibrated": False,
+                "source": "synthetic_diurnal_model",
+                "detail": "ambient curve modelled locally; run scripts/calibrate.py for live data",
+            }
+        return {
+            "calibrated": True,
+            "source": cal.get("source", "fortyguard_env_params"),
+            "endpoint": cal.get("endpoint", ENV_PARAMS_PATH),
+            "date": cal.get("date"),
+            "fetched_at": cal.get("fetched_at"),
+            "timezone": cal.get("timezone"),
+            "elevation_m": cal.get("elevation_m"),
+            "air_temp_min_f": cal.get("air_temp_min_f"),
+            "air_temp_max_f": cal.get("air_temp_max_f"),
+            "peak_hour": cal.get("peak_hour"),
+            "detail": (
+                f"ambient 24 h curve from FortyGuard {ENV_PARAMS_PATH}; "
+                f"microclimate structure modelled locally"
+            ),
+        }
+
+    @staticmethod
+    def _interp_hourly(series: Sequence[float], hour: float) -> float:
+        """Linear interpolation across a 24 h series, wrapping at midnight."""
+        h = hour % 24.0
+        i = int(h)
+        frac = h - i
+        return float(series[i]) * (1.0 - frac) + float(series[(i + 1) % 24]) * frac
 
     # -- the public API surface ---------------------------------------------------------
 
@@ -536,6 +793,7 @@ class FortyGuardService:
                 "resolution_mi2": MICROCLIMATE_RESOLUTION_MI2,
                 "tile_area_mi2": self.tile_area_mi2(resolved_city),
                 "endpoint": HEAT_INTELLIGENCE_PATH,
+                "calibration": self.calibration_summary(resolved_city),
             },
             "count": len(readings),
             "readings": [r.as_dict() for r in readings],
