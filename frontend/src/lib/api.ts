@@ -18,6 +18,8 @@ export interface CitySummary {
   bounds: { south: number; north: number; west: number; east: number };
   season: string;
   air_temp_max_f: number;
+  raster_tiles: number;
+  calibrated: boolean;
   presets: Preset[];
   shelter_count: number;
 }
@@ -55,10 +57,16 @@ export interface Meta {
   };
 }
 
+export type GridSource = "model" | "fortyguard";
+
 export interface ThermalGrid {
   city_id: string;
   hour: number;
-  resolution: number;
+  resolution: number | null;
+  source?: string;
+  units_label?: string;
+  date?: string;
+  cell_size_m?: number;
   bounds: { south: number; north: number; west: number; east: number };
   cells: [number, number, number, number][];
   exposure_index_f: number[];
@@ -265,8 +273,10 @@ async function post<T>(path: string, body: unknown): Promise<T> {
 export const api = {
   meta: () => get<Meta>("/meta"),
   cities: () => get<{ cities: CitySummary[] }>("/cities"),
-  grid: (cityId: string, hour: number, resolution = 40) =>
-    get<ThermalGrid>(`/cities/${cityId}/grid?hour=${hour}&resolution=${resolution}`),
+  grid: (cityId: string, hour: number, resolution = 40, source: GridSource = "model") =>
+    get<ThermalGrid>(
+      `/cities/${cityId}/grid?hour=${hour}&resolution=${resolution}&source=${source}`,
+    ),
   layers: (cityId: string) => get<CityLayers>(`/cities/${cityId}/layers`),
   coolRoute: (body: {
     origin: { lat: number; lon: number };

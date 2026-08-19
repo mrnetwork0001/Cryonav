@@ -97,30 +97,71 @@ export default function MapCanvas(props: Props) {
     }
     if (!grid || !showHeat) return;
 
-    const n = grid.resolution;
-    const canvas = document.createElement("canvas");
-    canvas.width = n;
-    canvas.height = n;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const img = ctx.createImageData(n, n);
     const { min_exposure_f: lo, max_exposure_f: hi } = grid.stats;
     const span = Math.max(hi - lo, 0.001);
+    const canvas = document.createElement("canvas");
+    const ctx0 = canvas.getContext("2d");
+    if (!ctx0) return;
 
-    for (let row = 0; row < n; row++) {
-      for (let col = 0; col < n; col++) {
-        const srcIdx = row * n + col;
-        // Grid rows run south -> north; canvas rows run top -> bottom.
-        const dstIdx = ((n - 1 - row) * n + col) * 4;
-        const [r, g, b] = exposureColor((grid.exposure_index_f[srcIdx] - lo) / span);
-        img.data[dstIdx] = r;
-        img.data[dstIdx + 1] = g;
-        img.data[dstIdx + 2] = b;
-        img.data[dstIdx + 3] = 255;
+    if (grid.resolution != null) {
+      // Model grid: a dense n x n array, one pixel per cell.
+      const n = grid.resolution;
+      canvas.width = n;
+      canvas.height = n;
+      const img = ctx0.createImageData(n, n);
+      for (let row = 0; row < n; row++) {
+        for (let col = 0; col < n; col++) {
+          const srcIdx = row * n + col;
+          // Grid rows run south -> north; canvas rows run top -> bottom.
+          const dstIdx = ((n - 1 - row) * n + col) * 4;
+          const [r, g, b] = exposureColor((grid.exposure_index_f[srcIdx] - lo) / span);
+          img.data[dstIdx] = r;
+          img.data[dstIdx + 1] = g;
+          img.data[dstIdx + 2] = b;
+          img.data[dstIdx + 3] = 255;
+        }
       }
+      ctx0.putImageData(img, 0, 0);
+    } else {
+      // FortyGuard raster: scattered ~100 m tile centroids. Bin them into a regular pixel
+      // grid over the tile bounds; bins with no observation stay transparent rather than
+      // being interpolated -- absence of data must not render as data.
+      const b = grid.bounds;
+      const latSpan = Math.max(b.north - b.south, 1e-9);
+      const lonSpan = Math.max(b.east - b.west, 1e-9);
+      // Bins are deliberately ~40% larger than the upstream tiles: the FortyGuard grid is a
+      // rotated projected grid, so equal-sized lat/lon bins leave systematic empty columns
+      // that render as dark stripes. Oversized bins guarantee every bin inside the AOI catches
+      // at least one centroid; multiple hits are averaged rather than last-write-wins.
+      const cellDeg = ((grid.cell_size_m ?? 100) * 1.4) / 111_000;
+      const W = Math.min(Math.max(Math.round(lonSpan / cellDeg), 16), 128);
+      const Hh = Math.min(Math.max(Math.round(latSpan / cellDeg), 16), 128);
+      canvas.width = W;
+      canvas.height = Hh;
+      const sum = new Float64Array(W * Hh);
+      const count = new Uint16Array(W * Hh);
+      for (const cell of grid.cells) {
+        const [lat, lon, value] = cell;
+        const col = Math.min(W - 1, Math.max(0, Math.floor(((lon - b.west) / lonSpan) * W)));
+        const rowFromS = Math.min(
+          Hh - 1,
+          Math.max(0, Math.floor(((lat - b.south) / latSpan) * Hh)),
+        );
+        const bin = (Hh - 1 - rowFromS) * W + col;
+        sum[bin] += value;
+        count[bin] += 1;
+      }
+      const img = ctx0.createImageData(W, Hh);
+      for (let i = 0; i < W * Hh; i++) {
+        if (count[i] === 0) continue; // no observation -> transparent, never interpolated
+        const [r, g, bl] = exposureColor((sum[i] / count[i] - lo) / span);
+        img.data[i * 4] = r;
+        img.data[i * 4 + 1] = g;
+        img.data[i * 4 + 2] = bl;
+        img.data[i * 4 + 3] = 255;
+      }
+      ctx0.putImageData(img, 0, 0);
     }
-    ctx.putImageData(img, 0, 0);
 
     const b = grid.bounds;
     const overlay = L.imageOverlay(

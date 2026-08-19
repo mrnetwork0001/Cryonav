@@ -346,3 +346,66 @@ class TestShelters:
 
     def test_limit_is_applied(self, service):
         assert len(service.shelters("dubai", radius_m=99999, limit=2)) == 2
+
+
+class TestHeatmapRaster:
+    """The /v1/heatmap fusion path, exercised against a synthetic FeatureCollection."""
+
+    @staticmethod
+    def _fc(n=3, base=37.0):
+        feats = []
+        for i in range(n):
+            lon = -112.0995 + i * 0.001
+            ring = [
+                [lon, 33.4520], [lon + 0.001, 33.4520],
+                [lon + 0.001, 33.4530], [lon, 33.4530], [lon, 33.4520],
+            ]
+            feats.append({
+                "geometry": {"coordinates": [ring]},
+                "properties": {
+                    "tile_id": i,
+                    "average_temperature": base + i * 0.2,
+                    "min_temperature": base - 4,
+                    "max_temperature": base + 4,
+                },
+            })
+        return {"features": feats}
+
+    def test_compact_preserves_temps_and_centroids(self):
+        c = FortyGuardService._compact_heatmap("phoenix", self._fc(), "2026-08-19")
+        assert c["tile_count"] == 3
+        assert c["avg_temp_c"] == [37.0, 37.2, 37.4]
+        assert abs(c["lat"][0] - 33.4524) < 0.001
+
+    def test_empty_collection_reports_coverage_not_schema(self):
+        from fortyguard_service import FortyGuardUpstreamError
+
+        with pytest.raises(FortyGuardUpstreamError, match="coverage"):
+            FortyGuardService._compact_heatmap("dubai", {"features": []}, "2026-08-19")
+
+    def test_anomaly_lookup_is_relative_to_tile_mean(self):
+        svc = FortyGuardService(api_key="")
+        svc._install_heatmap(FortyGuardService._compact_heatmap("phoenix", self._fc(), "2026-08-19"))
+        # middle tile == mean -> anomaly ~0; hottest tile -> +0.2C = +0.36F
+        mid = svc.heatmap_anomaly_f("phoenix", 33.4525, -112.0995 + 0.0015)
+        hot = svc.heatmap_anomaly_f("phoenix", 33.4525, -112.0995 + 0.0025)
+        assert mid == pytest.approx(0.0, abs=0.01)
+        assert hot == pytest.approx(0.36, abs=0.01)
+
+    def test_lookup_outside_raster_returns_none_not_zero(self):
+        svc = FortyGuardService(api_key="")
+        svc._install_heatmap(FortyGuardService._compact_heatmap("phoenix", self._fc(), "2026-08-19"))
+        assert svc.heatmap_anomaly_f("phoenix", 40.0, -100.0) is None
+        assert svc.heatmap_anomaly_f("dubai", 25.2, 55.27) is None
+
+    def test_raster_grid_reports_provenance(self, service):
+        if service.heatmap("phoenix") is None:
+            pytest.skip("no cached phoenix raster")
+        g = service.raster_grid("phoenix")
+        assert g["source"] == "fortyguard_heatmap"
+        assert g["cells"] and len(g["cells"][0]) == 4
+        assert g["stats"]["min_exposure_f"] < g["stats"]["max_exposure_f"]
+
+    def test_raster_grid_absent_raises(self, service):
+        with pytest.raises(KeyError):
+            service.raster_grid("dubai")

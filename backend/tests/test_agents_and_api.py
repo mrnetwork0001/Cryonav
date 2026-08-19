@@ -200,7 +200,16 @@ class TestApi:
         )
         assert r.status_code == 200
         body = r.json()
-        assert body["comparison"]["thermal_load_reduction_f"] >= 0
+        # A mandated shelter stop may legitimately cost mean exposure in exchange for breaking
+        # the continuous high-risk leg -- so non-negative savings are only guaranteed when the
+        # Sentinel did NOT rewrite the route. When it did, the trade must have been worth it.
+        if body["shelter_reroute"].get("applied"):
+            assert (
+                body["shelter_reroute"]["longest_leg_min_after"]
+                < body["shelter_reroute"]["longest_leg_min_before"]
+            )
+        else:
+            assert body["comparison"]["thermal_load_reduction_f"] >= 0
         assert body["routes"]["cool"]["metrics"]["distance_m"] > 0
 
     def test_cool_route_rejects_coincident_points(self, client):

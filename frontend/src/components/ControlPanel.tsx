@@ -1,4 +1,4 @@
-import type { CitySummary, Meta, Preset } from "../lib/api";
+import type { CitySummary, GridSource, Meta, Preset } from "../lib/api";
 
 interface Props {
   cities: CitySummary[];
@@ -16,6 +16,8 @@ interface Props {
     showShelters: boolean;
     showCorridors: boolean;
   };
+  gridSource: GridSource;
+  rasterAvailable: boolean;
   loading: boolean;
   onCity: (id: string) => void;
   onProfile: (id: string) => void;
@@ -23,6 +25,7 @@ interface Props {
   onPreset: (p: Preset) => void;
   onPickMode: (m: "origin" | "destination" | null) => void;
   onToggle: (key: keyof Props["toggles"]) => void;
+  onGridSource: (s: GridSource) => void;
   onSolve: () => void;
 }
 
@@ -128,6 +131,41 @@ export default function ControlPanel(p: Props) {
           >
             Set destination
           </PickButton>
+        </div>
+      </div>
+
+      <div>
+        <Label>Heat layer source</Label>
+        <div className="mt-1.5 grid grid-cols-2 gap-1">
+          <button
+            onClick={() => p.onGridSource("model")}
+            className={`rounded-lg border px-2 py-1.5 text-[10px] transition ${
+              p.gridSource === "model"
+                ? "border-cyan-400/50 bg-cyan-400/12 text-cyan-300"
+                : "border-slate-700/50 bg-slate-900/40 text-slate-500 hover:text-slate-300"
+            }`}
+            title="Cryonav's composite exposure index — the field the routes optimise on"
+          >
+            Exposure model
+          </button>
+          <button
+            onClick={() => p.rasterAvailable && p.onGridSource("fortyguard")}
+            disabled={!p.rasterAvailable}
+            className={`rounded-lg border px-2 py-1.5 text-[10px] transition ${
+              p.gridSource === "fortyguard"
+                ? "border-emerald-400/50 bg-emerald-400/12 text-emerald-300"
+                : p.rasterAvailable
+                  ? "border-slate-700/50 bg-slate-900/40 text-slate-500 hover:text-slate-300"
+                  : "cursor-not-allowed border-slate-800 bg-slate-900/20 text-slate-700"
+            }`}
+            title={
+              p.rasterAvailable
+                ? "Raw FortyGuard /v1/heatmap raster — observed ~100 m tiles, no Cryonav modelling"
+                : "No FortyGuard raster coverage for this tile (raster product is US-only)"
+            }
+          >
+            FortyGuard raster
+          </button>
         </div>
       </div>
 

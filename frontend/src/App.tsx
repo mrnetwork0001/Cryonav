@@ -3,6 +3,7 @@ import {
   api,
   type CityLayers,
   type CitySummary,
+  type GridSource,
   type Meta,
   type NavigationResult,
   type Preset,
@@ -22,6 +23,7 @@ export default function App() {
   const [hour, setHour] = useState(15);
 
   const [grid, setGrid] = useState<ThermalGrid | null>(null);
+  const [gridSource, setGridSource] = useState<GridSource>("model");
   const [layers, setLayers] = useState<CityLayers | null>(null);
   const [nav, setNav] = useState<NavigationResult | null>(null);
 
@@ -69,18 +71,25 @@ export default function App() {
     }
   }, [city?.id]);
 
-  // -- thermal grid follows city + hour ---------------------------------------------------
+  // Cities without a cached FortyGuard raster can only show the model layer.
+  useEffect(() => {
+    if (city && city.raster_tiles === 0 && gridSource === "fortyguard") {
+      setGridSource("model");
+    }
+  }, [city?.id]);
+
+  // -- thermal grid follows city + hour + source --------------------------------------------
   useEffect(() => {
     if (!city) return;
     let cancelled = false;
     api
-      .grid(city.id, hour, 40)
+      .grid(city.id, hour, 40, gridSource)
       .then((g) => !cancelled && setGrid(g))
       .catch((e) => !cancelled && setError(String(e)));
     return () => {
       cancelled = true;
     };
-  }, [city?.id, hour]);
+  }, [city?.id, hour, gridSource]);
 
   // -- solve ------------------------------------------------------------------------------
   const solve = useCallback(
@@ -164,6 +173,8 @@ export default function App() {
             activePreset={activePreset}
             pickMode={pickMode}
             toggles={toggles}
+            gridSource={gridSource}
+            rasterAvailable={city.raster_tiles > 0}
             loading={loading}
             onCity={setCityId}
             onProfile={setProfileId}
@@ -171,6 +182,7 @@ export default function App() {
             onPreset={applyPreset}
             onPickMode={setPickMode}
             onToggle={(k) => setToggles((t) => ({ ...t, [k]: !t[k] }))}
+            onGridSource={setGridSource}
             onSolve={() => solve(shelterReroute)}
           />
         </div>

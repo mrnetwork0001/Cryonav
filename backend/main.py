@@ -232,10 +232,21 @@ def city_grid(
     city_id: str,
     hour: float = Query(15.0, ge=0, lt=24),
     resolution: int = Query(28, ge=8, le=64),
+    source: str = Query("model", pattern="^(model|fortyguard)$"),
 ) -> Dict[str, Any]:
-    """Thermal heat grid for the map overlay."""
+    """Heat grid for the map overlay.
+
+    ``source=model`` (default) is Cryonav's exposure-index field -- the composite the routes
+    are optimised on. ``source=fortyguard`` is the raw /v1/heatmap raster: observed average
+    air temperature per ~100 m tile, FortyGuard's data with no Cryonav modelling on top.
+    """
     try:
-        return service.thermal_grid(city_id, hour, resolution)
+        if source == "fortyguard":
+            return service.raster_grid(city_id)
+        grid = service.thermal_grid(city_id, hour, resolution)
+        grid["source"] = "cryonav_exposure_model"
+        grid["units_label"] = "modelled exposure index (deg F)"
+        return grid
     except KeyError as exc:
         raise HTTPException(404, str(exc)) from exc
 

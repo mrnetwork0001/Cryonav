@@ -204,8 +204,10 @@ class FortyGuardService:
         self._cities: Dict[str, Dict[str, Any]] = {}
         self._dewpoints: Dict[str, float] = {}
         self._calibration: Dict[str, Dict[str, Any]] = {}
+        self._heatmaps: Dict[str, Dict[str, Any]] = {}
         self._load_cities(cities_path)
         self._load_calibrations()
+        self._load_heatmaps()
         self.last_status: FeedStatus = FeedStatus(
             source=self.mode, status_code=200, ok=True, latency_ms=0.0, detail="initialised"
         )
@@ -230,11 +232,14 @@ class FortyGuardService:
         """Catalogue entries for the city selector (no heavy geometry)."""
         out = []
         for city in self._cities.values():
+            hm = self._heatmaps.get(city["id"])
             out.append(
                 {
                     "id": city["id"],
                     "name": city["name"],
                     "region": city["region"],
+                    "raster_tiles": hm["compact"]["tile_count"] if hm else 0,
+                    "calibrated": city["id"] in self._calibration,
                     "country_code": city["country_code"],
                     "timezone": city["timezone"],
                     "center": city["center"],
@@ -420,13 +425,25 @@ class FortyGuardService:
         # A linear ramp still climbs measurably through the afternoon, and real ambient curves
         # plateau rather than falling like a sinusoid -- so a linear ramp moves the daily
         # exposure peak to 18:00 the moment the model is fed real data.
-        uhi_air_weight = 0.55 + 0.45 * (1.0 - solar) ** 3
-        air = (
-            base_air
-            + terr["uhi_uplift_f"] * uhi_air_weight
-            - terr["canopy_cooling_f"] * (0.65 + 0.35 * solar)
-            - terr["water_cooling_f"] * (0.7 + 0.3 * solar)
-        )
+        # Spatial air structure: prefer the real FortyGuard raster (/v1/heatmap, ~100 m tiles)
+        # when cached. Its observed spread is a few tenths of a degree C -- physically right,
+        # the 2 m layer is well mixed -- so when it is present the synthetic UHI/canopy air
+        # offsets below must be dropped entirely: the observation already contains whatever
+        # park cooling and asphalt warming exists in air temperature, and layering modelled
+        # offsets on top would double-count them at 10x the observed magnitude. The radiant
+        # and surface terms further down stay ours either way; air mixing does not erase the
+        # 40 F a body feels between canopy shade and open asphalt.
+        observed_anomaly = self.heatmap_anomaly_f(city_id, lat, lon)
+        if observed_anomaly is not None:
+            air = base_air + observed_anomaly
+        else:
+            uhi_air_weight = 0.55 + 0.45 * (1.0 - solar) ** 3
+            air = (
+                base_air
+                + terr["uhi_uplift_f"] * uhi_air_weight
+                - terr["canopy_cooling_f"] * (0.65 + 0.35 * solar)
+                - terr["water_cooling_f"] * (0.7 + 0.3 * solar)
+            )
 
         # Asphalt surface temperature: air + solar-driven uplift, suppressed by canopy shade.
         exposure_to_sun = terr["sky_view_factor"]
@@ -659,6 +676,176 @@ class FortyGuardService:
                 json.dump(calibration, fh, indent=2)
         self._calibration[city_id] = calibration
         return calibration
+
+    def heatmap_fetch(
+        self, city_id: str, date: Optional[str] = None, persist: bool = True,
+        poll_timeout_s: float = 180.0,
+    ) -> Dict[str, Any]:
+        """Fetch the real FortyGuard thermal raster for a tile via ``POST /v1/heatmap``.
+
+        The upstream returns a GeoJSON FeatureCollection of ~100 m tiles, each carrying
+        ``average/min/max_temperature`` in Celsius. That is FortyGuard's actual microclimate
+        product -- and it is stored compacted to centroids (~60 KB instead of ~1 MB of square
+        polygons that can be reconstructed from a centroid and a cell size).
+        """
+        import httpx  # noqa: PLC0415
+
+        if not self.api_key:
+            raise FortyGuardUpstreamError("no API key configured", status_code=401)
+
+        b = self.bounds(city_id)
+        ring = [
+            [b["west"], b["south"]], [b["east"], b["south"]],
+            [b["east"], b["north"]], [b["west"], b["north"]], [b["west"], b["south"]],
+        ]
+        headers = {
+            API_KEY_HEADER: self.api_key,
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": "Cryonav/1.0 (FortyGuard Hackathon 26)",
+        }
+        body = {
+            "polygon_aoi": {"type": "Polygon", "coordinates": [ring]},
+            "date_time": {
+                "start_date": date or datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+                "filter_type": 3,
+            },
+        }
+        try:
+            resp = httpx.post(
+                f"{self.base_url}{HEATMAP_PATH}", json=body, headers=headers, timeout=self.timeout_s
+            )
+        except httpx.HTTPError as exc:
+            raise FortyGuardUpstreamError(f"transport error: {exc}") from exc
+
+        payload = self._decode(resp)
+        activity_id = (payload.get("data") or {}).get("activity_id")
+        if not activity_id:
+            raise FortyGuardUpstreamError("no activity_id in heatmap submit response")
+
+        deadline = time.monotonic() + poll_timeout_s
+        while True:
+            try:
+                poll = httpx.get(
+                    f"{self.base_url}/v1/status/{activity_id}", headers=headers, timeout=self.timeout_s
+                )
+            except httpx.HTTPError as exc:
+                raise FortyGuardUpstreamError(f"transport error while polling: {exc}") from exc
+            data = self._decode(poll).get("data") or {}
+            status = str(data.get("status", ""))
+            if status.lower() == "completed":
+                fc = ((data.get("result") or {}).get("map_data")) or {}
+                compact = self._compact_heatmap(city_id, fc, body["date_time"]["start_date"])
+                if persist:
+                    CALIBRATION_DIR.mkdir(parents=True, exist_ok=True)
+                    with open(CALIBRATION_DIR / f"{city_id}_heatmap.json", "w", encoding="utf-8") as fh:
+                        json.dump(compact, fh)
+                self._install_heatmap(compact)
+                return compact
+            if status.lower() not in ("processing", "pending", "queued", "running", ""):
+                raise FortyGuardUpstreamError(f"heatmap job ended in state '{status}'")
+            if time.monotonic() >= deadline:
+                raise FortyGuardUpstreamError(f"heatmap still '{status}' after {poll_timeout_s:.0f}s")
+            time.sleep(4.0)
+
+    @staticmethod
+    def _compact_heatmap(city_id: str, fc: Dict[str, Any], date: str) -> Dict[str, Any]:
+        """Reduce a FeatureCollection of square tiles to centroid arrays."""
+        feats = fc.get("features") or []
+        if not feats:
+            # The raster product has narrower geographic coverage than env_params: US tiles
+            # return ~2,400 features, Gulf tiles return an empty collection. Say that, rather
+            # than a generic parse error, so an operator doesn't chase a schema bug.
+            raise FortyGuardUpstreamError(
+                "heatmap returned no tiles for this AOI (raster coverage appears US-only; "
+                "ambient env_params still works here)"
+            )
+        lats: List[float] = []
+        lons: List[float] = []
+        avg: List[float] = []
+        tmin: List[float] = []
+        tmax: List[float] = []
+        for f in feats:
+            try:
+                ring = f["geometry"]["coordinates"][0]
+                props = f["properties"]
+                lats.append(round(sum(pt[1] for pt in ring) / len(ring), 6))
+                lons.append(round(sum(pt[0] for pt in ring) / len(ring), 6))
+                avg.append(float(props["average_temperature"]))
+                tmin.append(float(props["min_temperature"]))
+                tmax.append(float(props["max_temperature"]))
+            except (KeyError, IndexError, TypeError, ValueError):
+                continue
+        if not lats:
+            raise FortyGuardUpstreamError("no parseable features in heatmap response")
+        mean_avg = sum(avg) / len(avg)
+        return {
+            "city_id": city_id,
+            "kind": "fortyguard_heatmap",
+            "endpoint": HEATMAP_PATH,
+            "date": date,
+            "fetched_at": datetime.now(timezone.utc).isoformat(),
+            "tile_count": len(lats),
+            "cell_size_m": 100.0,
+            "units": "celsius",
+            "mean_avg_temp_c": round(mean_avg, 4),
+            "lat": lats,
+            "lon": lons,
+            "avg_temp_c": avg,
+            "min_temp_c": tmin,
+            "max_temp_c": tmax,
+        }
+
+    def _install_heatmap(self, compact: Dict[str, Any]) -> None:
+        """Index a compact heatmap for O(1) nearest-centroid lookup during sampling."""
+        lats, lons = compact["lat"], compact["lon"]
+        step = 0.001  # ~100 m bins matching the upstream tile size
+        index: Dict[Tuple[int, int], int] = {}
+        for i in range(len(lats)):
+            index[(int(lats[i] / step), int(lons[i] / step))] = i
+        mean_avg = compact["mean_avg_temp_c"]
+        self._heatmaps[compact["city_id"]] = {
+            "compact": compact,
+            "index": index,
+            "step": step,
+            "mean_avg_c": mean_avg,
+        }
+
+    def heatmap(self, city_id: str) -> Optional[Dict[str, Any]]:
+        entry = self._heatmaps.get(city_id)
+        return entry["compact"] if entry else None
+
+    def heatmap_anomaly_f(self, city_id: str, lat: float, lon: float) -> Optional[float]:
+        """Observed air-temperature anomaly (deg F) at a point, relative to the tile mean.
+
+        Returns ``None`` when no raster is cached or the point falls outside it, so the
+        caller can fall back to the modelled anomaly rather than treating "no data" as zero.
+        """
+        entry = self._heatmaps.get(city_id)
+        if entry is None:
+            return None
+        step = entry["step"]
+        index = entry["index"]
+        base = (int(lat / step), int(lon / step))
+        for dr in (0, -1, 1):
+            for dc in (0, -1, 1):
+                i = index.get((base[0] + dr, base[1] + dc))
+                if i is not None:
+                    avg = entry["compact"]["avg_temp_c"][i]
+                    return (avg - entry["mean_avg_c"]) * 1.8
+        return None
+
+    def _load_heatmaps(self) -> None:
+        if not CALIBRATION_DIR.is_dir():
+            return
+        for path in CALIBRATION_DIR.glob("*_heatmap.json"):
+            try:
+                with open(path, "r", encoding="utf-8") as fh:
+                    compact = json.load(fh)
+            except (OSError, ValueError):
+                continue
+            if compact.get("kind") == "fortyguard_heatmap" and compact.get("city_id") in self._cities:
+                self._install_heatmap(compact)
 
     def _load_calibrations(self) -> None:
         """Load any cached FortyGuard calibration so the demo starts already fused."""
@@ -978,6 +1165,45 @@ class FortyGuardService:
         )
 
     # -- grid --------------------------------------------------------------------------
+
+    def raster_grid(self, city_id: str) -> Dict[str, Any]:
+        """The real FortyGuard /v1/heatmap raster, shaped like :meth:`thermal_grid`.
+
+        Same array layout so the dashboard's canvas can render either layer, but the values
+        are observed daily-average air temperature per ~100 m tile -- FortyGuard's data,
+        not Cryonav's model. Raises ``KeyError`` when no raster is cached for the city.
+        """
+        entry = self._heatmaps.get(city_id)
+        if entry is None:
+            raise KeyError(f"no FortyGuard raster cached for '{city_id}'")
+        c = entry["compact"]
+        avg_f = [round(v * 1.8 + 32.0, 2) for v in c["avg_temp_c"]]
+        max_f = [round(v * 1.8 + 32.0, 2) for v in c["max_temp_c"]]
+        cells = [
+            [c["lat"][i], c["lon"][i], avg_f[i], max_f[i]] for i in range(len(avg_f))
+        ]
+        return {
+            "city_id": city_id,
+            "source": "fortyguard_heatmap",
+            "endpoint": c["endpoint"],
+            "date": c["date"],
+            "fetched_at": c["fetched_at"],
+            "units_label": "observed avg air temp (deg F)",
+            "resolution": None,
+            "cell_size_m": c["cell_size_m"],
+            "bounds": self.bounds(city_id),
+            "tile_area_mi2": self.tile_area_mi2(city_id),
+            "cells": cells,
+            "exposure_index_f": avg_f,
+            "risk_rank": [],
+            "legend": [],
+            "stats": {
+                "min_exposure_f": round(min(avg_f), 2),
+                "max_exposure_f": round(max(avg_f), 2),
+                "mean_exposure_f": round(sum(avg_f) / len(avg_f), 2),
+                "extreme_cell_pct": 0.0,
+            },
+        }
 
     def thermal_grid(self, city_id: str, hour: float = 15.0, resolution: int = 24) -> Dict[str, Any]:
         """Rasterise the coverage tile into a heat grid for the dashboard overlay.

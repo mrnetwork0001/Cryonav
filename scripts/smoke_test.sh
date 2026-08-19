@@ -38,12 +38,18 @@ check "heat-intelligence" -X POST "$API/fortyguard/heat-intelligence" -H 'conten
   -d '{"locations":[{"lat":33.4520,"lon":-112.0825},{"lat":33.4560,"lon":-112.0740}],"city_id":"phoenix","hour":15}'
 
 SCRIPT='import json,sys
-d=json.load(sys.stdin);c=d["comparison"]
-assert c["thermal_load_reduction_f"]>=0, "cool route hotter than direct"
-assert c["thermal_dose_reduction_pct"]>=0, "cool route raised heat-strain dose"
+d=json.load(sys.stdin);c=d["comparison"];sr=d["shelter_reroute"]
+# A mandated shelter stop may trade mean exposure for a shorter unbroken high-risk leg,
+# so non-negative savings are only guaranteed when the Sentinel did not rewrite the route.
+if sr.get("applied"):
+    assert sr["longest_leg_min_after"] < sr["longest_leg_min_before"], "shelter stop did not shorten exposure leg"
+else:
+    assert c["thermal_load_reduction_f"]>=0, "cool route hotter than direct"
+    assert c["thermal_dose_reduction_pct"]>=0, "cool route raised heat-strain dose"
 assert len({s["agent"] for s in d["agent_trace"]})==3, "not all agents ran"
 assert d["safety"].get("longest_high_risk_leg_min") is not None
-print("-%sF load, -%s%% stress, +%s min" % (c["thermal_load_reduction_f"], c["heat_stress_reduction_pct"], c["added_minutes"]))'
+extra = " (shelter stop: leg %s->%s min)" % (sr.get("longest_leg_min_before"), sr.get("longest_leg_min_after")) if sr.get("applied") else ""
+print("-%sF load, -%s%% stress, +%s min%s" % (c["thermal_load_reduction_f"], c["heat_stress_reduction_pct"], c["added_minutes"], extra))'
 check "cool-route (3 agents)" -X POST "$API/navigate/cool-route" -H 'content-type: application/json' \
   -d '{"origin":{"lat":33.4485,"lon":-112.0962},"destination":{"lat":33.4576,"lon":-112.0705},"city_id":"phoenix","hour":15,"profile":"delivery_worker"}'
 
