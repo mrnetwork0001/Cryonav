@@ -155,14 +155,17 @@ export default function Landing() {
 
         {/* ---- live product card ------------------------------------------------------- */}
         <section className="lg:pt-2">
-          <div className="rounded-2xl border border-slate-800 bg-[#0a0e15]/90 p-5 shadow-[0_24px_80px_-32px_rgba(34,211,238,0.25)]">
+          <div className="live-card relative rounded-2xl border border-slate-800 bg-[#0a0e15]/90 p-5">
+            <div className="sheen" aria-hidden />
             <div className="flex items-center justify-between px-1">
               <span className="text-[11px] font-semibold tracking-[0.22em] text-slate-400">
                 ROUTE REQUEST INGESTED
               </span>
               <span className="flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.18em]">
                 <span
-                  className={`h-1.5 w-1.5 rounded-full ${feedLive ? "bg-emerald-400" : "bg-amber-400"}`}
+                  className={`ping-soft h-1.5 w-1.5 rounded-full ${
+                    feedLive ? "bg-emerald-400 text-emerald-400" : "bg-amber-400 text-amber-400"
+                  }`}
                   style={{ boxShadow: feedLive ? "0 0 8px #34d399" : "0 0 8px #fbbf24" }}
                 />
                 <span className={feedLive ? "text-emerald-400" : "text-amber-400"}>
@@ -212,7 +215,7 @@ export default function Landing() {
               </div>
               <div className="relative mt-3 h-1.5 rounded-full bg-slate-800">
                 <div
-                  className="absolute inset-y-0 left-0 rounded-full transition-all duration-1000"
+                  className="gauge-fill absolute inset-y-0 left-0 rounded-full transition-all duration-1000"
                   style={{
                     width: `${gaugePct}%`,
                     background:
@@ -220,7 +223,7 @@ export default function Landing() {
                   }}
                 />
                 <div
-                  className="absolute top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full border-2 border-slate-950 bg-white transition-all duration-1000"
+                  className="ping-soft absolute top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full border-2 border-slate-950 bg-white text-white transition-all duration-1000"
                   style={{ left: `calc(${gaugePct}% - 7px)` }}
                 />
               </div>
@@ -237,7 +240,7 @@ export default function Landing() {
                 <div className="text-[11px] font-semibold tracking-[0.2em] text-slate-400">
                   {shelterApplied ? "EXPOSURE LEG CUT" : "COOL ROUTE PRICED"}
                 </div>
-                <div className="tnum mt-1 text-4xl font-bold text-emerald-400">
+                <div className="metric-glow tnum mt-1 text-4xl font-bold text-emerald-400">
                   {shelterApplied
                     ? `−${(legBefore - legAfter).toFixed(1)} min`
                     : `−${loadSaved.toFixed(1)}°F`}
@@ -262,7 +265,7 @@ export default function Landing() {
 
             <div className="mt-5 flex items-center justify-between rounded-xl border border-indigo-400/25 bg-indigo-500/10 p-3.5 pl-4">
               <div className="flex items-center gap-3">
-                <span className="text-indigo-300">⚡</span>
+                <span className="bolt-flicker text-indigo-300">⚡</span>
                 <div>
                   <div className="text-[12px] font-bold tracking-[0.12em] text-slate-100">
                     1-CLICK COOL ROUTE READY
@@ -274,7 +277,7 @@ export default function Landing() {
               </div>
               <a
                 href="/app"
-                className="rounded-lg bg-cyan-400 px-5 py-2.5 text-[12px] font-bold tracking-[0.1em] text-slate-950 transition hover:bg-cyan-300"
+                className="btn-breathe rounded-lg bg-cyan-400 px-5 py-2.5 text-[12px] font-bold tracking-[0.1em] text-slate-950 transition hover:bg-cyan-300"
               >
                 NAVIGATE
               </a>

@@ -158,3 +158,164 @@ body,
     linear-gradient(90deg, rgb(148 163 184 / 0.045) 1px, transparent 1px);
   background-size: 56px 56px;
 }
+
+/* ---- landing live-card: continuous steady motion --------------------------------------- */
+
+/* Card glow breathes slowly. */
+@keyframes card-breathe {
+  0%,
+  100% {
+    box-shadow: 0 24px 80px -32px rgb(34 211 238 / 0.22);
+  }
+  50% {
+    box-shadow: 0 26px 100px -26px rgb(34 211 238 / 0.45);
+  }
+}
+.live-card {
+  animation: card-breathe 5.2s ease-in-out infinite;
+}
+
+/* Diagonal sheen sweeping across the card. */
+@keyframes sheen-sweep {
+  0% {
+    transform: translateX(-140%) skewX(-18deg);
+  }
+  100% {
+    transform: translateX(340%) skewX(-18deg);
+  }
+}
+.sheen {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.sheen::before {
+  content: "";
+  position: absolute;
+  top: -45%;
+  bottom: -45%;
+  left: 0;
+  width: 34%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(148 197 255 / 0.04),
+    rgb(103 232 249 / 0.09),
+    rgb(148 197 255 / 0.04),
+    transparent
+  );
+  animation: sheen-sweep 6.5s linear infinite;
+}
+
+/* Expanding ring around a status dot / gauge knob (uses currentColor). */
+@keyframes ping-soft {
+  0% {
+    transform: scale(1);
+    opacity: 0.65;
+  }
+  75%,
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+.ping-soft {
+  position: relative;
+}
+.ping-soft::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: currentColor;
+  animation: ping-soft 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* A glint travelling along the filled part of the thermal gauge. */
+@keyframes gauge-glint {
+  0% {
+    left: -12%;
+  }
+  100% {
+    left: 104%;
+  }
+}
+/* No `position` here: the element is positioned by its Tailwind `absolute` class, and a
+   later same-specificity rule would override it and collapse the fill out of the track. */
+.gauge-fill {
+  overflow: hidden;
+  border-radius: inherit;
+}
+.gauge-fill::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 12%;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.55), transparent);
+  animation: gauge-glint 3.4s ease-in-out infinite;
+}
+
+/* Headline metric glow. */
+@keyframes metric-glow {
+  0%,
+  100% {
+    text-shadow: 0 0 10px rgb(52 211 153 / 0.2);
+  }
+  50% {
+    text-shadow: 0 0 26px rgb(52 211 153 / 0.55);
+  }
+}
+.metric-glow {
+  animation: metric-glow 3s ease-in-out infinite;
+}
+
+/* Gentle flicker on the bolt. */
+@keyframes bolt-flicker {
+  0%,
+  100% {
+    opacity: 0.8;
+    filter: drop-shadow(0 0 2px rgb(129 140 248 / 0.35));
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 9px rgb(129 140 248 / 0.85));
+  }
+}
+.bolt-flicker {
+  animation: bolt-flicker 2.6s ease-in-out infinite;
+}
+
+/* Breathing glow on the primary action. */
+@keyframes btn-breathe {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(34 211 238 / 0);
+  }
+  50% {
+    box-shadow: 0 0 26px -4px rgb(34 211 238 / 0.6);
+  }
+}
+.btn-breathe {
+  animation: btn-breathe 3.2s ease-in-out infinite;
+}
+
+/* Every continuous effect stops for users who ask for reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  .live-card,
+  .metric-glow,
+  .bolt-flicker,
+  .btn-breathe,
+  .cool-flow {
+    animation: none;
+  }
+  .sheen::before,
+  .gauge-fill::after,
+  .ping-soft::before,
+  .hazard-marker::before {
+    animation: none;
+    content: none;
+  }
+}
