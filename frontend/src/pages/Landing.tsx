@@ -102,17 +102,6 @@ export default function Landing() {
           <a href="#edge" className="transition hover:text-cyan-300">
             EDGE
           </a>
-          <a
-            href="https://github.com/mrnetwork0001/Cryonav"
-            target="_blank"
-            rel="noreferrer"
-            className="transition hover:text-cyan-300"
-          >
-            SOURCE
-          </a>
-          <a href="/app" className="rounded-md border border-cyan-400/40 px-3 py-1.5 text-cyan-300 transition hover:bg-cyan-400/10">
-            DASHBOARD
-          </a>
         </nav>
       </header>
 
