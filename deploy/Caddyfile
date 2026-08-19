@@ -1,0 +1,23 @@
+# Cryonav edge config. deploy.sh substitutes {$CRYONAV_SITE} with your domain,
+# or with :80 for bare-IP serving (no TLS without a domain).
+{$CRYONAV_SITE} {
+	encode zstd gzip
+
+	# Backend: API + interactive docs
+	handle /api/* {
+		reverse_proxy 127.0.0.1:8008
+	}
+	handle /docs* {
+		reverse_proxy 127.0.0.1:8008
+	}
+	handle /openapi.json {
+		reverse_proxy 127.0.0.1:8008
+	}
+
+	# Frontend: static build with SPA fallback so /app deep-links resolve
+	handle {
+		root * /opt/cryonav/frontend/dist
+		try_files {path} /index.html
+		file_server
+	}
+}

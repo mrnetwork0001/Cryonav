@@ -324,7 +324,9 @@ class TestUpstreamFailureModes:
             svc, "_call_live", lambda *a, **k: pytest.fail("should not call upstream")
         )
         out = svc.heat_intelligence([(33.4498, -112.0715)], "phoenix", 15.0, prefer_live=False)
-        assert out["feed"]["source"] == "cryonav_simulation"
+        # Source is "fortyguard_calibrated" when a cached ambient curve exists for the tile,
+        # plain simulation otherwise -- either way, no upstream call may fire.
+        assert out["feed"]["source"] in ("cryonav_simulation", "fortyguard_calibrated")
 
 
 class TestShelters:

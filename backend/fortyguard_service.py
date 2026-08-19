@@ -966,7 +966,24 @@ class FortyGuardService:
             readings = [self.sample(resolved_city, lat, lon, hour) for lat, lon in points]
             status.latency_ms = round((time.perf_counter() - started) * 1000, 2)
             if not status.detail:
-                status.detail = "deterministic microclimate simulation (no API key configured)"
+                # Say what the local field is actually made of. "Simulation" alone undersells a
+                # tile whose ambient curve and spatial raster both came from FortyGuard today.
+                cal = self._calibration.get(resolved_city)
+                has_raster = resolved_city in self._heatmaps
+                if cal and has_raster:
+                    status.source = "fortyguard_calibrated"
+                    status.detail = (
+                        f"calibrated field: FortyGuard env_params {str(cal.get('date'))[:10]} "
+                        f"+ heatmap raster; microclimate structure modelled locally"
+                    )
+                elif cal:
+                    status.source = "fortyguard_calibrated"
+                    status.detail = (
+                        f"calibrated field: FortyGuard env_params {str(cal.get('date'))[:10]}; "
+                        f"spatial structure modelled locally"
+                    )
+                else:
+                    status.detail = "deterministic microclimate simulation (uncalibrated tile)"
 
         self.last_status = status
         peak = max(readings, key=lambda r: r.exposure_index_f)

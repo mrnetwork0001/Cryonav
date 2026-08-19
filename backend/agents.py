@@ -116,7 +116,12 @@ class ThermalSensingAgent(Agent):
             bb.destination,
             ((bb.origin[0] + bb.destination[0]) / 2, (bb.origin[1] + bb.destination[1]) / 2),
         ]
-        intel = self.service.heat_intelligence(probes, bb.city_id, bb.hour)
+        # prefer_live=False is deliberate, not a downgrade. The upstream heat_intelligence
+        # endpoint is an async PDF-report generator: a synchronous call at request time would
+        # submit a billable job per navigation and still have to serve this response from the
+        # local field. Live FortyGuard data enters through the calibrated daily pull
+        # (scripts/calibrate.py -> env_params + heatmap), which this sample already contains.
+        intel = self.service.heat_intelligence(probes, bb.city_id, bb.hour, prefer_live=False)
         readings = intel["readings"]
 
         origin_reading, dest_reading, mid_reading = readings[0], readings[1], readings[2]

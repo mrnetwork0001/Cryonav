@@ -21,6 +21,7 @@ export default function TopMetricsBar({ nav, grid, cityName, hour, loading }: Pr
   const color = ambient?.risk_color ?? "#22d3ee";
   const feedOk = nav?.feed.ok ?? false;
   const live = nav?.feed.source === "fortyguard_live";
+  const calibrated = nav?.feed.source === "fortyguard_calibrated";
   const degraded = nav?.feed.degraded ?? false;
 
   return (
@@ -88,7 +89,9 @@ export default function TopMetricsBar({ nav, grid, cityName, hour, loading }: Pr
             ? nav?.feed.detail
             : live
               ? `live upstream feed · ${nav?.feed.live_fields.length ?? 0}/5 metrics`
-              : "deterministic microclimate simulation"}
+              : calibrated
+                ? nav?.feed.detail
+                : "deterministic microclimate simulation"}
         </div>
       </div>
 

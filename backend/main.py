@@ -81,7 +81,14 @@ class HeatIntelligenceRequest(BaseModel):
     locations: List[LatLon] = Field(..., min_length=1, max_length=256)
     city_id: Optional[str] = Field(None, description="Omit to auto-resolve from coordinates.")
     hour: float = Field(15.0, ge=0, lt=24, description="Local hour of day, 0-23.99.")
-    prefer_live: bool = Field(True, description="Set false to force the simulation path.")
+    prefer_live: bool = Field(
+        False,
+        description=(
+            "Attempt a synchronous upstream call instead of the calibrated local field. "
+            "Default off: the upstream endpoint is an async report generator, so a live call "
+            "submits a billable job per request and cannot return in-band data anyway."
+        ),
+    )
 
 
 class CoolRouteRequest(BaseModel):

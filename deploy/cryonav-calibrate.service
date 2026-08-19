@@ -1,0 +1,15 @@
+# One-shot: pull today's real FortyGuard ambient curves + raster, then restart the API
+# so the new calibration is loaded (it is read once at startup).
+[Unit]
+Description=Cryonav daily FortyGuard calibration pull
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=cryonav
+Group=cryonav
+WorkingDirectory=/opt/cryonav
+EnvironmentFile=/etc/cryonav/env
+ExecStart=/opt/cryonav/backend/.venv/bin/python scripts/calibrate.py
+ExecStartPost=+/usr/bin/systemctl restart cryonav-api.service

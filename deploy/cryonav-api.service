@@ -1,0 +1,27 @@
+# Cryonav backend — FastAPI behind Caddy.
+# Installed to /etc/systemd/system/cryonav-api.service by deploy/deploy.sh
+[Unit]
+Description=Cryonav thermal-navigation API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=cryonav
+Group=cryonav
+WorkingDirectory=/opt/cryonav/backend
+# FORTYGUARD_API_KEY lives here (0600, root-owned). Never in the repo.
+EnvironmentFile=/etc/cryonav/env
+ExecStart=/opt/cryonav/backend/.venv/bin/uvicorn main:app --host 127.0.0.1 --port 8008 --workers 2
+Restart=always
+RestartSec=3
+
+# Light hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/cryonav/data
+
+[Install]
+WantedBy=multi-user.target
