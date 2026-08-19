@@ -319,3 +319,14 @@ body,
     content: none;
   }
 }
+
+/* ---- touch ergonomics -------------------------------------------------------------------- */
+
+@media (pointer: coarse) {
+  .leaflet-control-zoom a {
+    width: 38px !important;
+    height: 38px !important;
+    line-height: 38px !important;
+    font-size: 20px !important;
+  }
+}

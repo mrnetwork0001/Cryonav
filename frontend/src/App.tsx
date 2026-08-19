@@ -33,6 +33,7 @@ export default function App() {
   const [pickMode, setPickMode] = useState<"origin" | "destination" | null>(null);
 
   const [shelterReroute, setShelterReroute] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [rerouteBusy, setRerouteBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -158,11 +159,23 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-full flex-col gap-3 bg-[#0b0f17] p-3">
-      <TopMetricsBar nav={nav} grid={grid} cityName={`${city.name}, ${city.region}`} hour={hour} loading={loading} />
+    // Mobile (<lg): a normal flowing page — the document scrolls, the map gets an explicit
+    // viewport-relative height, and the map comes FIRST so a phone user isn't forced through
+    // ~800px of controls to reach it. Desktop (lg+): the original locked three-column shell
+    // with per-column scrolling. Without this split the columns collapse to 8px slivers on a
+    // phone and nothing is operable (measured, not hypothetical).
+    <div className="flex min-h-full flex-col gap-3 bg-[#0b0f17] p-3 lg:h-full">
+      <TopMetricsBar
+        nav={nav}
+        grid={grid}
+        cityName={`${city.name}, ${city.region}`}
+        hour={hour}
+        loading={loading}
+        onMenu={() => setDrawerOpen(true)}
+      />
 
-      <main className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-[300px_minmax(0,1fr)_340px]">
-        <div className="scroll-thin min-h-0 overflow-y-auto">
+      <main className="flex flex-1 flex-col gap-3 lg:grid lg:min-h-0 lg:grid-cols-[300px_minmax(0,1fr)_340px]">
+        <div className="scroll-thin hidden lg:block lg:min-h-0 lg:overflow-y-auto">
           <ControlPanel
             cities={cities}
             meta={meta}
@@ -187,7 +200,7 @@ export default function App() {
           />
         </div>
 
-        <div className="glass relative min-h-[420px] overflow-hidden rounded-xl">
+        <div className="glass relative h-[58vh] min-h-[380px] overflow-hidden rounded-xl lg:h-auto lg:min-h-[420px]">
           <MapCanvas
             city={city}
             grid={grid}
@@ -209,7 +222,7 @@ export default function App() {
           )}
         </div>
 
-        <div className="scroll-thin flex min-h-0 flex-col gap-3 overflow-y-auto">
+        <div className="scroll-thin flex flex-col gap-3 lg:min-h-0 lg:overflow-y-auto">
           <ExposureCard
             nav={nav}
             onEmergencyReroute={() => solve(!shelterReroute)}
@@ -219,6 +232,68 @@ export default function App() {
           <AgentTrace nav={nav} grid={grid} />
         </div>
       </main>
+
+      {/* ---- mobile control drawer -------------------------------------------------------
+          The control panel lives here below lg (the inline column is desktop-only). Kept
+          mounted so the slide transition runs; actions that hand focus back to the map —
+          picking a preset, arming a map pick, solving — close it automatically. */}
+      <div
+        onClick={() => setDrawerOpen(false)}
+        className={`fixed inset-0 z-[1190] bg-black/60 backdrop-blur-sm transition-opacity duration-300 lg:hidden ${
+          drawerOpen ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+        aria-hidden
+      />
+      <aside
+        className={`scroll-thin fixed inset-y-0 left-0 z-[1200] w-[85vw] max-w-[340px] overflow-y-auto bg-[#0b0f17] p-3 shadow-[8px_0_40px_-12px_rgba(0,0,0,0.9)] transition-transform duration-300 lg:hidden ${
+          drawerOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+        aria-label="Route controls"
+      >
+        <div className="mb-3 flex items-center justify-between px-1">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+            Route controls
+          </span>
+          <button
+            onClick={() => setDrawerOpen(false)}
+            aria-label="Close controls"
+            className="grid h-9 w-9 place-items-center rounded-lg border border-slate-700/60 text-slate-400 transition hover:text-slate-200"
+          >
+            ✕
+          </button>
+        </div>
+        <ControlPanel
+          cities={cities}
+          meta={meta}
+          cityId={cityId}
+          profileId={profileId}
+          hour={hour}
+          presets={city.presets}
+          activePreset={activePreset}
+          pickMode={pickMode}
+          toggles={toggles}
+          gridSource={gridSource}
+          rasterAvailable={city.raster_tiles > 0}
+          loading={loading}
+          onCity={setCityId}
+          onProfile={setProfileId}
+          onHour={setHour}
+          onPreset={(pr) => {
+            applyPreset(pr);
+            setDrawerOpen(false);
+          }}
+          onPickMode={(m) => {
+            setPickMode(m);
+            if (m) setDrawerOpen(false);
+          }}
+          onToggle={(k) => setToggles((t) => ({ ...t, [k]: !t[k] }))}
+          onGridSource={setGridSource}
+          onSolve={() => {
+            solve(shelterReroute);
+            setDrawerOpen(false);
+          }}
+        />
+      </aside>
     </div>
   );
 }
@@ -231,7 +306,7 @@ function MapLegend() {
     { color: "#38bdf8", label: "cooling shelter", dash: false },
   ];
   return (
-    <div className="glass pointer-events-none absolute bottom-3 right-3 z-[1000] rounded-lg px-3 py-2">
+    <div className="glass pointer-events-none absolute bottom-3 right-3 z-[1000] hidden rounded-lg px-3 py-2 sm:block">
       <div className="space-y-1">
         {items.map((i) => (
           <div key={i.label} className="flex items-center gap-2 text-[9px] text-slate-400">

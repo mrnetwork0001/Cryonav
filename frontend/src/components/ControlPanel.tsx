@@ -62,7 +62,7 @@ export default function ControlPanel(p: Props) {
               key={prof.id}
               onClick={() => p.onProfile(prof.id)}
               title={prof.description}
-              className={`w-full rounded-lg border px-2.5 py-1.5 text-left text-[11px] transition ${
+              className={`w-full rounded-lg border px-2.5 py-2.5 text-left text-[11px] transition lg:py-1.5 ${
                 prof.id === p.profileId
                   ? "border-cyan-400/50 bg-cyan-400/12 text-cyan-300"
                   : "border-slate-700/50 bg-slate-900/40 text-slate-400 hover:border-slate-600 hover:text-slate-200"
@@ -92,7 +92,7 @@ export default function ControlPanel(p: Props) {
           step={0.5}
           value={p.hour}
           onChange={(e) => p.onHour(Number(e.target.value))}
-          className="mt-2 w-full accent-cyan-400"
+          className="mt-2 h-6 w-full accent-cyan-400 lg:h-auto"
         />
         <div className="mt-0.5 flex justify-between text-[9px] text-slate-600">
           <span>00:00</span>
@@ -108,7 +108,7 @@ export default function ControlPanel(p: Props) {
             <button
               key={preset.id}
               onClick={() => p.onPreset(preset)}
-              className={`w-full rounded-lg border px-2.5 py-1.5 text-left text-[11px] transition ${
+              className={`w-full rounded-lg border px-2.5 py-2.5 text-left text-[11px] transition lg:py-1.5 ${
                 preset.id === p.activePreset
                   ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-300"
                   : "border-slate-700/50 bg-slate-900/40 text-slate-400 hover:border-slate-600 hover:text-slate-200"
@@ -139,7 +139,7 @@ export default function ControlPanel(p: Props) {
         <div className="mt-1.5 grid grid-cols-2 gap-1">
           <button
             onClick={() => p.onGridSource("model")}
-            className={`rounded-lg border px-2 py-1.5 text-[10px] transition ${
+            className={`rounded-lg border px-2 py-2.5 text-[10px] transition lg:py-1.5 ${
               p.gridSource === "model"
                 ? "border-cyan-400/50 bg-cyan-400/12 text-cyan-300"
                 : "border-slate-700/50 bg-slate-900/40 text-slate-500 hover:text-slate-300"
@@ -151,7 +151,7 @@ export default function ControlPanel(p: Props) {
           <button
             onClick={() => p.rasterAvailable && p.onGridSource("fortyguard")}
             disabled={!p.rasterAvailable}
-            className={`rounded-lg border px-2 py-1.5 text-[10px] transition ${
+            className={`rounded-lg border px-2 py-2.5 text-[10px] transition lg:py-1.5 ${
               p.gridSource === "fortyguard"
                 ? "border-emerald-400/50 bg-emerald-400/12 text-emerald-300"
                 : p.rasterAvailable
@@ -235,7 +235,7 @@ function Toggle({
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[10px] transition ${
+      className={`flex items-center gap-1.5 rounded-lg border px-2 py-2.5 text-[10px] transition lg:py-1.5 ${
         on
           ? "border-slate-600 bg-slate-800/60 text-slate-200"
           : "border-slate-800 bg-slate-900/30 text-slate-600"
@@ -262,7 +262,7 @@ function PickButton({
   return (
     <button
       onClick={onClick}
-      className={`rounded-lg border px-2 py-1.5 text-[10px] transition ${
+      className={`rounded-lg border px-2 py-2.5 text-[10px] transition lg:py-1.5 ${
         active
           ? "border-cyan-400/60 bg-cyan-400/15 text-cyan-300"
           : "border-slate-700/50 bg-slate-900/40 text-slate-500 hover:text-slate-300"

@@ -59,7 +59,7 @@ export default function MapCanvas(props: Props) {
     mapRef.current = map;
 
     L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-      attribution: '&copy; OpenStreetMap &copy; CARTO &middot; thermal layer: FortyGuard Temperature API',
+      attribution: '&copy; OpenStreetMap &copy; CARTO &middot; FortyGuard Temperature API',
       subdomains: "abcd",
       maxZoom: 19,
     }).addTo(map);
@@ -77,6 +77,19 @@ export default function MapCanvas(props: Props) {
       map.remove();
       mapRef.current = null;
     };
+  }, []);
+
+  // -- keep Leaflet honest about its container size ---------------------------------------
+  // The wrapper's height differs per breakpoint (58vh on phones, grid-stretched on desktop)
+  // and changes on rotation. Leaflet only measures its container once, so without this the
+  // map renders tiles for a stale size and pans reveal grey voids.
+  useEffect(() => {
+    const map = mapRef.current;
+    const host = hostRef.current;
+    if (!map || !host) return;
+    const ro = new ResizeObserver(() => map.invalidateSize());
+    ro.observe(host);
+    return () => ro.disconnect();
   }, []);
 
   // -- recenter when the city changes ----------------------------------------------------

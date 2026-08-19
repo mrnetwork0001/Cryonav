@@ -6,6 +6,8 @@ interface Props {
   cityName: string;
   hour: number;
   loading: boolean;
+  /** Opens the mobile control drawer; the button renders below lg only. */
+  onMenu: () => void;
 }
 
 const RISK_LABEL: Record<string, string> = {
@@ -15,7 +17,7 @@ const RISK_LABEL: Record<string, string> = {
   extreme: "EXTREME HEAT RISK",
 };
 
-export default function TopMetricsBar({ nav, grid, cityName, hour, loading }: Props) {
+export default function TopMetricsBar({ nav, grid, cityName, hour, loading, onMenu }: Props) {
   const ambient = nav?.ambient;
   const risk = ambient?.risk_level ?? "low";
   const color = ambient?.risk_color ?? "#22d3ee";
@@ -27,7 +29,16 @@ export default function TopMetricsBar({ nav, grid, cityName, hour, loading }: Pr
   return (
     <header className="glass z-20 flex flex-wrap items-stretch gap-px overflow-hidden rounded-xl">
       {/* Brand */}
-      <div className="flex min-w-[210px] flex-1 items-center gap-3 px-5 py-3">
+      <div className="flex min-w-[210px] flex-1 items-center gap-3 px-4 py-2.5 md:px-5 md:py-3">
+        <button
+          onClick={onMenu}
+          aria-label="Open route controls"
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-slate-700/60 text-slate-300 transition hover:border-cyan-400/50 hover:text-cyan-300 lg:hidden"
+        >
+          <svg viewBox="0 0 20 20" className="h-5 w-5 fill-none stroke-current" strokeWidth="1.8" strokeLinecap="round" aria-hidden>
+            <path d="M3 5.5h14M3 10h14M3 14.5h14" />
+          </svg>
+        </button>
         <div
           className="grid h-9 w-9 shrink-0 place-items-center rounded-lg font-bold text-slate-950"
           style={{ background: "linear-gradient(135deg,#22d3ee,#0891b2)" }}
@@ -45,7 +56,7 @@ export default function TopMetricsBar({ nav, grid, cityName, hour, loading }: Pr
       <Divider />
 
       {/* FortyGuard feed status */}
-      <div className="flex min-w-[240px] flex-1 flex-col justify-center px-5 py-3">
+      <div className="flex min-w-[240px] flex-1 flex-col justify-center px-4 py-2.5 md:px-5 md:py-3">
         <div className="flex items-center gap-2">
           <span
             className={`h-1.5 w-1.5 rounded-full ${
@@ -98,7 +109,7 @@ export default function TopMetricsBar({ nav, grid, cityName, hour, loading }: Pr
       <Divider />
 
       {/* Current temperature + risk meter */}
-      <div className="flex min-w-[300px] flex-[1.4] flex-col justify-center px-5 py-3">
+      <div className="flex min-w-[300px] flex-[1.4] flex-col justify-center px-4 py-2.5 md:px-5 md:py-3">
         <div className="flex items-baseline gap-2">
           <span className="tnum text-[26px] font-semibold leading-none text-slate-50">
             {ambient ? `${ambient.air_temp_2m_f.toFixed(0)}°F` : "—"}
@@ -129,7 +140,7 @@ export default function TopMetricsBar({ nav, grid, cityName, hour, loading }: Pr
       <Divider />
 
       {/* Tile context */}
-      <div className="flex min-w-[190px] flex-1 flex-col justify-center px-5 py-3">
+      <div className="flex min-w-[190px] flex-1 flex-col justify-center px-4 py-2.5 md:px-5 md:py-3">
         <div className="text-[10px] uppercase tracking-[0.12em] text-slate-500">Coverage tile</div>
         <div className="mt-1 text-[13px] font-medium text-slate-200">{cityName}</div>
         <div className="tnum mt-0.5 text-[11px] text-slate-500">
@@ -148,7 +159,9 @@ export default function TopMetricsBar({ nav, grid, cityName, hour, loading }: Pr
 }
 
 function Divider() {
-  return <div className="w-px shrink-0 self-stretch bg-slate-700/40" />;
+  // Below md the sections stack full-width, so a 1px vertical divider separates nothing --
+  // it just renders as a stray tick in the right gutter.
+  return <div className="hidden w-px shrink-0 self-stretch bg-slate-700/40 md:block" />;
 }
 
 /** Position of the current exposure index across the comfort → survival-limit span. */

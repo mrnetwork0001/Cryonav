@@ -32,6 +32,7 @@ interface CalSummary {
 }
 
 export default function Landing() {
+  const [menuOpen, setMenuOpen] = useState(false);
   const [cities, setCities] = useState<CitySummary[]>([]);
   const [nav, setNav] = useState<NavigationResult | null>(null);
   const [cals, setCals] = useState<Record<string, CalSummary>>({});
@@ -82,7 +83,7 @@ export default function Landing() {
   return (
     <div className="bg-blueprint min-h-full bg-[#05070b] text-slate-200">
       {/* ---- nav ---------------------------------------------------------------------- */}
-      <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6">
+      <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 sm:py-6">
         <a href="/" className="flex items-center gap-3">
           <span
             className="grid h-9 w-9 place-items-center rounded-lg font-bold text-slate-950"
@@ -92,17 +93,50 @@ export default function Landing() {
           </span>
           <span className="text-[15px] font-bold tracking-[0.08em] text-slate-100">CRYONAV</span>
         </a>
-        <nav className="hidden items-center gap-8 text-[11px] font-medium tracking-[0.22em] text-slate-400 sm:flex">
-          <a href="#agents" className="transition hover:text-cyan-300">
+        <nav className="hidden items-center gap-4 text-[11px] font-medium tracking-[0.22em] text-slate-400 sm:flex">
+          <a href="#agents" className="px-2 py-2.5 transition hover:text-cyan-300">
             AGENTS
           </a>
-          <a href="#api" className="transition hover:text-cyan-300">
+          <a href="#api" className="px-2 py-2.5 transition hover:text-cyan-300">
             LIVE API
           </a>
-          <a href="#edge" className="transition hover:text-cyan-300">
+          <a href="#edge" className="px-2 py-2.5 transition hover:text-cyan-300">
             EDGE
           </a>
         </nav>
+        {/* phone menu */}
+        <div className="relative sm:hidden">
+          <button
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-label="Menu"
+            aria-expanded={menuOpen}
+            className="grid h-10 w-10 place-items-center rounded-lg border border-slate-700/60 text-slate-300 transition hover:border-cyan-400/50 hover:text-cyan-300"
+          >
+            <svg viewBox="0 0 20 20" className="h-5 w-5 fill-none stroke-current" strokeWidth="1.8" strokeLinecap="round" aria-hidden>
+              {menuOpen ? <path d="M5 5l10 10M15 5L5 15" /> : <path d="M3 5.5h14M3 10h14M3 14.5h14" />}
+            </svg>
+          </button>
+          {menuOpen && (
+            <nav className="absolute right-0 top-12 z-50 w-52 rounded-xl border border-slate-700/60 bg-[#0a0e15]/95 p-2 text-[11px] font-medium tracking-[0.18em] text-slate-300 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.9)] backdrop-blur">
+              {[
+                ["#agents", "AGENTS"],
+                ["#api", "LIVE API"],
+                ["#edge", "EDGE"],
+                ["/app", "DASHBOARD"],
+                ["https://github.com/mrnetwork0001/Cryonav", "SOURCE"],
+              ].map(([href, label]) => (
+                <a
+                  key={label}
+                  href={href}
+                  onClick={() => setMenuOpen(false)}
+                  className="block rounded-lg px-3 py-3 transition hover:bg-cyan-400/10 hover:text-cyan-300"
+                >
+                  {label}
+                </a>
+              ))}
+            </nav>
+          )}
+        </div>
       </header>
 
       {/* ---- hero --------------------------------------------------------------------- */}
@@ -235,12 +269,12 @@ export default function Landing() {
               </div>
             </div>
 
-            <div className="mt-5 flex items-end justify-between px-1">
+            <div className="mt-5 flex flex-wrap items-end justify-between gap-3 px-1">
               <div>
                 <div className="text-[11px] font-semibold tracking-[0.2em] text-slate-400">
                   {shelterApplied ? "EXPOSURE LEG CUT" : "COOL ROUTE PRICED"}
                 </div>
-                <div className="metric-glow tnum mt-1 text-4xl font-bold text-emerald-400">
+                <div className="metric-glow tnum mt-1 text-3xl font-bold text-emerald-400 sm:text-4xl">
                   {shelterApplied
                     ? `−${(legBefore - legAfter).toFixed(1)} min`
                     : `−${loadSaved.toFixed(1)}°F`}
@@ -263,7 +297,7 @@ export default function Landing() {
               </div>
             )}
 
-            <div className="mt-5 flex items-center justify-between rounded-xl border border-indigo-400/25 bg-indigo-500/10 p-3.5 pl-4">
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-indigo-400/25 bg-indigo-500/10 p-3.5 pl-4">
               <div className="flex items-center gap-3">
                 <span className="bolt-flicker text-indigo-300">⚡</span>
                 <div>
@@ -494,8 +528,12 @@ export default function Landing() {
           EDGE TIER
       ================================================================================= */}
       <section id="edge" className="border-t border-slate-800/60">
-        <div className="mx-auto grid max-w-7xl gap-10 px-6 py-24 lg:grid-cols-[1fr_1fr]">
-          <div>
+        {/* minmax(0,1fr) + min-w-0: grid items default to min-width:auto, which lets the
+            JSON <pre>'s min-content width propagate upward and force the whole page wider
+            than a phone — its own overflow-x-auto never engages. Measured: 530px page at a
+            390px viewport without this. */}
+        <div className="mx-auto grid max-w-7xl gap-10 px-6 py-24 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <div className="min-w-0">
             <SectionKicker>MUNICIPAL EDGE TIER</SectionKicker>
             <h2 className="mt-4 text-4xl font-bold tracking-tight text-white">
               Small enough for a kiosk on a metered uplink.
@@ -513,7 +551,7 @@ export default function Landing() {
               <Stat label="OFFLINE" value="✓" />
             </div>
           </div>
-          <div className="rounded-2xl border border-slate-800 bg-[#0a0e15]/90 p-5 font-mono text-[12px] leading-relaxed text-slate-400">
+          <div className="min-w-0 rounded-2xl border border-slate-800 bg-[#0a0e15]/90 p-5 font-mono text-[12px] leading-relaxed text-slate-400">
             <div className="text-[10px] uppercase tracking-[0.2em] text-slate-500">
               POST /api/v1/edge/jetson-kiosk
             </div>
@@ -587,15 +625,15 @@ export default function Landing() {
               CRYONAV — built for FortyGuard Hackathon '26 · “Building the World's Temperature AI”
             </span>
           </div>
-          <div className="flex items-center gap-6">
-            <a href="/app" className="transition hover:text-cyan-300">
+          <div className="flex items-center gap-2">
+            <a href="/app" className="px-2 py-2.5 transition hover:text-cyan-300">
               DASHBOARD
             </a>
             <a
               href="https://github.com/mrnetwork0001/Cryonav"
               target="_blank"
               rel="noreferrer"
-              className="transition hover:text-cyan-300"
+              className="px-2 py-2.5 transition hover:text-cyan-300"
             >
               MIT · SOURCE
             </a>

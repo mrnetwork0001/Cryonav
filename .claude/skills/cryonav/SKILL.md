@@ -83,6 +83,13 @@ These were each found by a failing test or a wrong-looking screenshot, not by de
 - **`/` is the marketing landing** (`src/pages/Landing.tsx`), **`/app` is the dashboard** — a pathname switch in `main.tsx`, no router dependency. The landing's product card runs a REAL cool-route solve on mount and renders whatever the agents did (falls back to last measured values, marked OFFLINE, when the backend is down). Keep it honest: never hardcode impressive numbers there.
 - Landing style: blueprint grid (`.bg-blueprint`), gradient headline, mono stat strip, live Sentinel card. Derived from a Syntura-style reference the user supplied.
 
+## Mobile layout
+
+- **Dashboard (<lg)**: natural page scroll (root `min-h-full`, `lg:h-full`); map first at `h-[58vh]`; the ControlPanel renders ONLY in a slide-in drawer opened by the hamburger in TopMetricsBar (`onMenu`); the inline left column is `hidden lg:block`. Drawer actions that hand focus to the map (preset, pick, solve) auto-close it. Never reintroduce base-breakpoint `min-h-0 overflow-y-auto` on the columns — that collapses them to 8px slivers on phones (measured).
+- **Landing**: `#edge` grid needs `minmax(0,1fr)` columns + `min-w-0` children or the JSON `<pre>`'s min-content width forces a 530px page on a 390px phone. Phone header uses a hamburger dropdown (AGENTS/LIVE API/EDGE/DASHBOARD/SOURCE).
+- Leaflet gets `map.invalidateSize()` via ResizeObserver in MapCanvas — required because the wrapper height is breakpoint-dependent.
+- Touch targets: base paddings are `py-2.5`, compacted with `lg:py-1.5`; Leaflet zoom buttons upsized under `@media (pointer: coarse)`.
+
 ## Gotchas
 
 - Leaflet is driven directly via `useEffect` (no react-leaflet) to dodge peer-dep churn. Map tiles come from CARTO dark_matter (no token needed); Mapbox is an optional upgrade behind `VITE_MAPBOX_TOKEN`.

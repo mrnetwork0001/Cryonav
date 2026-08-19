@@ -41,7 +41,7 @@ export default function AgentTrace({ nav, grid }: Props) {
         </div>
       )}
 
-      <div className="scroll-thin mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+      <div className="scroll-thin mt-3 max-h-[60vh] space-y-2 overflow-y-auto pr-1 lg:max-h-none lg:min-h-0 lg:flex-1">
         {!nav && <p className="text-xs text-slate-500">Run a route to watch the agents work.</p>}
 
         {nav?.agent_trace.map((step) => {
