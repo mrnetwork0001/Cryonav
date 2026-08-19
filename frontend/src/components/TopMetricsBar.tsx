@@ -28,29 +28,31 @@ export default function TopMetricsBar({ nav, grid, cityName, hour, loading, onMe
 
   return (
     <header className="glass z-20 flex flex-wrap items-stretch gap-px overflow-hidden rounded-xl">
-      {/* Brand */}
+      {/* Brand — links back to the landing page; burger sits top-right (mobile only) */}
       <div className="flex min-w-[210px] flex-1 items-center gap-3 px-4 py-2.5 md:px-5 md:py-3">
+        <a href="/" className="flex items-center gap-3" title="Cryonav — home">
+          <div
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-lg font-bold text-slate-950"
+            style={{ background: "linear-gradient(135deg,#22d3ee,#0891b2)" }}
+          >
+            ❄
+          </div>
+          <div className="leading-tight">
+            <div className="text-[15px] font-semibold tracking-tight text-slate-100">CRYONAV</div>
+            <div className="text-[10px] uppercase tracking-[0.14em] text-slate-500">
+              Thermal Navigation Engine
+            </div>
+          </div>
+        </a>
         <button
           onClick={onMenu}
           aria-label="Open route controls"
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-slate-700/60 text-slate-300 transition hover:border-cyan-400/50 hover:text-cyan-300 lg:hidden"
+          className="ml-auto grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-slate-700/60 text-slate-300 transition hover:border-cyan-400/50 hover:text-cyan-300 lg:hidden"
         >
           <svg viewBox="0 0 20 20" className="h-5 w-5 fill-none stroke-current" strokeWidth="1.8" strokeLinecap="round" aria-hidden>
             <path d="M3 5.5h14M3 10h14M3 14.5h14" />
           </svg>
         </button>
-        <div
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-lg font-bold text-slate-950"
-          style={{ background: "linear-gradient(135deg,#22d3ee,#0891b2)" }}
-        >
-          ❄
-        </div>
-        <div className="leading-tight">
-          <div className="text-[15px] font-semibold tracking-tight text-slate-100">CRYONAV</div>
-          <div className="text-[10px] uppercase tracking-[0.14em] text-slate-500">
-            Thermal Navigation Engine
-          </div>
-        </div>
       </div>
 
       <Divider />
