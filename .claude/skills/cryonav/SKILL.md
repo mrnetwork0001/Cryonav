@@ -78,6 +78,11 @@ These were each found by a failing test or a wrong-looking screenshot, not by de
 - **The live path must fail loudly.** `FeedStatus.degraded` / `upstream_status_code` carry the real upstream status; never report a 401 or a schema mismatch as a green 200. An unrecognised envelope, a record-count mismatch, or a non-JSON body all raise `FortyGuardUpstreamError` so the caller degrades with a reason.
 - **Frontend deltas derive their own sign** (`delta()` in `ExposureCard.tsx`). A mandated shelter stop legitimately increases dose, and a hardcoded `−` prefix renders `−−10.9%`.
 
+## Frontend layout
+
+- **`/` is the marketing landing** (`src/pages/Landing.tsx`), **`/app` is the dashboard** — a pathname switch in `main.tsx`, no router dependency. The landing's product card runs a REAL cool-route solve on mount and renders whatever the agents did (falls back to last measured values, marked OFFLINE, when the backend is down). Keep it honest: never hardcode impressive numbers there.
+- Landing style: blueprint grid (`.bg-blueprint`), gradient headline, mono stat strip, live Sentinel card. Derived from a Syntura-style reference the user supplied.
+
 ## Gotchas
 
 - Leaflet is driven directly via `useEffect` (no react-leaflet) to dodge peer-dep churn. Map tiles come from CARTO dark_matter (no token needed); Mapbox is an optional upgrade behind `VITE_MAPBOX_TOKEN`.

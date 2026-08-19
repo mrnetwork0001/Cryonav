@@ -149,3 +149,12 @@ body,
 .scroll-thin::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* ---- landing page: faint blueprint grid ------------------------------------------------ */
+
+.bg-blueprint {
+  background-image:
+    linear-gradient(rgb(148 163 184 / 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(148 163 184 / 0.045) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
