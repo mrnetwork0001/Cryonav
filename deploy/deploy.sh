@@ -49,12 +49,39 @@ ssh "$TARGET" CRYONAV_SITE_VALUE="$SITE" 'bash -s' <<'REMOTE'
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 
+# --- shared-host guards: this box may run other services; break nothing -----------------
+listeners=$(ss -tlnp 2>/dev/null || true)
+owner_of() { echo "$listeners" | awk -v p=":$1$" '$4 ~ p {print; exit}' | grep -oE 'users:\(\("[^"]+"' | head -1 | cut -d'"' -f2; }
+
+if echo "$listeners" | awk '$4 ~ /:8008$/ {found=1} END {exit !found}'; then
+  if [ "$(owner_of 8008)" != "uvicorn" ] && ! systemctl is-active --quiet cryonav-api 2>/dev/null; then
+    echo "ABORT: port 8008 is in use by '$(owner_of 8008)' and it is not our service." >&2
+    echo "Nothing was installed or changed. Free the port or change it in deploy/cryonav-api.service + deploy/Caddyfile." >&2
+    exit 40
+  fi
+fi
+
+WEB_OWNER=""
+for port in 80 443; do
+  o=$(owner_of "$port"); [ -n "$o" ] && WEB_OWNER="$o" && break
+done
+MANAGE_WEB=yes
+if [ -n "$WEB_OWNER" ] && [ "$WEB_OWNER" != "caddy" ]; then
+  # Another web server owns the edge. We must not install Caddy (its postinst tries to bind
+  # :80 and fails or worse, races) and must not touch the existing server's config.
+  MANAGE_WEB=no
+elif [ "$WEB_OWNER" = "caddy" ] && [ -f /etc/caddy/Caddyfile ] && ! grep -q "Cryonav edge config" /etc/caddy/Caddyfile; then
+  # Caddy exists but serves someone else's sites: stage our config, never overwrite.
+  MANAGE_WEB=stage
+fi
+echo "web-edge strategy: ${MANAGE_WEB} (owner: ${WEB_OWNER:-none})"
+
 # --- system deps (first run only, cheap afterwards)
 command -v python3 >/dev/null || sudo apt-get update -qq
 sudo apt-get install -y -qq python3-venv python3-pip rsync curl >/dev/null
 
-# --- caddy from the official repo
-if ! command -v caddy >/dev/null; then
+# --- caddy from the official repo (only when this deploy owns the web edge)
+if [ "$MANAGE_WEB" = "yes" ] && ! command -v caddy >/dev/null; then
   sudo apt-get install -y -qq debian-keyring debian-archive-keyring apt-transport-https gnupg >/dev/null
   curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' \
     | sudo gpg --batch --yes --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
@@ -81,19 +108,45 @@ sudo systemctl enable --now cryonav-api.service
 sudo systemctl enable --now cryonav-calibrate.timer
 sudo systemctl restart cryonav-api.service
 
-# --- caddy site
-sudo mkdir -p /etc/caddy
-sudo cp /opt/cryonav/deploy/Caddyfile /etc/caddy/Caddyfile
-echo "CRYONAV_SITE=${CRYONAV_SITE_VALUE}" | sudo tee /etc/caddy/cryonav.env >/dev/null
-sudo mkdir -p /etc/systemd/system/caddy.service.d
-printf '[Service]\nEnvironmentFile=/etc/caddy/cryonav.env\n' | sudo tee /etc/systemd/system/caddy.service.d/cryonav.conf >/dev/null
-sudo systemctl daemon-reload
-sudo systemctl enable caddy >/dev/null 2>&1 || true
-sudo systemctl restart caddy
+# --- web edge, per strategy
+case "$MANAGE_WEB" in
+  yes)
+    sudo mkdir -p /etc/caddy
+    if [ -f /etc/caddy/Caddyfile ] && ! grep -q "Cryonav edge config" /etc/caddy/Caddyfile; then
+      sudo cp /etc/caddy/Caddyfile "/etc/caddy/Caddyfile.pre-cryonav.$(date +%s)"
+      echo "backed up existing Caddyfile"
+    fi
+    sudo cp /opt/cryonav/deploy/Caddyfile /etc/caddy/Caddyfile
+    echo "CRYONAV_SITE=${CRYONAV_SITE_VALUE}" | sudo tee /etc/caddy/cryonav.env >/dev/null
+    sudo mkdir -p /etc/systemd/system/caddy.service.d
+    printf '[Service]\nEnvironmentFile=/etc/caddy/cryonav.env\n' | sudo tee /etc/systemd/system/caddy.service.d/cryonav.conf >/dev/null
+    sudo systemctl daemon-reload
+    sudo systemctl enable caddy >/dev/null 2>&1 || true
+    sudo systemctl restart caddy
+    sleep 3
+    curl -fsS http://127.0.0.1/api/v1/health | head -c 200 && echo
+    ;;
+  stage)
+    # Caddy runs someone else's sites: stage our block and let the operator import it.
+    sudo cp /opt/cryonav/deploy/Caddyfile /etc/caddy/cryonav.caddy
+    echo "CRYONAV_SITE=${CRYONAV_SITE_VALUE}" | sudo tee /etc/caddy/cryonav.env >/dev/null
+    echo "STAGED: /etc/caddy/cryonav.caddy — your Caddyfile was NOT touched."
+    echo "To publish Cryonav, add to /etc/caddy/Caddyfile:   import /etc/caddy/cryonav.caddy"
+    echo "then set CRYONAV_SITE in caddy's environment (see /etc/caddy/cryonav.env) and reload caddy."
+    ;;
+  no)
+    echo "SKIPPED web edge: ports 80/443 are owned by '${WEB_OWNER}'. Nothing web-related was changed."
+    echo "The Cryonav API is up on 127.0.0.1:8008. To publish it through your existing ${WEB_OWNER}:"
+    echo "  - proxy  /api/  ->  http://127.0.0.1:8008/api/"
+    echo "  - proxy  /docs and /openapi.json  ->  http://127.0.0.1:8008"
+    echo "  - serve  /opt/cryonav/frontend/dist  as static root with SPA fallback to /index.html"
+    echo "An nginx example lives at /opt/cryonav/deploy/nginx-cryonav.conf.example"
+    ;;
+esac
 
-# --- wait + smoke check through the proxy
-sleep 3
-curl -fsS http://127.0.0.1/api/v1/health | head -c 200 && echo
+# --- backend smoke check (always, directly against uvicorn)
+sleep 2
+curl -fsS http://127.0.0.1:8008/api/v1/health | head -c 200 && echo
 echo "REMOTE OK"
 REMOTE
 
