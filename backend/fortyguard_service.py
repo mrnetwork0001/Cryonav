@@ -388,12 +388,26 @@ class FortyGuardService:
 
     # -- sampling ----------------------------------------------------------------------
 
-    def sample(self, city_id: str, lat: float, lon: float, hour: float = 15.0) -> ThermalReading:
-        """One simulated 2 m AGL reading. Pure function of its arguments."""
+    def sample(
+        self,
+        city_id: str,
+        lat: float,
+        lon: float,
+        hour: float = 15.0,
+        terr: Optional[Dict[str, Any]] = None,
+    ) -> ThermalReading:
+        """One simulated 2 m AGL reading. Pure function of its arguments.
+
+        ``terr`` lets callers reuse a precomputed :meth:`terrain` result. Terrain is
+        hour-independent and by far the most expensive part of a sample, so the routing
+        engine computes it once per street edge and replays it across hour buckets --
+        the difference between a ~6 s and a ~1 s graph rebuild on the real OSM network.
+        """
         city = self.city(city_id)
         clim = city["climate"]
         peak = clim.get("peak_hour", 15.0)
-        terr = self.terrain(city_id, lat, lon)
+        if terr is None:
+            terr = self.terrain(city_id, lat, lon)
 
         # Prefer a real FortyGuard-derived ambient curve when this tile has been calibrated;
         # fall back to the synthetic diurnal model otherwise. Only the *ambient baseline* comes

@@ -18,8 +18,10 @@ detour ratio. That search loop is what the Cool-Route Optimization Agent drives.
 from __future__ import annotations
 
 import heapq
+import json
 import math
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 import thermal
@@ -27,6 +29,15 @@ from fortyguard_service import FortyGuardService, ThermalReading
 from thermal import clamp, haversine_m
 
 Coord = Tuple[float, float]
+
+#: Real pedestrian networks fetched from OpenStreetMap by scripts/fetch_streets.py.
+#: When a city's file exists it is used; the synthetic lattice remains only as a
+#: fallback for cities without cached OSM data.
+STREETS_DIR = Path(__file__).resolve().parent.parent / "data" / "streets"
+
+#: Walking-speed factors per OSM highway class. Steps are the only class that
+#: materially changes pedestrian pace; everything else is captured by the heat derate.
+HIGHWAY_SPEED_FACTOR: Dict[str, float] = {"steps": 0.55}
 
 # --------------------------------------------------------------------------------------
 # User profiles
@@ -117,40 +128,66 @@ class EdgeData:
     canopy_cover_pct: float
     risk_level: str
     surface_type: str
+    #: Real street geometry from a -> target (inclusive of both endpoints). Empty for
+    #: lattice edges, where the straight node-to-node line is the geometry.
+    geometry: Tuple[Coord, ...] = ()
+    #: OSM-class pace modifier (stairs etc.); multiplies the heat-derated walking speed.
+    speed_factor: float = 1.0
+
+
+#: Spatial-hash cell size for nearest-node lookup, degrees (~110 m).
+_CELL_DEG = 0.001
+
+#: Refuse to snap a request point that is further than this from any street node --
+#: routing from a snap 2 km away would silently answer a different question.
+MAX_SNAP_M = 500.0
 
 
 @dataclass
 class StreetGraph:
     city_id: str
     hour: float
-    resolution: int
+    #: Lattice size for synthetic graphs; None when built from real OSM streets.
+    resolution: Optional[int]
     nodes: List[Coord]
     adjacency: List[List[EdgeData]]
     node_readings: List[ThermalReading]
     bounds: Dict[str, float]
+    source: str = "synthetic_lattice"
+    cells: Dict[Tuple[int, int], List[int]] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if not self.cells:
+            for i, (lat, lon) in enumerate(self.nodes):
+                self.cells.setdefault((int(lat / _CELL_DEG), int(lon / _CELL_DEG)), []).append(i)
 
     def nearest_node(self, point: Coord) -> int:
         """Snap an arbitrary GPS fix onto the walkable network.
 
-        Uses the grid's regular spacing to jump straight to the containing cell, then checks
-        its immediate neighbourhood -- O(1) instead of scanning 784 nodes per request.
+        Spatial-hash ring search: O(1) for on-network points regardless of graph size
+        (the OSM Phoenix graph has 25k nodes -- a linear scan per request would not fly).
+        Raises ``ValueError`` beyond MAX_SNAP_M rather than snapping to a far-away node.
         """
-        b = self.bounds
-        lat_span = b["north"] - b["south"]
-        lon_span = b["east"] - b["west"]
-        n = self.resolution
-        row = int(round((clamp(point[0], b["south"], b["north"]) - b["south"]) / lat_span * (n - 1)))
-        col = int(round((clamp(point[1], b["west"], b["east"]) - b["west"]) / lon_span * (n - 1)))
-
-        best_idx, best_d = row * n + col, float("inf")
-        for dr in (-1, 0, 1):
-            for dc in (-1, 0, 1):
-                r, c = row + dr, col + dc
-                if 0 <= r < n and 0 <= c < n:
-                    idx = r * n + c
-                    d = haversine_m(point, self.nodes[idx])
-                    if d < best_d:
-                        best_idx, best_d = idx, d
+        base = (int(point[0] / _CELL_DEG), int(point[1] / _CELL_DEG))
+        best_idx, best_d = -1, float("inf")
+        for ring in range(0, 8):
+            for dr in range(-ring, ring + 1):
+                for dc in range(-ring, ring + 1):
+                    if max(abs(dr), abs(dc)) != ring:
+                        continue
+                    for i in self.cells.get((base[0] + dr, base[1] + dc), ()):
+                        d = haversine_m(point, self.nodes[i])
+                        if d < best_d:
+                            best_idx, best_d = i, d
+            # One extra ring after the first hit: a diagonal neighbour cell can hold a
+            # closer node than the cell the first hit came from.
+            if best_idx >= 0 and ring >= 1:
+                break
+        if best_idx < 0 or best_d > MAX_SNAP_M:
+            raise ValueError(
+                f"point ({point[0]:.5f}, {point[1]:.5f}) is {best_d if best_idx >= 0 else 'far'}"
+                f"{' m' if best_idx >= 0 else ''} from the walkable network (limit {MAX_SNAP_M:.0f} m)"
+            )
         return best_idx
 
 
@@ -248,10 +285,21 @@ class Route:
 class RoutingEngine:
     """Graph construction, thermal weighting and dual-path solving."""
 
-    def __init__(self, service: FortyGuardService, resolution: int = GRAPH_RESOLUTION) -> None:
+    def __init__(
+        self,
+        service: FortyGuardService,
+        resolution: int = GRAPH_RESOLUTION,
+        streets_dir: Optional[Path] = STREETS_DIR,
+    ) -> None:
         self.service = service
         self.resolution = resolution
+        self.streets_dir = streets_dir
         self._graphs: Dict[Tuple[str, float], StreetGraph] = {}
+        #: Raw OSM street data per city, loaded once.
+        self._streets: Dict[str, Optional[Dict[str, Any]]] = {}
+        #: Terrain per street edge midpoint, computed once per city and replayed across
+        #: hour buckets -- terrain is hour-independent and dominates sampling cost.
+        self._edge_terrain: Dict[str, List[Dict[str, Any]]] = {}
 
     # -- graph -------------------------------------------------------------------------
 
@@ -268,7 +316,75 @@ class RoutingEngine:
             self._graphs[key] = cached
         return cached
 
+    def _streets_for(self, city_id: str) -> Optional[Dict[str, Any]]:
+        if city_id not in self._streets:
+            data = None
+            if self.streets_dir is not None:
+                path = self.streets_dir / f"{city_id}.json"
+                if path.is_file():
+                    try:
+                        with open(path, "r", encoding="utf-8") as fh:
+                            data = json.load(fh)
+                    except (OSError, ValueError):
+                        data = None
+                    if data is not None and not (data.get("nodes") and data.get("edges")):
+                        data = None
+            self._streets[city_id] = data
+        return self._streets[city_id]
+
     def _build_graph(self, city_id: str, hour: float) -> StreetGraph:
+        streets = self._streets_for(city_id)
+        if streets is not None:
+            return self._build_osm_graph(city_id, hour, streets)
+        return self._build_lattice_graph(city_id, hour)
+
+    def _build_osm_graph(self, city_id: str, hour: float, streets: Dict[str, Any]) -> StreetGraph:
+        """Real pedestrian network: one EdgeData per direction per OSM edge, microclimate
+        sampled at the edge's geometric midpoint with terrain cached across hour buckets."""
+        nodes: List[Coord] = [(n[0], n[1]) for n in streets["nodes"]]
+        raw_edges = streets["edges"]
+
+        terrain = self._edge_terrain.get(city_id)
+        if terrain is None:
+            terrain = []
+            for e in raw_edges:
+                geom = e["geom"]
+                mid = geom[len(geom) // 2]
+                terrain.append(self.service.terrain(city_id, mid[0], mid[1]))
+            self._edge_terrain[city_id] = terrain
+
+        adjacency: List[List[EdgeData]] = [[] for _ in nodes]
+        for e, terr in zip(raw_edges, terrain):
+            geom = e["geom"]
+            mid = geom[len(geom) // 2]
+            m = self.service.sample(city_id, mid[0], mid[1], hour, terr=terr)
+            factor = HIGHWAY_SPEED_FACTOR.get(e.get("hw", ""), 1.0)
+            fwd = tuple((pt[0], pt[1]) for pt in geom)
+            common = dict(
+                distance_m=float(e["len"]),
+                exposure_index_f=m.exposure_index_f,
+                air_temp_2m_f=m.air_temp_2m_f,
+                surface_temp_f=m.surface_temp_f,
+                canopy_cover_pct=m.canopy_cover_pct,
+                risk_level=m.risk_level,
+                surface_type=m.surface_type,
+                speed_factor=factor,
+            )
+            adjacency[e["a"]].append(EdgeData(target=e["b"], geometry=fwd, **common))
+            adjacency[e["b"]].append(EdgeData(target=e["a"], geometry=fwd[::-1], **common))
+
+        return StreetGraph(
+            city_id=city_id,
+            hour=hour,
+            resolution=None,
+            nodes=nodes,
+            adjacency=adjacency,
+            node_readings=[],
+            bounds=self.service.bounds(city_id),
+            source="openstreetmap",
+        )
+
+    def _build_lattice_graph(self, city_id: str, hour: float) -> StreetGraph:
         b = self.service.bounds(city_id)
         n = self.resolution
         lat_step = (b["north"] - b["south"]) / (n - 1)
@@ -349,7 +465,8 @@ class RoutingEngine:
         """
         if aversion <= 0.0:
             return edge.distance_m
-        time_min = edge.distance_m / self.walking_speed_mps(edge.exposure_index_f, profile) / 60.0
+        speed = self.walking_speed_mps(edge.exposure_index_f, profile) * edge.speed_factor
+        time_min = edge.distance_m / speed / 60.0
         return time_min * (1.0 + aversion * self.thermal_penalty(edge.exposure_index_f))
 
     # -- search ------------------------------------------------------------------------
@@ -357,30 +474,52 @@ class RoutingEngine:
     def _dijkstra(
         self, graph: StreetGraph, source: int, target: int, aversion: float, profile: Dict[str, Any]
     ) -> List[int]:
-        """Standard Dijkstra over the thermal-weighted graph. Returns node indices."""
+        """A* over the thermal-weighted graph. Returns node indices.
+
+        The heuristic is the great-circle distance to the target, scaled to the cost
+        unit in use: metres when aversion == 0 (cost is pure distance), otherwise
+        minutes at the profile's unimpeded pace (real edge time can only be slower --
+        heat derate and stairs both reduce speed -- and the thermal multiplier only
+        inflates further, so admissibility holds and paths stay optimal). On the 25k-node
+        OSM network this cuts explored nodes by roughly an order of magnitude, which is
+        what keeps the aversion-ladder search and the Sentinel's shelter trials
+        interactive.
+        """
         n = len(graph.nodes)
+        nodes = graph.nodes
+        t_lat, t_lon = nodes[target]
+
+        if aversion <= 0.0:
+            h_scale = 1.0  # cost unit: metres
+        else:
+            h_scale = 1.0 / (profile["base_walk_speed_mps"] * 60.0)  # cost unit: minutes
+
+        def h(i: int) -> float:
+            return haversine_m(nodes[i], (t_lat, t_lon)) * h_scale
+
         dist = [math.inf] * n
         prev = [-1] * n
         visited = [False] * n
         dist[source] = 0.0
-        queue: List[Tuple[float, int]] = [(0.0, source)]
+        queue: List[Tuple[float, int]] = [(h(source), source)]
 
         while queue:
-            d, u = heapq.heappop(queue)
+            _, u = heapq.heappop(queue)
             if visited[u]:
                 continue
             visited[u] = True
             if u == target:
                 break
+            du = dist[u]
             for edge in graph.adjacency[u]:
                 v = edge.target
                 if visited[v]:
                     continue
-                nd = d + self.edge_cost(edge, aversion, profile)
+                nd = du + self.edge_cost(edge, aversion, profile)
                 if nd < dist[v]:
                     dist[v] = nd
                     prev[v] = u
-                    heapq.heappush(queue, (nd, v))
+                    heapq.heappush(queue, (nd + h(v), v))
 
         if not visited[target] and target != source:
             return []
@@ -454,7 +593,7 @@ class RoutingEngine:
             if u in breaks:
                 longest_leg_s = max(longest_leg_s, current_leg_s)
                 current_leg_s = 0.0
-            speed = self.walking_speed_mps(edge.exposure_index_f, profile)
+            speed = self.walking_speed_mps(edge.exposure_index_f, profile) * edge.speed_factor
             seg_time_s = edge.distance_m / speed
             seg_min = seg_time_s / 60.0
 
@@ -498,10 +637,19 @@ class RoutingEngine:
         duration_min = total_time_s / 60.0
         longest_leg_s = max(longest_leg_s, current_leg_s)
 
+        # Real street shape when edges carry geometry (OSM); node polyline otherwise.
+        geometry: List[Coord] = [graph.nodes[path[0]]] if path else []
+        for u, v in zip(path, path[1:]):
+            edge = edge_by_target.get((u, v))
+            if edge is not None and edge.geometry:
+                geometry.extend(edge.geometry[1:])
+            else:
+                geometry.append(graph.nodes[v])
+
         return Route(
             kind=kind,
             label=label,
-            geometry=[graph.nodes[i] for i in path],
+            geometry=geometry,
             segments=segments,
             distance_m=total_dist,
             duration_min=duration_min,

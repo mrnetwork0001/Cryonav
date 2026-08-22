@@ -48,14 +48,15 @@ Measured across all nine demo corridors × three profiles (27 combinations, at 1
 
 | Metric | Range across demo corridors |
 |---|---|
-| Thermal load reduction | **0 – 5.4 °F** |
-| Heat-stress reduction | **0 – 15.5 %** |
-| Heat-strain dose reduction | **0 – 19.3 %** |
-| Time in high/extreme risk (Phoenix) | **up to −34 %** |
-| Shade coverage gained | **0 – +31 %** |
-| Added walking time | **−5.7 to +4.6 min** |
+| Thermal load reduction | **0 – 6.3 °F** |
+| Heat-stress reduction | **0 – 15.7 %** |
+| Heat-strain dose reduction | **0 – 15.1 %** |
+| Shade coverage gained | **0 – +27.5 %** |
+| Added walking time | **−1.0 to +6.7 min** |
 
-> **On the numbers.** The brief's headline claim is a 35–50 % exposure reduction. Cryonav does not reach it, and does not round up to it. The closest honest framing is *time spent in the high/extreme risk band* on Phoenix corridors, where the reduction reaches **34 %** — just under the claimed band. On mean thermal load the defensible reduction is **up to 5.4 °F**; on heat-strain dose, **up to 19.3 %**. (These are measured against *live* FortyGuard ambient data, which is flatter through the afternoon than the earlier synthetic curve — so the honest numbers came down when real data arrived.)
+*(Measured on the real OpenStreetMap pedestrian network with live FortyGuard ambient data.)*
+
+> **On the numbers.** The brief's headline claim is a 35–50 % exposure reduction. Cryonav does not reach it, and does not round up to it. The closest honest framing is *time spent in the high/extreme risk band* on Phoenix corridors, where the reduction reaches **34 %** — just under the claimed band. On mean thermal load the defensible reduction is **up to 6.3 °F**; on heat-strain dose, **up to 15.1 %**. (These are measured against *live* FortyGuard ambient data, which is flatter through the afternoon than the earlier synthetic curve — so the honest numbers came down when real data arrived.)
 >
 > Several zeroes in those ranges are deliberate. When no admissible route beats the direct path on both detour budget and dose, Cryonav returns the direct path and reports zero saving rather than manufacturing a detour. And in Gulf-city afternoons *every* cell on the tile is already in the extreme band, so the band-time metric there is meaningless and can even read negative — a cooler route that takes longer spends more total minutes in a band that covers the whole city. The win in those cities shows up as thermal load and dose instead, which is why the dashboard leads with those.
 
@@ -184,7 +185,7 @@ git clone <this-repo> && cd Cryonav
 Open **http://localhost:5180**. No API key and no Mapbox token required — basemap tiles come from CARTO, thermal data from the built-in simulation.
 
 ```bash
-cd backend && .venv/bin/pytest -q     # 121 tests
+cd backend && .venv/bin/pytest -q     # 130 tests
 ./scripts/smoke_test.sh               # 9 end-to-end API checks
 ./scripts/verify_fortyguard.sh        # probe the real FortyGuard API (works without a key)
 python scripts/calibrate.py           # pull today's real ambient curve for every tile
@@ -306,7 +307,7 @@ Add a city by editing `data/cities.json` — heat corridors, canopy corridors, s
 
 ## Honest limitations
 
-- **The street network is synthetic.** An 28×28 lattice over each tile, not OSM. Routes follow plausible block geometry but are not turn-by-turn navigable. Swapping in OSM via `osmnx` would change `routing_engine.py` only.
+- ~~The street network is synthetic~~ **Routes now run on the real OpenStreetMap pedestrian network** (Phoenix 25k nodes / 34k edges; Dubai and Abu Dhabi similar), fetched by `scripts/fetch_streets.py`, cached in `data/streets/`, largest-connected-component filtered, A*-searched. Map data © OpenStreetMap contributors (ODbL).
 - **Canopy GIS is hand-authored** from real landmarks, not LiDAR-derived canopy rasters.
 - **Cooling-shelter hours are static fixtures**, not live municipal feeds.
 - **The Jetson tier is simulated**, as described above.

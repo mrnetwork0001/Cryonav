@@ -211,7 +211,7 @@
         { "id": "auh-wtc", "name": "WTC Mall Cooling Concourse", "type": "mall_refuge", "center": [24.4880, 54.3600], "air_conditioned": true, "water": true, "hours": "10:00-22:00", "capacity": 1200, "indoor_temp_f": 71 },
         { "id": "auh-adm", "name": "Abu Dhabi Mall Atrium", "type": "mall_refuge", "center": [24.4960, 54.3800], "air_conditioned": true, "water": true, "hours": "10:00-22:00", "capacity": 1500, "indoor_temp_f": 70 },
         { "id": "auh-hosn", "name": "Qasr Al Hosn Visitor Cooling Hall", "type": "cooling_center", "center": [24.4818, 54.3548], "air_conditioned": true, "water": true, "hours": "09:00-19:00", "capacity": 350, "indoor_temp_f": 72 },
-        { "id": "auh-corniche-hydration", "name": "Corniche Hydration & Misting Point 3", "type": "hydration_station", "center": [24.4838, 54.3418], "air_conditioned": false, "water": true, "hours": "24/7", "capacity": 100, "indoor_temp_f": null },
+        { "id": "auh-corniche-hydration", "name": "Corniche Hydration & Misting Point 3", "type": "hydration_station", "center": [24.4822, 54.3466], "air_conditioned": false, "water": true, "hours": "24/7", "capacity": 100, "indoor_temp_f": null },
         { "id": "auh-capital-gardens", "name": "Capital Gardens Shade Pavilion", "type": "hydration_station", "center": [24.4698, 54.3668], "air_conditioned": false, "water": true, "hours": "06:00-22:00", "capacity": 120, "indoor_temp_f": null },
         { "id": "auh-bus-hub", "name": "Al Zahiyah Cooled Bus Shelter Hub", "type": "cooled_transit", "center": [24.4938, 54.3722], "air_conditioned": true, "water": false, "hours": "05:00-23:00", "capacity": 90, "indoor_temp_f": 77 },
         { "id": "auh-nahyan-clinic", "name": "Al Nahyan Community Clinic Respite", "type": "cooling_center", "center": [24.4752, 54.3745], "air_conditioned": true, "water": true, "hours": "08:00-20:00", "capacity": 140, "indoor_temp_f": 73 }
@@ -220,7 +220,7 @@
         {
           "id": "auh-corniche-to-wtc",
           "label": "Corniche → WTC Mall",
-          "origin": { "name": "Corniche Hydration Point 3", "coords": [24.4838, 54.3418] },
+          "origin": { "name": "Corniche Hydration Point 3", "coords": [24.4822, 54.3466] },
           "destination": { "name": "WTC Mall Concourse", "coords": [24.4880, 54.3600] }
         },
         {

@@ -33,27 +33,56 @@ class TestProfiles:
 
 
 class TestGraph:
-    def test_graph_dimensions(self, engine):
-        g = engine.graph("phoenix", 15.0)
-        assert len(g.nodes) == g.resolution ** 2
-        assert len(g.node_readings) == len(g.nodes)
+    def test_real_street_network_loads(self, engine):
+        """All three cities carry committed OSM street files and must use them."""
+        for city_id in ("phoenix", "dubai", "abu_dhabi"):
+            g = engine.graph(city_id, 15.0)
+            assert g.source == "openstreetmap", city_id
+            assert g.resolution is None
+            assert len(g.nodes) > 5000, f"{city_id}: implausibly small network"
+            assert not g.node_readings  # per-node sampling deliberately skipped on OSM graphs
 
     def test_graph_is_cached_per_half_hour_bucket(self, engine):
         assert engine.graph("phoenix", 15.0) is engine.graph("phoenix", 15.2)
         assert engine.graph("phoenix", 15.0) is not engine.graph("phoenix", 16.0)
 
-    def test_every_node_is_connected(self, engine):
+    def test_network_is_one_connected_component(self, engine):
+        """fetch_streets.py keeps only the largest component; no dead islands allowed."""
         g = engine.graph("phoenix", 15.0)
-        assert all(len(adj) >= 3 for adj in g.adjacency)
+        seen = {0}
+        stack = [0]
+        while stack:
+            u = stack.pop()
+            for e in g.adjacency[u]:
+                if e.target not in seen:
+                    seen.add(e.target)
+                    stack.append(e.target)
+        assert len(seen) == len(g.nodes)
+
+    def test_edges_carry_real_geometry(self, engine):
+        g = engine.graph("phoenix", 15.0)
+        with_geom = sum(1 for adj in g.adjacency for e in adj if len(e.geometry) >= 2)
+        total = sum(len(adj) for adj in g.adjacency)
+        assert with_geom == total, "every OSM edge must carry its street polyline"
 
     def test_nearest_node_snaps_within_a_block(self, engine):
         g = engine.graph("phoenix", 15.0)
         idx = g.nearest_node((33.4520, -112.0740))
         assert thermal.haversine_m((33.4520, -112.0740), g.nodes[idx]) < 200
 
-    def test_nearest_node_clamps_out_of_bounds_input(self, engine):
+    def test_nearest_node_refuses_far_off_network_points(self, engine):
+        """Snapping a point 500 m+ off-network would silently answer a different question."""
         g = engine.graph("phoenix", 15.0)
-        assert 0 <= g.nearest_node((0.0, 0.0)) < len(g.nodes)
+        with pytest.raises(ValueError, match="walkable network"):
+            g.nearest_node((0.0, 0.0))
+
+    def test_lattice_fallback_when_no_street_file(self, service):
+        from routing_engine import RoutingEngine
+
+        eng = RoutingEngine(service, streets_dir=None)
+        g = eng.graph("phoenix", 15.0)
+        assert g.source == "synthetic_lattice"
+        assert len(g.nodes) == g.resolution ** 2
 
 
 class TestCostModel:
@@ -77,6 +106,20 @@ class TestCostModel:
         g = engine.graph("phoenix", 15.0)
         edge = g.adjacency[400][0]
         assert engine.edge_cost(edge, 0.0, PROFILES["pedestrian"]) == edge.distance_m
+
+    def test_stairs_slow_the_walker(self, engine):
+        """OSM steps edges carry a speed factor that must raise traversal time."""
+        from routing_engine import EdgeData
+
+        base = dict(
+            target=1, distance_m=100.0, exposure_index_f=100.0, air_temp_2m_f=100.0,
+            surface_temp_f=120.0, canopy_cover_pct=10.0, risk_level="moderate",
+            surface_type="concrete",
+        )
+        flat = EdgeData(**base)
+        stairs = EdgeData(**{**base, "speed_factor": 0.55})
+        p = PROFILES["pedestrian"]
+        assert engine.edge_cost(stairs, 2.0, p) > engine.edge_cost(flat, 2.0, p)
 
 
 class TestSolve:
@@ -173,7 +216,7 @@ class TestMetrics:
         )
 
     def test_route_serialises_completely(self, engine):
-        out = engine.solve("abu_dhabi", (24.4838, 54.3418), (24.4880, 54.3600), 15.0, "pedestrian")
+        out = engine.solve("abu_dhabi", (24.4822, 54.3466), (24.4880, 54.3600), 15.0, "pedestrian")
         d = out["cool"].as_dict()
         for key in ("kind", "label", "geometry", "segments", "waypoints", "metrics"):
             assert key in d

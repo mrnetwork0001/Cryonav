@@ -30,7 +30,7 @@ docs/        PROJECT_SPEC.md
 ./scripts/setup.sh        # venv (python3.12) + pip install + npm install
 ./scripts/dev.sh          # backend :8008 + frontend :5180 together
 ./scripts/smoke_test.sh   # 9 end-to-end curl checks against a running backend
-cd backend && .venv/bin/pytest -q      # 121 unit + integration tests
+cd backend && .venv/bin/pytest -q      # 130 unit + integration tests
 ```
 
 Backend alone: `cd backend && .venv/bin/uvicorn main:app --reload --port 8008`
@@ -43,7 +43,7 @@ Ports are **8008 / 5180**, not 8000 / 5173 — both defaults were already occupi
 - **No network required for a demo.** `FORTYGUARD_API_KEY` unset ⇒ `fortyguard_service.py` serves the deterministic physical mock (diurnal curve + UHI gaussians + canopy cooling + WBGT). Set the key and it proxies `POST /v1/heat_intelligence` live (auth via the `api-key` header), falling back to the mock on failure and flagging it as `degraded`. Never hardcode a key.
 - **Determinism**: the mock is seeded by (city, lat, lon, hour) so screenshots and tests reproduce exactly. Don't introduce unseeded randomness.
 - **Agents are explicit classes** in `agents.py` (ThermalSensingAgent, CoolRouteOptimizationAgent, EmergencyThermalSentinelAgent) coordinated by `CryonavOrchestrator` over a shared blackboard. Every agent step appends to `trace[]` — the frontend renders that trace live, so keep trace messages short and demo-legible.
-- **Routing**: `routing_engine.py` builds a synthetic street graph per city, then runs Dijkstra twice — once on pure distance (Path A) and once on a thermal-weighted cost (Path B). Profile sensitivity (`pedestrian` / `delivery_worker` / `elderly_vulnerable`) scales the thermal penalty.
+- **Routing**: `routing_engine.py` loads the real OSM pedestrian network from `data/streets/<city>.json` (fetch anew with `scripts/fetch_streets.py`; synthetic lattice only as fallback when the file is missing), then runs A* twice — once on pure distance (Path A) and once on a thermal-weighted cost (Path B). Profile sensitivity (`pedestrian` / `delivery_worker` / `elderly_vulnerable`) scales the thermal penalty.
 - **UI palette**: background `#0B0F17`, cool route `#22D3EE`, standard route `#FB7185`/`#F97316`, glassmorphism panels. Keep the dark aesthetic — it's the demo's first impression.
 - **Edge endpoint** `/api/v1/edge/jetson-kiosk` must stay lightweight: decimated polyline, no grid payload, `payload_bytes` + inference latency reported for the Jetson story.
 
