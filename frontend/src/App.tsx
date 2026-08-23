@@ -147,7 +147,7 @@ export default function App() {
 
   if (!city) {
     return (
-      <div className="grid h-full place-items-center bg-[#0b0f17] text-slate-500">
+      <div className="bg-blueprint grid h-full place-items-center bg-[#05070b] text-slate-500">
         <div className="text-center">
           <div className="text-sm">{error ? "Backend unreachable" : "Loading Cryonav…"}</div>
           {error && (
@@ -166,7 +166,7 @@ export default function App() {
     // ~800px of controls to reach it. Desktop (lg+): the original locked three-column shell
     // with per-column scrolling. Without this split the columns collapse to 8px slivers on a
     // phone and nothing is operable (measured, not hypothetical).
-    <div className="flex min-h-full flex-col gap-3 bg-[#0b0f17] p-3 lg:h-full">
+    <div className="bg-blueprint flex min-h-full flex-col gap-3 bg-[#05070b] p-3 lg:h-full">
       <TopMetricsBar
         nav={nav}
         grid={grid}
@@ -204,7 +204,7 @@ export default function App() {
           />
         </div>
 
-        <div className="glass relative h-[58vh] min-h-[380px] overflow-hidden rounded-xl lg:h-auto lg:min-h-[420px]">
+        <div className="glass relative h-[58vh] min-h-[380px] overflow-hidden rounded-2xl lg:h-auto lg:min-h-[420px]">
           <MapCanvas
             city={city}
             grid={grid}
@@ -257,7 +257,7 @@ export default function App() {
         aria-hidden
       />
       <aside
-        className={`scroll-thin fixed inset-y-0 left-0 z-[1200] w-[85vw] max-w-[340px] overflow-y-auto bg-[#0b0f17] p-3 shadow-[8px_0_40px_-12px_rgba(0,0,0,0.9)] transition-transform duration-300 lg:hidden ${
+        className={`scroll-thin fixed inset-y-0 left-0 z-[1200] w-[85vw] max-w-[340px] overflow-y-auto bg-[#0a0e15] p-3 shadow-[8px_0_40px_-12px_rgba(0,0,0,0.9)] transition-transform duration-300 lg:hidden ${
           drawerOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         aria-label="Route controls"

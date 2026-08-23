@@ -14,7 +14,7 @@ const AGENT_META: Record<string, { label: string; color: string; glyph: string }
 /** Renders the agents' actual working trace, so the reasoning is shown rather than claimed. */
 export default function AgentTrace({ nav, grid }: Props) {
   return (
-    <section className="glass flex min-h-0 flex-col rounded-xl p-4">
+    <section className="glass flex min-h-0 flex-col rounded-2xl p-4">
       <div className="flex items-baseline justify-between">
         <h2 className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
           Agent orchestration trace

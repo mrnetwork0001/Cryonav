@@ -31,7 +31,7 @@ export default function ExposureCard({
 }: Props) {
   if (!nav) {
     return (
-      <section className="glass rounded-xl p-4">
+      <section className="glass rounded-2xl p-4">
         <SectionTitle>Thermal safety & exposure</SectionTitle>
         <p className="mt-3 text-xs text-slate-500">Solve a route to see the exposure scoreboard.</p>
       </section>
@@ -44,7 +44,7 @@ export default function ExposureCard({
   const safety = nav.safety;
 
   return (
-    <section className="glass rounded-xl p-4">
+    <section className="glass rounded-2xl p-4">
       <SectionTitle>Thermal safety & exposure</SectionTitle>
 
       {/* Headline savings */}

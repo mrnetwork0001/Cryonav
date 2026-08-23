@@ -2,7 +2,7 @@
 @import "leaflet/dist/leaflet.css";
 
 @theme {
-  --color-void: #0b0f17;
+  --color-void: #05070b;
   --color-panel: #10161f;
   --color-edge: #1e2937;
   --color-cool: #22d3ee;
@@ -27,17 +27,20 @@ body,
   -webkit-font-smoothing: antialiased;
 }
 
-/* ---- glassmorphism shell ------------------------------------------------------------ */
+/* ---- card shell -----------------------------------------------------------------------
+   One idiom across landing AND dashboard: near-opaque #0a0e15 panels with plain slate
+   borders (the landing's protocol-dark look). A light blur remains because dashboard
+   panels float over the map; the old cyan-tinted glassmorphism is gone. */
 
 .glass {
-  background: color-mix(in srgb, #10161f 78%, transparent);
-  backdrop-filter: blur(14px) saturate(140%);
-  border: 1px solid color-mix(in srgb, #22d3ee 14%, #1e2937);
-  box-shadow: 0 8px 32px -12px rgb(0 0 0 / 0.8), inset 0 1px 0 rgb(255 255 255 / 0.04);
+  background: rgb(10 14 21 / 0.92);
+  backdrop-filter: blur(8px);
+  border: 1px solid #1e293b;
+  box-shadow: 0 12px 40px -20px rgb(0 0 0 / 0.7);
 }
 
 .glass-hot {
-  border-color: color-mix(in srgb, #ef4444 30%, #1e2937);
+  border-color: color-mix(in srgb, #ef4444 30%, #1e293b);
 }
 
 /* Numeric readouts sit in tabular figures so values stop jittering as they update. */

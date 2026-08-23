@@ -29,7 +29,7 @@ export default function TopMetricsBar({ nav, grid, cityName, cityId, reportDate,
   const degraded = nav?.feed.degraded ?? false;
 
   return (
-    <header className="glass z-20 flex flex-wrap items-stretch gap-px overflow-hidden rounded-xl">
+    <header className="glass z-20 flex flex-wrap items-stretch gap-px overflow-hidden rounded-2xl">
       {/* Brand — links back to the landing page; burger sits top-right (mobile only) */}
       <div className="flex min-w-[210px] flex-1 items-center gap-3 px-4 py-2.5 md:px-5 md:py-3">
         <a href="/" className="flex items-center gap-3" title="Cryonav — home">

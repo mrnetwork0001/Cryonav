@@ -31,7 +31,7 @@ interface Props {
 
 export default function ControlPanel(p: Props) {
   return (
-    <section className="glass space-y-4 rounded-xl p-4">
+    <section className="glass space-y-4 rounded-2xl p-4">
       <div>
         <Label>Coverage tile</Label>
         <div className="mt-1.5 grid grid-cols-3 gap-1">

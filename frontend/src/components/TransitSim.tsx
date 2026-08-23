@@ -285,7 +285,7 @@ export default function TransitSim({ nav, cityId, hour, profileId, onFrame }: Pr
   const statusColor = STATUS_COLOR[monitor?.status ?? "ok"];
 
   return (
-    <section className="glass rounded-xl p-4">
+    <section className="glass rounded-2xl p-4">
       <div className="flex items-center justify-between">
         <h2 className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
           Sentinel · live transit sim
