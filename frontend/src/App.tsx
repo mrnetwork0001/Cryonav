@@ -14,6 +14,7 @@ import TopMetricsBar from "./components/TopMetricsBar";
 import ExposureCard from "./components/ExposureCard";
 import ControlPanel from "./components/ControlPanel";
 import AgentTrace from "./components/AgentTrace";
+import TransitSim, { type SimFrame } from "./components/TransitSim";
 
 export default function App() {
   const [meta, setMeta] = useState<Meta | null>(null);
@@ -34,6 +35,7 @@ export default function App() {
 
   const [shelterReroute, setShelterReroute] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [simFrame, setSimFrame] = useState<SimFrame | null>(null);
   const [loading, setLoading] = useState(false);
   const [rerouteBusy, setRerouteBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -169,6 +171,8 @@ export default function App() {
         nav={nav}
         grid={grid}
         cityName={`${city.name}, ${city.region}`}
+        cityId={city.id}
+        reportDate={city.has_report ? city.report_date : null}
         hour={hour}
         loading={loading}
         onMenu={() => setDrawerOpen(true)}
@@ -213,6 +217,7 @@ export default function App() {
             showCorridors={toggles.showCorridors}
             onPickPoint={pickPoint}
             pickMode={pickMode}
+            sim={simFrame}
           />
           <MapLegend />
           {error && (
@@ -228,6 +233,13 @@ export default function App() {
             onEmergencyReroute={() => solve(!shelterReroute)}
             rerouteBusy={rerouteBusy}
             rerouteActive={shelterReroute}
+          />
+          <TransitSim
+            nav={nav}
+            cityId={cityId}
+            hour={hour}
+            profileId={profileId}
+            onFrame={setSimFrame}
           />
           <AgentTrace nav={nav} grid={grid} />
         </div>

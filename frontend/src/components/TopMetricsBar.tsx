@@ -4,6 +4,8 @@ interface Props {
   nav: NavigationResult | null;
   grid: ThermalGrid | null;
   cityName: string;
+  cityId: string;
+  reportDate: string | null;
   hour: number;
   loading: boolean;
   /** Opens the mobile control drawer; the button renders below lg only. */
@@ -17,7 +19,7 @@ const RISK_LABEL: Record<string, string> = {
   extreme: "EXTREME HEAT RISK",
 };
 
-export default function TopMetricsBar({ nav, grid, cityName, hour, loading, onMenu }: Props) {
+export default function TopMetricsBar({ nav, grid, cityName, cityId, reportDate, hour, loading, onMenu }: Props) {
   const ambient = nav?.ambient;
   const risk = ambient?.risk_level ?? "low";
   const color = ambient?.risk_color ?? "#22d3ee";
@@ -154,6 +156,17 @@ export default function TopMetricsBar({ nav, grid, cityName, hour, loading, onMe
           <div className="tnum mt-0.5 text-[10px] text-rose-400/80">
             {grid.stats.extreme_cell_pct}% of tile in extreme band
           </div>
+        )}
+        {reportDate && (
+          <a
+            href={`/api/v1/cities/${cityId}/report.pdf`}
+            target="_blank"
+            rel="noreferrer"
+            className="tnum mt-1 inline-flex w-fit items-center gap-1 rounded border border-cyan-400/30 bg-cyan-400/8 px-1.5 py-0.5 text-[9px] font-semibold tracking-wider text-cyan-300 transition hover:bg-cyan-400/15"
+            title="FortyGuard heat-intelligence analyst report, generated upstream and cached daily"
+          >
+            ⬇ FG ANALYST REPORT · {reportDate.slice(5)}
+          </a>
         )}
       </div>
     </header>

@@ -11,3 +11,5 @@ frontend/dist/
 .env.local
 .DS_Store
 frontend/tsconfig.tsbuildinfo
+demo/node_modules/
+demo/footage/

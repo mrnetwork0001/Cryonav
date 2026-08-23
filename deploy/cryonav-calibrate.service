@@ -11,5 +11,5 @@ User=cryonav
 Group=cryonav
 WorkingDirectory=/opt/cryonav
 EnvironmentFile=/etc/cryonav/env
-ExecStart=/opt/cryonav/backend/.venv/bin/python scripts/calibrate.py
+ExecStart=/opt/cryonav/backend/.venv/bin/python scripts/calibrate.py --report
 ExecStartPost=+/usr/bin/systemctl restart cryonav-api.service

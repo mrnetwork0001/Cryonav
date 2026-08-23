@@ -7,6 +7,7 @@ import {
   type NavigationResult,
   type ThermalGrid,
 } from "../lib/api";
+import type { SimFrame } from "./TransitSim";
 
 interface Props {
   city: CitySummary;
@@ -20,6 +21,7 @@ interface Props {
   showCorridors: boolean;
   onPickPoint: (which: "origin" | "destination", coords: [number, number]) => void;
   pickMode: "origin" | "destination" | null;
+  sim: SimFrame | null;
 }
 
 /**
@@ -41,6 +43,7 @@ export default function MapCanvas(props: Props) {
   const routeLayerRef = useRef<L.LayerGroup | null>(null);
   const shelterLayerRef = useRef<L.LayerGroup | null>(null);
   const corridorLayerRef = useRef<L.LayerGroup | null>(null);
+  const simLayerRef = useRef<L.LayerGroup | null>(null);
   const pickRef = useRef(props.pickMode);
   const onPickRef = useRef(props.onPickPoint);
 
@@ -67,6 +70,7 @@ export default function MapCanvas(props: Props) {
     corridorLayerRef.current = L.layerGroup().addTo(map);
     routeLayerRef.current = L.layerGroup().addTo(map);
     shelterLayerRef.current = L.layerGroup().addTo(map);
+    simLayerRef.current = L.layerGroup().addTo(map);
 
     map.on("click", (e: L.LeafletMouseEvent) => {
       if (!pickRef.current) return;
@@ -392,9 +396,61 @@ export default function MapCanvas(props: Props) {
     });
   }, [layers, showShelters]);
 
+  // -- Sentinel transit sim walker ---------------------------------------------------------
+  const sim = props.sim;
+  useEffect(() => {
+    const group = simLayerRef.current;
+    if (!group) return;
+    group.clearLayers();
+    if (!sim) return;
+
+    const color = { ok: "#34d399", advisory: "#facc15", reroute: "#fb923c", dispatch: "#ef4444" }[
+      sim.status
+    ];
+
+    if (sim.trail.length >= 2) {
+      L.polyline(sim.trail, { color: "#e2e8f0", weight: 3, opacity: 0.85, interactive: false }).addTo(
+        group,
+      );
+    }
+    if (sim.shelter && (sim.status === "reroute" || sim.status === "dispatch")) {
+      L.polyline([sim.pos, sim.shelter.center], {
+        color,
+        weight: 2.5,
+        opacity: 0.9,
+        dashArray: "4 8",
+        interactive: false,
+      }).addTo(group);
+      L.marker(sim.shelter.center, { icon: shelterIcon(color, true), interactive: false }).addTo(group);
+    }
+    const dispatch = sim.status === "dispatch";
+    L.marker(sim.pos, {
+      interactive: false,
+      zIndexOffset: 2000,
+      icon: L.divIcon({
+        className: "",
+        html: `<div class="${dispatch ? "hazard-marker" : "ping-soft"}" style="width:18px;height:18px;color:${color}">
+                 <div style="position:absolute;inset:2px;border-radius:9999px;background:${color};border:2.5px solid #0b0f17;box-shadow:0 0 12px ${color}"></div>
+               </div>`,
+        iconSize: [18, 18],
+        iconAnchor: [9, 9],
+      }),
+    }).addTo(group);
+  }, [sim]);
+
   return (
     <div className="relative h-full w-full">
       <div ref={hostRef} className="h-full w-full" />
+      {sim?.status === "dispatch" && (
+        <div className="pointer-events-none absolute top-3 left-1/2 z-[1001] -translate-x-1/2 rounded-lg border border-rose-500/60 bg-rose-950/95 px-4 py-2 text-center shadow-[0_0_40px_rgba(239,68,68,0.45)]">
+          <div className="text-[11px] font-bold tracking-[0.18em] text-rose-300">
+            ⚠ EMERGENCY DISPATCH
+          </div>
+          <div className="tnum mt-0.5 text-[10px] text-rose-400/90">
+            immobility in extreme heat · position relayed to responders
+          </div>
+        </div>
+      )}
       {props.pickMode && (
         <div className="pointer-events-none absolute top-3 left-1/2 z-[1000] -translate-x-1/2 rounded-full border border-cyan-400/40 bg-slate-950/90 px-4 py-1.5 text-xs font-medium text-cyan-300 shadow-lg">
           Click the map to set the {props.pickMode}

@@ -39,6 +39,7 @@ CITIES_PATH = DATA_DIR / "cities.json"
 CALIBRATION_DIR = DATA_DIR / "calibration"
 URBAN_DIR = DATA_DIR / "urban"
 SHELTERS_DIR = DATA_DIR / "shelters"
+REPORTS_DIR = DATA_DIR / "reports"
 
 DEFAULT_BASE_URL = "https://api.fortyguard.com"
 
@@ -248,6 +249,8 @@ class FortyGuardService:
                     "region": city["region"],
                     "raster_tiles": hm["compact"]["tile_count"] if hm else 0,
                     "calibrated": city["id"] in self._calibration,
+                    "has_report": self.report_meta(city["id"]) is not None,
+                    "report_date": (self.report_meta(city["id"]) or {}).get("date"),
                     "country_code": city["country_code"],
                     "timezone": city["timezone"],
                     "center": city["center"],
@@ -917,6 +920,115 @@ class FortyGuardService:
                 continue
             if cal.get("city_id") in self._cities and len(cal.get("air_temp_f", [])) == 24:
                 self._calibration[cal["city_id"]] = cal
+
+    def fetch_heat_report(self, city_id: str, poll_timeout_s: float = 600.0) -> Dict[str, Any]:
+        """Generate and cache FortyGuard's heat-intelligence analyst report (PDF).
+
+        ``POST /v1/heat_intelligence`` is an async report generator (~2.5 min): it returns an
+        ``activity_id`` whose completed result carries a presigned S3 link. That link embeds
+        the caller's API key in the object path, so it is downloaded HERE, server-side, and
+        only the stored bytes are ever served to a browser. Cached to data/reports/ with a
+        metadata sidecar; the daily calibration timer refreshes it.
+        """
+        import httpx  # noqa: PLC0415
+
+        if not self.api_key:
+            raise FortyGuardUpstreamError("no API key configured", status_code=401)
+
+        city = self.city(city_id)
+        headers = {
+            API_KEY_HEADER: self.api_key,
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": "Cryonav/1.0 (FortyGuard Hackathon 26)",
+        }
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        body = {
+            "latitude": city["center"][0],
+            "longitude": city["center"][1],
+            "temperature": city["climate"]["air_temp_max_f"],
+            "date": today,
+            "analysis": ["geographic", "environmental", "urban", "events", "anthropogenic"],
+        }
+        try:
+            resp = httpx.post(
+                f"{self.base_url}{HEAT_INTELLIGENCE_PATH}", json=body, headers=headers,
+                timeout=self.timeout_s,
+            )
+        except httpx.HTTPError as exc:
+            raise FortyGuardUpstreamError(f"transport error: {exc}") from exc
+        payload = self._decode(resp)
+        activity_id = (payload.get("data") or {}).get("activity_id")
+        if not activity_id:
+            raise FortyGuardUpstreamError("no activity_id in heat_intelligence submit response")
+
+        deadline = time.monotonic() + poll_timeout_s
+        link = None
+        while True:
+            try:
+                poll = httpx.get(
+                    f"{self.base_url}/v1/status/{activity_id}", headers=headers,
+                    timeout=self.timeout_s,
+                )
+            except httpx.HTTPError as exc:
+                raise FortyGuardUpstreamError(f"transport error while polling: {exc}") from exc
+            data = self._decode(poll).get("data") or {}
+            status = str(data.get("status", "")).lower()
+            if status == "completed":
+                link = ((data.get("result") or {}).get("download_link"))
+                break
+            if status not in ("processing", "pending", "queued", "running", ""):
+                raise FortyGuardUpstreamError(f"report job ended in state '{status}'")
+            if time.monotonic() >= deadline:
+                raise FortyGuardUpstreamError(
+                    f"report still processing after {poll_timeout_s:.0f}s"
+                )
+            time.sleep(6.0)
+        if not link:
+            raise FortyGuardUpstreamError("completed report carried no download_link")
+
+        # Download immediately: the link is a short-lived presigned URL AND contains the
+        # API key in its object path — it must not be stored or forwarded.
+        try:
+            pdf = httpx.get(link, timeout=60.0)
+            pdf.raise_for_status()
+        except httpx.HTTPError as exc:
+            raise FortyGuardUpstreamError(f"report download failed: {exc}") from exc
+        if not pdf.content.startswith(b"%PDF"):
+            raise FortyGuardUpstreamError(
+                f"report is not a PDF ({pdf.headers.get('content-type', 'unknown')})"
+            )
+
+        REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+        pdf_path = REPORTS_DIR / f"{city_id}.pdf"
+        with open(pdf_path, "wb") as fh:
+            fh.write(pdf.content)
+        meta = {
+            "city_id": city_id,
+            "date": today,
+            "fetched_at": datetime.now(timezone.utc).isoformat(),
+            "endpoint": HEAT_INTELLIGENCE_PATH,
+            "analyses": body["analysis"],
+            "bytes": len(pdf.content),
+            "source": "fortyguard_heat_intelligence",
+        }
+        with open(REPORTS_DIR / f"{city_id}.json", "w", encoding="utf-8") as fh:
+            json.dump(meta, fh, indent=1)
+        return meta
+
+    def report_meta(self, city_id: str) -> Optional[Dict[str, Any]]:
+        """Metadata of the cached analyst report, or None when absent."""
+        path = REPORTS_DIR / f"{city_id}.json"
+        if not path.is_file() or not (REPORTS_DIR / f"{city_id}.pdf").is_file():
+            return None
+        try:
+            with open(path, "r", encoding="utf-8") as fh:
+                return json.load(fh)
+        except (OSError, ValueError):
+            return None
+
+    def report_path(self, city_id: str) -> Path:
+        return REPORTS_DIR / f"{city_id}.pdf"
 
     def _load_urban(self) -> None:
         """Real OSM urban form (scripts/fetch_urban.py). Missing file => legacy fixtures."""

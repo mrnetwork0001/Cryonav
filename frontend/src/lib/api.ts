@@ -20,6 +20,8 @@ export interface CitySummary {
   air_temp_max_f: number;
   raster_tiles: number;
   calibrated: boolean;
+  has_report: boolean;
+  report_date: string | null;
   presets: Preset[];
   shelter_count: number;
 }

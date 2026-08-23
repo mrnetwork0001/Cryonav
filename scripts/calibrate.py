@@ -32,6 +32,8 @@ def main() -> int:
     ap.add_argument("cities", nargs="*", help="city ids (default: all)")
     ap.add_argument("--date", default=None, help="YYYY-MM-DD (default: today UTC)")
     ap.add_argument("--skip-heatmap", action="store_true", help="only fetch ambient curves")
+    ap.add_argument("--report", action="store_true",
+                    help="also refresh the FortyGuard analyst PDF (slow: ~2.5 min per city upstream)")
     args = ap.parse_args()
 
     svc = FortyGuardService()
@@ -64,6 +66,13 @@ def main() -> int:
                 continue
             print(f"  raster: {hm['tile_count']} tiles @ ~{hm['cell_size_m']:.0f} m, "
                   f"avg {hm['mean_avg_temp_c']:.2f} °C")
+        if args.report:
+            print("  generating FortyGuard analyst report (takes ~2.5 min upstream) …", flush=True)
+            try:
+                meta = svc.fetch_heat_report(city_id)
+                print(f"  report: {meta['bytes'] // 1024} KB PDF for {meta['date']}")
+            except FortyGuardUpstreamError as exc:
+                print(f"  report FAILED: {exc}", file=sys.stderr)
     return 1 if failures else 0
 
 

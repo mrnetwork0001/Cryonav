@@ -322,6 +322,29 @@ def city_grid(
         raise HTTPException(404, str(exc)) from exc
 
 
+@app.get(f"{API_PREFIX}/cities/{{city_id}}/report.pdf")
+def city_report(city_id: str):
+    """FortyGuard's heat-intelligence analyst report for this tile (cached daily).
+
+    Generated upstream by POST /v1/heat_intelligence and downloaded server-side —
+    the upstream link embeds the API key and is never exposed. 404 when no report
+    has been cached (no key, or the tile's report fetch failed).
+    """
+    from fastapi.responses import FileResponse  # noqa: PLC0415
+
+    if city_id not in service.city_ids():
+        raise HTTPException(404, f"unknown city '{city_id}'")
+    meta = service.report_meta(city_id)
+    if meta is None:
+        raise HTTPException(404, "no cached FortyGuard report for this tile")
+    return FileResponse(
+        service.report_path(city_id),
+        media_type="application/pdf",
+        filename=f"fortyguard-heat-intelligence-{city_id}-{meta['date']}.pdf",
+        headers={"X-Report-Date": str(meta["date"])},
+    )
+
+
 @app.get(f"{API_PREFIX}/cities/{{city_id}}/layers")
 def city_layers(city_id: str) -> Dict[str, Any]:
     """Urban-morphology layers for map rendering.
