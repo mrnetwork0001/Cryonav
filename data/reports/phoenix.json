@@ -1,0 +1,15 @@
+{
+ "city_id": "phoenix",
+ "date": "2026-08-23",
+ "fetched_at": "2026-08-23T10:17:18.681029+00:00",
+ "endpoint": "/v1/heat_intelligence",
+ "analyses": [
+  "geographic",
+  "environmental",
+  "urban",
+  "events",
+  "anthropogenic"
+ ],
+ "bytes": 976370,
+ "source": "fortyguard_heat_intelligence"
+}
