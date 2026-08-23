@@ -1,0 +1,15 @@
+{
+ "city_id": "abu_dhabi",
+ "date": "2026-08-23",
+ "fetched_at": "2026-08-23T10:34:24.790963+00:00",
+ "endpoint": "/v1/heat_intelligence",
+ "analyses": [
+  "geographic",
+  "environmental",
+  "urban",
+  "events",
+  "anthropogenic"
+ ],
+ "bytes": 1030169,
+ "source": "fortyguard_heat_intelligence"
+}

@@ -1,0 +1,15 @@
+{
+ "city_id": "dubai",
+ "date": "2026-08-23",
+ "fetched_at": "2026-08-23T10:27:19.253190+00:00",
+ "endpoint": "/v1/heat_intelligence",
+ "analyses": [
+  "geographic",
+  "environmental",
+  "urban",
+  "events",
+  "anthropogenic"
+ ],
+ "bytes": 1054934,
+ "source": "fortyguard_heat_intelligence"
+}
