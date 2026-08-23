@@ -83,6 +83,15 @@ These were each found by a failing test or a wrong-looking screenshot, not by de
 - **`/` is the marketing landing** (`src/pages/Landing.tsx`), **`/app` is the dashboard** — a pathname switch in `main.tsx`, no router dependency. The landing's product card runs a REAL cool-route solve on mount and renders whatever the agents did (falls back to last measured values, marked OFFLINE, when the backend is down). Keep it honest: never hardcode impressive numbers there.
 - Landing style: blueprint grid (`.bg-blueprint`), gradient headline, mono stat strip, live Sentinel card. Derived from a Syntura-style reference the user supplied.
 
+## Real-data pipeline (all fixtures replaced)
+
+- `scripts/fetch_urban.py` → `data/urban/<city>.json`: real OSM parks, street trees (palms down-weighted), covered ways, tree rows, water, surface parking (AUH: exclude only underground/multi-storey — 98% of lots carry no subtag), industrial/retail land, primary/secondary road ribbons with real lane counts. Consumed by `backend/urban.py::UrbanIndex` (spatial hash, O(1) terrain queries); `terrain()` prefers it, hand-authored `cities.json` zones are fallback only.
+- `scripts/fetch_shelters.py` → `data/shelters/<city>.json`: Phoenix = official MAG Heat Relief Network ArcGIS (`HRN_Public_view/FeatureServer/0`, filter `Year=2026 AND Active='Yes'`); Gulf = OSM mosques/malls/metro/drinking-water with category defaults flagged `assumed`. `service.shelters()` uses these when present; `shelter_source()` reports provenance.
+- Overpass etiquette: ALWAYS send the Cryonav User-Agent (406 without it); overpass-api.de rate-limits after ~3 rapid queries — maps.mail.ru mirror is the reliable fallback; space queries ≥8s.
+- `out tags` omits node coordinates — trees need `out body`.
+- Startup: stale calibration auto-refreshes in a background thread; graphs pre-warm (first real-terrain build ~5.5s/city, then 0.3s per hour bucket via the per-edge terrain cache).
+- The assumptions that remain (canopy % per green class, °F boost per hot class, category AC/hours) live in each data file's `assumptions` block — keep them there, not in code comments.
+
 ## Mobile layout
 
 - **Dashboard (<lg)**: natural page scroll (root `min-h-full`, `lg:h-full`); map first at `h-[58vh]`; the ControlPanel renders ONLY in a slide-in drawer opened by the hamburger in TopMetricsBar (`onMenu`); the inline left column is `hidden lg:block`. Drawer actions that hand focus to the map (preset, pick, solve) auto-close it. Never reintroduce base-breakpoint `min-h-0 overflow-y-auto` on the columns — that collapses them to 8px slivers on phones (measured).

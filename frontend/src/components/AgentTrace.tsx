@@ -28,7 +28,11 @@ export default function AgentTrace({ nav, grid }: Props) {
 
       {grid && (
         <div className="tnum mt-2 flex items-center gap-2 rounded-lg border border-slate-700/40 bg-slate-950/40 px-2.5 py-1.5 text-[10px] text-slate-500">
-          <span>{grid?.source === "fortyguard_heatmap" ? "FG observed air" : "tile exposure"}</span>
+          <span>
+            {grid?.source === "fortyguard_heatmap"
+              ? `FG observed air · ${String(grid?.date ?? "").slice(0, 10)}`
+              : "tile exposure"}
+          </span>
           <span className="text-cyan-300">{grid.stats.min_exposure_f}°F</span>
           <div
             className="h-1.5 flex-1 rounded-full"

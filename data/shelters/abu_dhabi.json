@@ -1,0 +1,2781 @@
+{
+ "city_id": "abu_dhabi",
+ "source": "openstreetmap_overpass",
+ "fetched_at": "2026-08-23T09:35:34Z",
+ "attribution": "Map data (c) OpenStreetMap contributors, ODbL",
+ "disclaimer": "Air-conditioning and hours are category-level assumptions where OSM carries no tags (measured coverage: opening_hours 2-6%, air_conditioning ~0%).",
+ "count": 163,
+ "shelters": [
+  {
+   "id": "osm-n840540852",
+   "name": "Nayel & Bin Harmal Tower",
+   "type": "mall_refuge",
+   "category": "mall",
+   "center": [
+    24.480587,
+    54.357299
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "10:00-23:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 71,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n846543944",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.471714,
+    54.340503
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n2152284555",
+   "name": "The Souq Central Market",
+   "type": "mall_refuge",
+   "category": "marketplace",
+   "center": [
+    24.489153,
+    54.357224
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "09:00-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 75,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n2491329918",
+   "name": "Al Wahda Mall, Main Entrance",
+   "type": "mall_refuge",
+   "category": "mall",
+   "center": [
+    24.470762,
+    54.372329
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "10:00-23:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 71,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n3991593919",
+   "name": "Paris Gallery Mall",
+   "type": "mall_refuge",
+   "category": "mall",
+   "center": [
+    24.47467,
+    54.347297
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "10:00-23:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 71,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n4405580089",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    24.484926,
+    54.371856
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n4653451207",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.478047,
+    54.380098
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n4855959922",
+   "name": "Community centre",
+   "type": "cooling_center",
+   "category": "community_centre",
+   "center": [
+    24.496341,
+    54.380642
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "08:00-20:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 73,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n4862295421",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    24.464301,
+    54.367857
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n5552581730",
+   "name": "Community centre",
+   "type": "cooling_center",
+   "category": "community_centre",
+   "center": [
+    24.468098,
+    54.345893
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "08:00-20:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 73,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n5552603923",
+   "name": "Community centre",
+   "type": "cooling_center",
+   "category": "community_centre",
+   "center": [
+    24.469571,
+    54.344399
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "08:00-20:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 73,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n5552604123",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    24.468214,
+    54.344684
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n5642898567",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    24.456959,
+    54.371691
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n9629310694",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    24.46925,
+    54.333668
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n9629408291",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    24.474133,
+    54.340286
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n9629413112",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    24.470826,
+    54.336037
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n9629425843",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    24.477296,
+    54.344271
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n9629426511",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    24.493661,
+    54.355482
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n9629440206",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    24.487969,
+    54.34991
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n9629446309",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    24.472814,
+    54.339016
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n9629449084",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    24.480393,
+    54.346101
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n11246806579",
+   "name": "Hanzalah Bin Abi Amer",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.49216,
+    54.362098
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n11519364519",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    24.476181,
+    54.343655
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n11519364545",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    24.474742,
+    54.342388
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n11519364566",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    24.473235,
+    54.339934
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n11522086235",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    24.496426,
+    54.376075
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n11527408037",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    24.500471,
+    54.364261
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n11745497270",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    24.496859,
+    54.362705
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n11765320702",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.498022,
+    54.370146
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n11950979111",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    24.473941,
+    54.34106
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n11975516347",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    24.486936,
+    54.350748
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-w26786016",
+   "name": "World Trade Center / The Mall",
+   "type": "mall_refuge",
+   "category": "mall",
+   "center": [
+    24.487476,
+    54.357325
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "Mo-Fr,Su 10:00-22:00; Sa 10:00-00:00",
+   "hours_assumed": false,
+   "indoor_temp_f": 71,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w27374404",
+   "name": "Foutouh al Khair Centre",
+   "type": "mall_refuge",
+   "category": "marketplace",
+   "center": [
+    24.484998,
+    54.358636
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "09:00-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 75,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w62281265",
+   "name": "Sheikh Khalifa Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.484568,
+    54.352895
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w66017586",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.458072,
+    54.367192
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w69020913",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.458786,
+    54.376669
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w90658053",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.461347,
+    54.351501
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w91662999",
+   "name": "Khalidiyah Mall",
+   "type": "mall_refuge",
+   "category": "mall",
+   "center": [
+    24.470058,
+    54.351654
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "Mo-Su 10:00-22:00",
+   "hours_assumed": false,
+   "indoor_temp_f": 71,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w95912087",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.488705,
+    54.354619
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w95912091",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.489146,
+    54.353599
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w95912116",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.48966,
+    54.354932
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w95928087",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.466523,
+    54.376941
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w100596043",
+   "name": "Sheikh Zayed Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.481227,
+    54.358719
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w108742401",
+   "name": "Bilal",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.491667,
+    54.380295
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w111301371",
+   "name": "Al Bateen Mall",
+   "type": "mall_refuge",
+   "category": "mall",
+   "center": [
+    24.46021,
+    54.347727
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "10:00-23:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 71,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w111301374",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.464004,
+    54.343557
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w111301377",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.46086,
+    54.347415
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w119133471",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.470545,
+    54.347354
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w119133498",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.471561,
+    54.348508
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w119134826",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.466901,
+    54.347164
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w119134832",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.463493,
+    54.353444
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w119140379",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.460522,
+    54.341588
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w119140380",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.45773,
+    54.344003
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w119140382",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.457906,
+    54.34724
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w119427979",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.45671,
+    54.371834
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w119428432",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.455912,
+    54.374309
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w120113814",
+   "name": "Masjid Derwish Bin Karam",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.490429,
+    54.366328
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w121820342",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.490796,
+    54.356403
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w121820527",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.490976,
+    54.357351
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w121820793",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.489976,
+    54.359637
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w136962277",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.462078,
+    54.362941
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w140647951",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.486467,
+    54.354732
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w141029806",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.465011,
+    54.365968
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w141196529",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.459717,
+    54.360959
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w144308190",
+   "name": "Muhammad Bin Masoud Al Muhairbi Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.480412,
+    54.354517
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w144308192",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.48178,
+    54.350839
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w144308715",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.476465,
+    54.353609
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w148197436",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.494489,
+    54.363601
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w167469199",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.478298,
+    54.366142
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w170334915",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.466389,
+    54.353041
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w170335286",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.475447,
+    54.352303
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w172829156",
+   "name": "Fatima Bint Mohammed",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.476477,
+    54.346462
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w172959555",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.492857,
+    54.360118
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w172961253",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.492943,
+    54.361331
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w172962019",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.486343,
+    54.360469
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w173009868",
+   "name": "Ali Abdullah Jasim Al Zaabi Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.478956,
+    54.352765
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w177130319",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.479961,
+    54.363045
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w177130320",
+   "name": "Hamil bin Khadim Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.483245,
+    54.366804
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w177130321",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.484797,
+    54.363993
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w177133292",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.481239,
+    54.366991
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w177134168",
+   "name": "Madenat Zayed Market",
+   "type": "mall_refuge",
+   "category": "marketplace",
+   "center": [
+    24.480536,
+    54.366368
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "09:00-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 75,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w177136067",
+   "name": "Madinat Zayed Shopping Centre",
+   "type": "mall_refuge",
+   "category": "mall",
+   "center": [
+    24.483646,
+    54.365614
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "10:00-23:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 71,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w177137371",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.482708,
+    54.362073
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w177140273",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.488839,
+    54.369618
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w177262517",
+   "name": "Al Mariah Mall",
+   "type": "mall_refuge",
+   "category": "mall",
+   "center": [
+    24.494146,
+    54.367508
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "10:00-23:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 71,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w177427593",
+   "name": "Mariam Bint Said",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.477252,
+    54.372997
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w177427597",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.480742,
+    54.375749
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w177428118",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.482087,
+    54.372504
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w177797690",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.492793,
+    54.37015
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w179416277",
+   "name": "Hamdan Center",
+   "type": "mall_refuge",
+   "category": "mall",
+   "center": [
+    24.489029,
+    54.362937
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "10:00-23:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 71,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w190734231",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.496198,
+    54.369281
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w200054824",
+   "name": "Mosque Of Sheikh Hazza Bin Sultan",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.497605,
+    54.375796
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w204796904",
+   "name": "Al Bateen Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.458151,
+    54.331195
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w206647053",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.485648,
+    54.355828
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w206647176",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.468738,
+    54.362904
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w219107793",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.48563,
+    54.380868
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w220838094",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.470509,
+    54.379871
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w232754802",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.490385,
+    54.373899
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w232767097",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.486444,
+    54.374855
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w232767912",
+   "name": "Thani Bin Murshid Al Romaithy",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.486062,
+    54.36692
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w232769164",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.496783,
+    54.370916
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w264715163",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.473608,
+    54.373215
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w282484577",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.474893,
+    54.378774
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w289822310",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.459778,
+    54.334075
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w296805941",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.487727,
+    54.353172
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w300785217",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.493606,
+    54.371468
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w325352310",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.461851,
+    54.380727
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w326537465",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.486826,
+    54.368025
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w372378504",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.479245,
+    54.357068
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w392886529",
+   "name": "Madinat Zayed Shopping Centre Gold Centre",
+   "type": "mall_refuge",
+   "category": "mall",
+   "center": [
+    24.48225,
+    54.366482
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "10:00-23:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 71,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w395020133",
+   "name": "Shareefa Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.491156,
+    54.360661
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w396951282",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.478571,
+    54.371758
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w396951283",
+   "name": "Al Falah Plaza",
+   "type": "mall_refuge",
+   "category": "mall",
+   "center": [
+    24.478254,
+    54.372162
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "10:00-23:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 71,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w397390549",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.478203,
+    54.355863
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w400026313",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.459954,
+    54.342234
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w411577289",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.486471,
+    54.371037
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w416884128",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.487762,
+    54.36844
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w417375550",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.464165,
+    54.36185
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w417375602",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.466757,
+    54.364161
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w417375607",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.468021,
+    54.361872
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w417375610",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.463602,
+    54.360635
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w417375613",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.464567,
+    54.360151
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w417375617",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.466096,
+    54.358399
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w417375621",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.4698,
+    54.360404
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w418118732",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.475683,
+    54.371359
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w418124887",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.458927,
+    54.339107
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w424235390",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.48455,
+    54.369542
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w428424439",
+   "name": "Mohammed Saif Bin Musaed",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.472988,
+    54.343086
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w437415137",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.461844,
+    54.33677
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w437415316",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.458397,
+    54.337882
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w437418070",
+   "name": "\u0645\u0633\u062c\u062f \u0645\u0628\u0627\u0631\u0643 \u0648 \u0645\u0637\u0631 \u0623\u0628\u0646\u0627\u0621 \u062d\u0627\u0638\u0631",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.455646,
+    54.34634
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w437418159",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.456753,
+    54.347997
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w437421667",
+   "name": "\u0645\u0633\u062c\u062f \u0645\u062d\u0645\u062f \u0628\u0646 \u0639\u0628\u062f\u0627\u0644\u0644\u0647 \u0635\u0627\u0644\u062d",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.455686,
+    54.342424
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w474869141",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.478476,
+    54.349274
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w474869150",
+   "name": "Martyr Al-Shaibah Hadir Khamis Al-Amaimi Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.476691,
+    54.349324
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w474869156",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.466113,
+    54.351001
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w478461328",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.492253,
+    54.359163
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w478883461",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.463769,
+    54.369796
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w478895301",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.466065,
+    54.367654
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w478923726",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.467804,
+    54.380023
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w479544271",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.457875,
+    54.358713
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w480247262",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.45826,
+    54.340775
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w480453532",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.467683,
+    54.360062
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w480455488",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.463077,
+    54.356851
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w480488367",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.464323,
+    54.357548
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w480529086",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.478618,
+    54.35992
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w480655243",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.47386,
+    54.351236
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w480689158",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.479386,
+    54.348589
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w480691101",
+   "name": "Faraj Muhammad Al-Muhairbi Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.480041,
+    54.353148
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w481866056",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.493723,
+    54.378481
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w482043018",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.494528,
+    54.372657
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w482049906",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.498026,
+    54.370148
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w715769028",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.483557,
+    54.379109
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w718055669",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.468242,
+    54.376574
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w1047459200",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.472496,
+    54.339141
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w1153943450",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.481979,
+    54.369829
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w1239395646",
+   "name": "Handicrafts Souk",
+   "type": "mall_refuge",
+   "category": "marketplace",
+   "center": [
+    24.476879,
+    54.331468
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "09:00-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 75,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w1264116285",
+   "name": "Madinat Zayed Exhibition",
+   "type": "mall_refuge",
+   "category": "marketplace",
+   "center": [
+    24.484844,
+    54.36493
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "24/7 closed",
+   "hours_assumed": false,
+   "indoor_temp_f": 75,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w1349925782",
+   "name": "\"Souk\"",
+   "type": "mall_refuge",
+   "category": "marketplace",
+   "center": [
+    24.47624,
+    54.331132
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "09:00-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 75,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w1470832492",
+   "name": "Enaya Bint Saleh Al Muhairi Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.476297,
+    54.347947
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w1485434674",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.488209,
+    54.357923
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-r6402470",
+   "name": "Al Wahda Mall",
+   "type": "mall_refuge",
+   "category": "mall",
+   "center": [
+    24.470116,
+    54.37363
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "10:00-23:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 71,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-r7041272",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    24.464827,
+    54.374171
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  }
+ ]
+}

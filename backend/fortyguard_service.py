@@ -32,9 +32,13 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 import thermal
 from thermal import clamp, haversine_m
 
+from urban import UrbanIndex, display_layers, load_urban_index  # noqa: E402  (local module)
+
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 CITIES_PATH = DATA_DIR / "cities.json"
 CALIBRATION_DIR = DATA_DIR / "calibration"
+URBAN_DIR = DATA_DIR / "urban"
+SHELTERS_DIR = DATA_DIR / "shelters"
 
 DEFAULT_BASE_URL = "https://api.fortyguard.com"
 
@@ -205,9 +209,13 @@ class FortyGuardService:
         self._dewpoints: Dict[str, float] = {}
         self._calibration: Dict[str, Dict[str, Any]] = {}
         self._heatmaps: Dict[str, Dict[str, Any]] = {}
+        self._urban: Dict[str, Optional[UrbanIndex]] = {}
+        self._real_shelters: Dict[str, Dict[str, Any]] = {}
         self._load_cities(cities_path)
         self._load_calibrations()
         self._load_heatmaps()
+        self._load_urban()
+        self._load_real_shelters()
         self.last_status: FeedStatus = FeedStatus(
             source=self.mode, status_code=200, ok=True, latency_ms=0.0, detail="initialised"
         )
@@ -247,7 +255,11 @@ class FortyGuardService:
                     "season": city["climate"]["season"],
                     "air_temp_max_f": city["climate"]["air_temp_max_f"],
                     "presets": city["presets"],
-                    "shelter_count": len(city["shelters"]),
+                    "shelter_count": (
+                        self._real_shelters[city["id"]]["count"]
+                        if city["id"] in self._real_shelters
+                        else len(city["shelters"])
+                    ),
                     "canopy_zone_count": len(city["canopy_zones"]),
                     "heat_island_count": len(city["heat_islands"]),
                 }
@@ -305,9 +317,41 @@ class FortyGuardService:
     def terrain(self, city_id: str, lat: float, lon: float) -> Dict[str, Any]:
         """Canopy / heat-island / water influence at a point, before any temperature maths.
 
-        Returns the urban-morphology inputs that the FortyGuard reading is then fused with:
-        canopy fraction, sky view factor, heat-island uplift, water proximity, surface class.
+        Prefers REAL OSM urban geometry (parks, street trees, covered ways, parking lots,
+        lane-counted arterials) via :class:`urban.UrbanIndex`; the hand-authored gaussian
+        fixtures remain only as a fallback for cities without a fetched urban file.
+        Returns the same keys either way, so the thermal sampler is source-agnostic.
         """
+        idx = self._urban.get(city_id)
+        if idx is not None:
+            raw = idx.terrain(lat, lon)
+            canopy = clamp(raw["canopy_fraction"], 0.0, 0.95)
+            svf = clamp(1.0 - canopy * 0.92, 0.05, 1.0)
+            surface_boost = _saturate(raw["surface_boost_f"], SURFACE_BOOST_CAP_F)
+            if raw["covered"] > 0.45:
+                surface_type = "covered_walkway"
+            elif canopy > 0.55:
+                surface_type = "park_turf"
+            elif raw["water_cooling_f"] > 1.6:
+                surface_type = "waterfront"
+            elif canopy > 0.28:
+                surface_type = "canopy_shade"
+            elif raw["arterial"] > 0.4 or surface_boost > 6.0:
+                surface_type = "asphalt"
+            else:
+                surface_type = "concrete"
+            return {
+                "canopy_fraction": canopy,
+                "canopy_cooling_f": _saturate(raw["canopy_cooling_f"], CANOPY_COOLING_CAP_F),
+                "sky_view_factor": svf,
+                "uhi_uplift_f": _saturate(raw["uhi_uplift_f"], UHI_CAP_F),
+                "surface_boost_f": surface_boost,
+                "water_cooling_f": _saturate(raw["water_cooling_f"], WATER_COOLING_CAP_F),
+                "humidity_boost_pct": min(raw["humidity_boost_pct"], 15.0),
+                "surface_type": surface_type,
+                "source": "openstreetmap",
+            }
+
         city = self.city(city_id)
         p = (lat, lon)
 
@@ -874,6 +918,40 @@ class FortyGuardService:
             if cal.get("city_id") in self._cities and len(cal.get("air_temp_f", [])) == 24:
                 self._calibration[cal["city_id"]] = cal
 
+    def _load_urban(self) -> None:
+        """Real OSM urban form (scripts/fetch_urban.py). Missing file => legacy fixtures."""
+        for cid in self._cities:
+            self._urban[cid] = load_urban_index(URBAN_DIR, cid)
+
+    def _load_real_shelters(self) -> None:
+        """Real refuge data (scripts/fetch_shelters.py): official MAG network for Phoenix,
+        OSM POIs for the Gulf. Missing file => the hand-authored cities.json list."""
+        if not SHELTERS_DIR.is_dir():
+            return
+        for path in SHELTERS_DIR.glob("*.json"):
+            try:
+                with open(path, "r", encoding="utf-8") as fh:
+                    data = json.load(fh)
+            except (OSError, ValueError):
+                continue
+            if data.get("city_id") in self._cities and data.get("shelters"):
+                self._real_shelters[data["city_id"]] = data
+
+    def urban(self, city_id: str) -> Optional[UrbanIndex]:
+        return self._urban.get(city_id)
+
+    def shelter_source(self, city_id: str) -> Dict[str, Any]:
+        real = self._real_shelters.get(city_id)
+        if real:
+            return {
+                "source": real["source"],
+                "attribution": real.get("attribution"),
+                "disclaimer": real.get("disclaimer"),
+                "fetched_at": real.get("fetched_at"),
+                "count": real["count"],
+            }
+        return {"source": "hand_authored_fixture", "count": len(self.city(city_id)["shelters"])}
+
     def calibration(self, city_id: str) -> Optional[Dict[str, Any]]:
         return self._calibration.get(city_id)
 
@@ -1298,9 +1376,11 @@ class FortyGuardService:
         """Municipal cooling centres, hydration stations and cooled transit, nearest first."""
         city = self.city(city_id)
         origin = (lat, lon) if lat is not None and lon is not None else tuple(city["center"])
+        real = self._real_shelters.get(city_id)
+        catalogue = real["shelters"] if real else city["shelters"]
 
         out: List[Dict[str, Any]] = []
-        for shelter in city["shelters"]:
+        for shelter in catalogue:
             if require_ac and not shelter["air_conditioned"]:
                 continue
             d = haversine_m(origin, tuple(shelter["center"]))

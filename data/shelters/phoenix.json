@@ -1,0 +1,1345 @@
+{
+ "city_id": "phoenix",
+ "source": "mag_heat_relief_network",
+ "endpoint": "https://services1.arcgis.com/MdyCMZnX1raZ7TS3/arcgis/rest/services/HRN_Public_view/FeatureServer/0/query",
+ "fetched_at": "2026-08-23T09:35:59Z",
+ "attribution": "Maricopa Association of Governments Heat Relief Network",
+ "disclaimer": "MAG aggregates partner-submitted sites and cannot vouch for authenticity or accuracy; verify independently. Medical emergencies: call 911.",
+ "count": 27,
+ "shelters": [
+  {
+   "id": "mag-487",
+   "name": "Grace Lutheran Church",
+   "type": "cooling_center",
+   "center": [
+    33.461043,
+    -112.069954
+   ],
+   "air_conditioned": true,
+   "ac_assumed": false,
+   "water": true,
+   "hours": "Mo-We 9am-5pm, Th & Fr 11am-7pm, Sa 1pm-7pm, Su 12:30pm-7pm",
+   "hours_by_day": {
+    "Monday": [
+     "9:00 AM",
+     "5:00 PM"
+    ],
+    "Tuesday": [
+     "9:00 AM",
+     "5:00 PM"
+    ],
+    "Wednesday": [
+     "9:00 AM",
+     "5:00 PM"
+    ],
+    "Thursday": [
+     "11:00 AM",
+     "7:00 PM"
+    ],
+    "Friday": [
+     "11:00 AM",
+     "7:00 PM"
+    ],
+    "Saturday": [
+     "1:00 PM",
+     "7:00 PM"
+    ],
+    "Sunday": [
+     "12:30 PM",
+     "7:00 PM"
+    ]
+   },
+   "season": [
+    "2026-08-06",
+    "2026-08-23"
+   ],
+   "organization": "AZ Faith Network",
+   "address": "1124 N. 3rd St. Phoenix AZ 85004",
+   "phone": "602-334-4331",
+   "wheelchair": "Yes",
+   "pets": null,
+   "indoor_temp_f": 72,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "mag-493",
+   "name": "Lincoln Family Downtown YMCA",
+   "type": "hydration_station",
+   "center": [
+    33.45324,
+    -112.075629
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "Mo-Fr 7am-7pm",
+   "hours_by_day": {
+    "Monday": [
+     "7:00 AM",
+     "7:00 PM"
+    ],
+    "Tuesday": [
+     "7:00 AM",
+     "7:00 PM"
+    ],
+    "Wednesday": [
+     "7:00 AM",
+     "7:00 PM"
+    ],
+    "Thursday": [
+     "7:00 AM",
+     "7:00 PM"
+    ],
+    "Friday": [
+     "7:00 AM",
+     "7:00 PM"
+    ]
+   },
+   "season": [
+    "2026-05-01",
+    "2026-09-30"
+   ],
+   "organization": "YMCA",
+   "address": "350 N. 1st Ave. Phoenix AZ 85003",
+   "phone": "602-257-5138",
+   "wheelchair": null,
+   "pets": null,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "mag-272",
+   "name": "Senior Opportunities West Senior Center",
+   "type": "hydration_station",
+   "center": [
+    33.43554,
+    -112.082972
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "Mo-Fr 9am-4pm",
+   "hours_by_day": {
+    "Monday": [
+     "9:00 AM",
+     "4:00 PM"
+    ],
+    "Tuesday": [
+     "9:00 AM",
+     "4:00 PM"
+    ],
+    "Wednesday": [
+     "9:00 AM",
+     "4:00 PM"
+    ],
+    "Thursday": [
+     "9:00 AM",
+     "4:00 PM"
+    ],
+    "Friday": [
+     "9:00 AM",
+     "4:00 PM"
+    ]
+   },
+   "season": [
+    "2026-05-01",
+    "2026-09-30"
+   ],
+   "organization": "City of Phoenix",
+   "address": "1220 S. 7th Ave. Phoenix AZ 85007",
+   "phone": "602-534-7657",
+   "wheelchair": "Yes",
+   "pets": "No",
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "mag-86",
+   "name": "University Park Recreation Center",
+   "type": "hydration_station",
+   "center": [
+    33.451933,
+    -112.086688
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "Mo-Fr 4pm-8pm",
+   "hours_by_day": {
+    "Monday": [
+     "4:00 PM",
+     "8:00 PM"
+    ],
+    "Tuesday": [
+     "4:00 PM",
+     "8:00 PM"
+    ],
+    "Wednesday": [
+     "4:00 PM",
+     "8:00 PM"
+    ],
+    "Thursday": [
+     "4:00 PM",
+     "8:00 PM"
+    ],
+    "Friday": [
+     "4:00 PM",
+     "8:00 PM"
+    ]
+   },
+   "season": [
+    "2026-05-01",
+    "2026-09-30"
+   ],
+   "organization": "City of Phoenix",
+   "address": "1102 W. Van Buren St. Phoenix AZ 85007",
+   "phone": "602-327-9032",
+   "wheelchair": null,
+   "pets": "No",
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "mag-484",
+   "name": "Cooltainer 1818",
+   "type": "cooling_center",
+   "center": [
+    33.449543,
+    -112.099302
+   ],
+   "air_conditioned": true,
+   "ac_assumed": false,
+   "water": true,
+   "hours": "Mo-Su 8am-8pm",
+   "hours_by_day": {
+    "Monday": [
+     "8:00 AM",
+     "8:00 PM"
+    ],
+    "Tuesday": [
+     "8:00 AM",
+     "8:00 PM"
+    ],
+    "Wednesday": [
+     "8:00 AM",
+     "8:00 PM"
+    ],
+    "Thursday": [
+     "8:00 AM",
+     "8:00 PM"
+    ],
+    "Friday": [
+     "8:00 AM",
+     "8:00 PM"
+    ],
+    "Saturday": [
+     "8:00 AM",
+     "8:00 PM"
+    ],
+    "Sunday": [
+     "8:00 AM",
+     "8:00 PM"
+    ]
+   },
+   "season": [
+    "2026-05-04",
+    "2026-09-30"
+   ],
+   "organization": "AZ Faith Network",
+   "address": "1818 W. Adams St. Phoenix AZ 85007",
+   "phone": "602-334-4331",
+   "wheelchair": "Yes",
+   "pets": "Yes",
+   "indoor_temp_f": 72,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "mag-292",
+   "name": "Burton Barr Central Library",
+   "type": "cooling_center",
+   "center": [
+    33.462516,
+    -112.073123
+   ],
+   "air_conditioned": true,
+   "ac_assumed": false,
+   "water": true,
+   "hours": "Mo, Fr & Sa 9am-5pm; Tu-Th 9am-7pm; Su 12pm-5pm",
+   "hours_by_day": {
+    "Monday": [
+     "9:00 AM",
+     "5:00 PM"
+    ],
+    "Tuesday": [
+     "9:00 AM",
+     "7:00 PM"
+    ],
+    "Wednesday": [
+     "9:00 AM",
+     "7:00 PM"
+    ],
+    "Thursday": [
+     "9:00 AM",
+     "7:00 PM"
+    ],
+    "Friday": [
+     "9:00 AM",
+     "5:00 PM"
+    ],
+    "Saturday": [
+     "9:00 AM",
+     "5:00 PM"
+    ],
+    "Sunday": [
+     "12:00 PM",
+     "5:00 PM"
+    ]
+   },
+   "season": [
+    "2026-05-01",
+    "2026-09-30"
+   ],
+   "organization": "City of Phoenix",
+   "address": "1221 N. Central Ave. Phoenix AZ 85004",
+   "phone": "602-534-2026",
+   "wheelchair": "Yes",
+   "pets": "No",
+   "indoor_temp_f": 72,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "mag-198",
+   "name": "Encanto Pool",
+   "type": "hydration_station",
+   "center": [
+    33.47195,
+    -112.089824
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "Mo-Th & Sa-Su 12pm-6pm",
+   "hours_by_day": {
+    "Monday": [
+     "12:00 PM",
+     "6:00 PM"
+    ],
+    "Tuesday": [
+     "12:00 PM",
+     "6:00 PM"
+    ],
+    "Wednesday": [
+     "12:00 PM",
+     "6:00 PM"
+    ],
+    "Thursday": [
+     "12:00 PM",
+     "6:00 PM"
+    ],
+    "Saturday": [
+     "12:00 PM",
+     "6:00 PM"
+    ],
+    "Sunday": [
+     "12:00 PM",
+     "6:00 PM"
+    ]
+   },
+   "season": [
+    "2026-05-23",
+    "2026-09-07"
+   ],
+   "organization": "City of Phoenix",
+   "address": "2125 N. 15th Ave. Phoenix AZ 85006",
+   "phone": "602-262-6482",
+   "wheelchair": "Yes",
+   "pets": "No",
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "mag-453",
+   "name": "Cooltainer 1601",
+   "type": "cooling_center",
+   "center": [
+    33.446623,
+    -112.094223
+   ],
+   "air_conditioned": true,
+   "ac_assumed": false,
+   "water": true,
+   "hours": "Mo-Su 8am-8pm",
+   "hours_by_day": {
+    "Monday": [
+     "8:00 AM",
+     "8:00 PM"
+    ],
+    "Tuesday": [
+     "8:00 AM",
+     "8:00 PM"
+    ],
+    "Wednesday": [
+     "8:00 AM",
+     "8:00 PM"
+    ],
+    "Thursday": [
+     "8:00 AM",
+     "8:00 PM"
+    ],
+    "Friday": [
+     "8:00 AM",
+     "8:00 PM"
+    ],
+    "Saturday": [
+     "8:00 AM",
+     "8:00 PM"
+    ],
+    "Sunday": [
+     "8:00 AM",
+     "8:00 PM"
+    ]
+   },
+   "season": [
+    "2026-04-20",
+    "2026-09-30"
+   ],
+   "organization": "AZ Faith Network",
+   "address": "1645 W Jefferson St. Phoenix AZ 85007",
+   "phone": "602-334-4331",
+   "wheelchair": "Yes",
+   "pets": "Yes",
+   "indoor_temp_f": 72,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "mag-485",
+   "name": "Justa Resource & Day Center",
+   "type": "cooling_center",
+   "center": [
+    33.4469,
+    -112.08611
+   ],
+   "air_conditioned": true,
+   "ac_assumed": false,
+   "water": true,
+   "hours": "Mo-Su 3pm-9pm",
+   "hours_by_day": {
+    "Monday": [
+     "3:00 PM",
+     "9:00 PM"
+    ],
+    "Tuesday": [
+     "3:00 PM",
+     "9:00 PM"
+    ],
+    "Wednesday": [
+     "3:00 PM",
+     "9:00 PM"
+    ],
+    "Thursday": [
+     "3:00 PM",
+     "9:00 PM"
+    ],
+    "Friday": [
+     "3:00 PM",
+     "9:00 PM"
+    ],
+    "Saturday": [
+     "3:00 PM",
+     "9:00 PM"
+    ],
+    "Sunday": [
+     "3:00 PM",
+     "9:00 PM"
+    ]
+   },
+   "season": [
+    "2026-05-01",
+    "2026-09-30"
+   ],
+   "organization": "Justa Center",
+   "address": "1001 W. Jefferson St. Phoenix AZ 85007",
+   "phone": "602-783-2175",
+   "wheelchair": "Yes",
+   "pets": "Yes",
+   "indoor_temp_f": 72,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "mag-87",
+   "name": "Verde Park Recreation Center",
+   "type": "hydration_station",
+   "center": [
+    33.452018,
+    -112.061789
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "Mo-Fr 4pm-8pm",
+   "hours_by_day": {
+    "Monday": [
+     "4:00 PM",
+     "8:00 PM"
+    ],
+    "Tuesday": [
+     "4:00 PM",
+     "8:00 PM"
+    ],
+    "Wednesday": [
+     "4:00 PM",
+     "8:00 PM"
+    ],
+    "Thursday": [
+     "4:00 PM",
+     "8:00 PM"
+    ],
+    "Friday": [
+     "4:00 PM",
+     "8:00 PM"
+    ]
+   },
+   "season": [
+    "2026-05-01",
+    "2026-09-30"
+   ],
+   "organization": "City of Phoenix",
+   "address": "916 E. Van Buren St. Phoenix AZ 85006",
+   "phone": "602-327-9032",
+   "wheelchair": null,
+   "pets": "No",
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "mag-542",
+   "name": "CASS (Central Arizona Shelter Services)",
+   "type": "hydration_station",
+   "center": [
+    33.444635,
+    -112.088005
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "Mo-Su 6am-10pm",
+   "hours_by_day": {
+    "Monday": [
+     "6:00 AM",
+     "10:00 PM"
+    ],
+    "Tuesday": [
+     "6:00 AM",
+     "10:00 PM"
+    ],
+    "Wednesday": [
+     "6:00 AM",
+     "10:00 PM"
+    ],
+    "Thursday": [
+     "6:00 AM",
+     "10:00 PM"
+    ],
+    "Friday": [
+     "6:00 AM",
+     "10:00 PM"
+    ],
+    "Saturday": [
+     "6:00 AM",
+     "10:00 PM"
+    ],
+    "Sunday": [
+     "6:00 AM",
+     "10:00 PM"
+    ]
+   },
+   "season": [
+    "2026-05-01",
+    "2026-09-30"
+   ],
+   "organization": "CASS (Central Arizona Shelter Services)",
+   "address": "230 S. 12th Ave. Phoenix AZ 85007",
+   "phone": "602-256-6945",
+   "wheelchair": "Yes",
+   "pets": "Yes",
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "mag-519",
+   "name": "Valle del Sol South Phoenix",
+   "type": "cooling_center",
+   "center": [
+    33.43562,
+    -112.074704
+   ],
+   "air_conditioned": true,
+   "ac_assumed": false,
+   "water": true,
+   "hours": "Mo-Fr 5am-5pm",
+   "hours_by_day": {
+    "Monday": [
+     "5:00 AM",
+     "5:00 PM"
+    ],
+    "Tuesday": [
+     "5:00 AM",
+     "5:00 PM"
+    ],
+    "Wednesday": [
+     "5:00 AM",
+     "5:00 PM"
+    ],
+    "Thursday": [
+     "5:00 AM",
+     "5:00 PM"
+    ],
+    "Friday": [
+     "5:00 AM",
+     "5:00 PM"
+    ]
+   },
+   "season": [
+    "2026-05-18",
+    "2026-09-30"
+   ],
+   "organization": "Valle del Sol",
+   "address": "1209 S 1st Ave Phoenix AZ 85003",
+   "phone": "760-482-7844",
+   "wheelchair": "Yes",
+   "pets": "No",
+   "indoor_temp_f": 72,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "mag-559",
+   "name": "Phoenix Dining room",
+   "type": "cooling_center",
+   "center": [
+    33.44476,
+    -112.08649
+   ],
+   "air_conditioned": true,
+   "ac_assumed": false,
+   "water": true,
+   "hours": "Mo-Su 1:30pm-5pm",
+   "hours_by_day": {
+    "Monday": [
+     "1:30 PM",
+     "5:00 PM"
+    ],
+    "Tuesday": [
+     "1:30 PM",
+     "5:00 PM"
+    ],
+    "Wednesday": [
+     "1:30 PM",
+     "5:00 PM"
+    ],
+    "Thursday": [
+     "1:30 PM",
+     "5:00 PM"
+    ],
+    "Friday": [
+     "1:30 PM",
+     "5:00 PM"
+    ],
+    "Saturday": [
+     "1:30 PM",
+     "5:00 PM"
+    ],
+    "Sunday": [
+     "1:30 PM",
+     "5:00 PM"
+    ]
+   },
+   "season": [
+    "2026-05-01",
+    "2026-09-30"
+   ],
+   "organization": "Society of St. Vincent de Paul",
+   "address": "1075 W. Jackson St. Phoenix AZ 85007",
+   "phone": "602-620-1892",
+   "wheelchair": null,
+   "pets": "Yes",
+   "indoor_temp_f": 72,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "mag-147",
+   "name": "Key Campus Brian Garcia Welcome Center",
+   "type": "hydration_station",
+   "center": [
+    33.44456,
+    -112.087451
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "Mo-Su 8am-11pm",
+   "hours_by_day": {
+    "Monday": [
+     "8:00 AM",
+     "11:00 PM"
+    ],
+    "Tuesday": [
+     "8:00 AM",
+     "11:00 PM"
+    ],
+    "Wednesday": [
+     "8:00 AM",
+     "11:00 PM"
+    ],
+    "Thursday": [
+     "8:00 AM",
+     "11:00 PM"
+    ],
+    "Friday": [
+     "8:00 AM",
+     "11:00 PM"
+    ],
+    "Saturday": [
+     "8:00 AM",
+     "11:00 PM"
+    ],
+    "Sunday": [
+     "8:00 AM",
+     "11:00 PM"
+    ]
+   },
+   "season": [
+    "2026-05-01",
+    "2026-09-30"
+   ],
+   "organization": "Keys to Change",
+   "address": "204 S. 12th Ave. Phoenix AZ 85007",
+   "phone": "480-793-3615",
+   "wheelchair": null,
+   "pets": null,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "mag-574",
+   "name": "Memorial Hospital",
+   "type": "hydration_station",
+   "center": [
+    33.436843,
+    -112.080954
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "Mo-Fr 9am-5pm",
+   "hours_by_day": {
+    "Monday": [
+     "9:00 AM",
+     "5:00 PM"
+    ],
+    "Tuesday": [
+     "9:00 AM",
+     "5:00 PM"
+    ],
+    "Wednesday": [
+     "9:00 AM",
+     "5:00 PM"
+    ],
+    "Thursday": [
+     "9:00 AM",
+     "5:00 PM"
+    ],
+    "Friday": [
+     "9:00 AM",
+     "5:00 PM"
+    ]
+   },
+   "season": [
+    "2026-06-03",
+    "2026-09-30"
+   ],
+   "organization": "Apex Transitional Housing",
+   "address": "515 W. Buckeye Rd.  Phoenix AZ 85003",
+   "phone": "480-255-2787",
+   "wheelchair": null,
+   "pets": null,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "mag-265",
+   "name": "Andre House",
+   "type": "hydration_station",
+   "center": [
+    33.445368,
+    -112.086669
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "Mo-Th 10am-4pm, Sa-Su 1pm-4pm",
+   "hours_by_day": {
+    "Monday": [
+     "10:00 AM",
+     "4:00 PM"
+    ],
+    "Tuesday": [
+     "10:00 AM",
+     "4:00 PM"
+    ],
+    "Wednesday": [
+     "10:00 AM",
+     "4:00 PM"
+    ],
+    "Thursday": [
+     "10:00 AM",
+     "4:00 PM"
+    ],
+    "Saturday": [
+     "1:00 PM",
+     "4:00 PM"
+    ],
+    "Sunday": [
+     "1:00 PM",
+     "4:00 PM"
+    ]
+   },
+   "season": [
+    "2026-05-01",
+    "2026-09-30"
+   ],
+   "organization": "Andre House",
+   "address": "213 S. 11th Ave. Phoenix AZ 85007",
+   "phone": "602-255-0580",
+   "wheelchair": null,
+   "pets": null,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "mag-82",
+   "name": "Harmon Recreation Center",
+   "type": "hydration_station",
+   "center": [
+    33.434844,
+    -112.080082
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "Mo-Fr 4pm-7pm, Sa 8am-1pm",
+   "hours_by_day": {
+    "Monday": [
+     "4:00 PM",
+     "7:00 PM"
+    ],
+    "Tuesday": [
+     "4:00 PM",
+     "7:00 PM"
+    ],
+    "Wednesday": [
+     "4:00 PM",
+     "7:00 PM"
+    ],
+    "Thursday": [
+     "4:00 PM",
+     "7:00 PM"
+    ],
+    "Friday": [
+     "4:00 PM",
+     "7:00 PM"
+    ],
+    "Saturday": [
+     "8:00 AM",
+     "1:00 PM"
+    ]
+   },
+   "season": [
+    "2026-05-01",
+    "2026-09-30"
+   ],
+   "organization": "City of Phoenix",
+   "address": "1425 S. 5th Ave. Phoenix AZ 85003",
+   "phone": "602-327-9032",
+   "wheelchair": "Yes",
+   "pets": "No",
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "mag-580",
+   "name": "St. Joseph the Worker - Phoenix",
+   "type": "hydration_station",
+   "center": [
+    33.469835,
+    -112.065805
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "Mo-Fr 9am-4pm",
+   "hours_by_day": {
+    "Monday": [
+     "9:00 AM",
+     "4:00 PM"
+    ],
+    "Tuesday": [
+     "9:00 AM",
+     "4:00 PM"
+    ],
+    "Wednesday": [
+     "9:00 AM",
+     "4:00 PM"
+    ],
+    "Thursday": [
+     "9:00 AM",
+     "4:00 PM"
+    ],
+    "Friday": [
+     "9:00 AM",
+     "4:00 PM"
+    ]
+   },
+   "season": [
+    "2026-05-01",
+    "2026-09-30"
+   ],
+   "organization": "St. Joseph the Worker",
+   "address": "382 E. Palm Ln. Phoenix AZ 85004 (Suite #150)",
+   "phone": "602-309-4061",
+   "wheelchair": null,
+   "pets": null,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "mag-400",
+   "name": "FIBCO Family Services",
+   "type": "hydration_station",
+   "center": [
+    33.446752,
+    -112.057816
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "Tu,We & Fr 9am-2pm",
+   "hours_by_day": {
+    "Tuesday": [
+     "9:00 AM",
+     "2:00 PM"
+    ],
+    "Wednesday": [
+     "9:00 AM",
+     "2:00 PM"
+    ],
+    "Friday": [
+     "9:00 AM",
+     "2:00 PM"
+    ]
+   },
+   "season": [
+    "2026-05-01",
+    "2026-09-30"
+   ],
+   "organization": "FIBCO Family Services",
+   "address": "1141 E. Jefferson St. Phoenix AZ 85034",
+   "phone": "602-509-5869",
+   "wheelchair": null,
+   "pets": null,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "mag-145",
+   "name": "Downtown Family Health Clinic",
+   "type": "cooling_center",
+   "center": [
+    33.445378,
+    -112.088581
+   ],
+   "air_conditioned": true,
+   "ac_assumed": false,
+   "water": true,
+   "hours": "Mo 7am-8pm, Tu-Fr 7am-7pm, Sa-Su 8am-5pm",
+   "hours_by_day": {
+    "Monday": [
+     "7:00 AM",
+     "8:00 PM"
+    ],
+    "Tuesday": [
+     "7:00 AM",
+     "7:00 PM"
+    ],
+    "Wednesday": [
+     "7:00 AM",
+     "7:00 PM"
+    ],
+    "Thursday": [
+     "7:00 AM",
+     "7:00 PM"
+    ],
+    "Friday": [
+     "7:00 AM",
+     "7:00 PM"
+    ],
+    "Saturday": [
+     "8:00 AM",
+     "5:00 PM"
+    ],
+    "Sunday": [
+     "8:00 AM",
+     "5:00 PM"
+    ]
+   },
+   "season": [
+    "2026-05-01",
+    "2026-09-30"
+   ],
+   "organization": "Circle the City",
+   "address": "220 S. 12th Ave. Phoenix AZ 85007",
+   "phone": "951-205-0555",
+   "wheelchair": "Yes",
+   "pets": null,
+   "indoor_temp_f": 72,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "mag-71",
+   "name": "Harmon Library",
+   "type": "cooling_center",
+   "center": [
+    33.435914,
+    -112.080063
+   ],
+   "air_conditioned": true,
+   "ac_assumed": false,
+   "water": true,
+   "hours": "Mo, Fr, Sa 9am-5pm; Tu-Th 10am-6pm",
+   "hours_by_day": {
+    "Monday": [
+     "9:00 AM",
+     "5:00 PM"
+    ],
+    "Tuesday": [
+     "10:00 AM",
+     "6:00 PM"
+    ],
+    "Wednesday": [
+     "10:00 AM",
+     "6:00 PM"
+    ],
+    "Thursday": [
+     "10:00 AM",
+     "6:00 PM"
+    ],
+    "Friday": [
+     "9:00 AM",
+     "5:00 PM"
+    ],
+    "Saturday": [
+     "9:00 AM",
+     "5:00 PM"
+    ]
+   },
+   "season": [
+    "2026-05-01",
+    "2026-09-30"
+   ],
+   "organization": "City of Phoenix",
+   "address": "1325 S. 5th Ave. Phoenix AZ 85003",
+   "phone": "602-262-4636",
+   "wheelchair": "Yes",
+   "pets": "No",
+   "indoor_temp_f": 72,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "mag-455",
+   "name": "20 W Jackson",
+   "type": "cooling_center",
+   "center": [
+    33.44517,
+    -112.074518
+   ],
+   "air_conditioned": true,
+   "ac_assumed": false,
+   "water": true,
+   "hours": "Open 24/7",
+   "hours_by_day": {
+    "Monday": [
+     "12:00 AM",
+     "11:59 PM"
+    ],
+    "Tuesday": [
+     "12:00 AM",
+     "11:59 PM"
+    ],
+    "Wednesday": [
+     "12:00 AM",
+     "11:59 PM"
+    ],
+    "Thursday": [
+     "12:00 AM",
+     "11:59 PM"
+    ],
+    "Friday": [
+     "12:00 AM",
+     "11:59 PM"
+    ],
+    "Saturday": [
+     "12:00 AM",
+     "11:59 PM"
+    ],
+    "Sunday": [
+     "12:00 AM",
+     "11:59 PM"
+    ]
+   },
+   "season": [
+    "2026-05-01",
+    "2026-09-30"
+   ],
+   "organization": "City of Phoenix",
+   "address": "20 W. Jackson St. Phoenix AZ 85003",
+   "phone": null,
+   "wheelchair": "Yes",
+   "pets": "No",
+   "indoor_temp_f": 72,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "mag-97",
+   "name": "Eastlake Park Community Center",
+   "type": "hydration_station",
+   "center": [
+    33.446485,
+    -112.048069
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "Mo-Th 10am-9pm, Fr 4pm-6pm, Sa 9am-7pm",
+   "hours_by_day": {
+    "Monday": [
+     "10:00 AM",
+     "9:00 PM"
+    ],
+    "Tuesday": [
+     "10:00 AM",
+     "9:00 PM"
+    ],
+    "Wednesday": [
+     "10:00 AM",
+     "9:00 PM"
+    ],
+    "Thursday": [
+     "10:00 AM",
+     "9:00 PM"
+    ],
+    "Friday": [
+     "4:00 PM",
+     "6:00 PM"
+    ],
+    "Saturday": [
+     "9:00 AM",
+     "7:00 PM"
+    ]
+   },
+   "season": [
+    "2026-05-01",
+    "2026-09-30"
+   ],
+   "organization": "City of Phoenix",
+   "address": "1549 E. Jefferson St. Phoenix AZ 85034",
+   "phone": "602-327-9032",
+   "wheelchair": "Yes",
+   "pets": "No",
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "mag-14",
+   "name": "Marcos de Niza Senior Center",
+   "type": "hydration_station",
+   "center": [
+    33.432847,
+    -112.077713
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "Mo-Fr 9am-3pm",
+   "hours_by_day": {
+    "Monday": [
+     "9:00 AM",
+     "3:00 PM"
+    ],
+    "Tuesday": [
+     "9:00 AM",
+     "3:00 PM"
+    ],
+    "Wednesday": [
+     "9:00 AM",
+     "3:00 PM"
+    ],
+    "Thursday": [
+     "9:00 AM",
+     "3:00 PM"
+    ],
+    "Friday": [
+     "9:00 AM",
+     "3:00 PM"
+    ]
+   },
+   "season": [
+    "2026-05-01",
+    "2026-09-30"
+   ],
+   "organization": "City of Phoenix",
+   "address": "305 W. Pima Rd. Phoenix AZ 85003",
+   "phone": "602-261-8511",
+   "wheelchair": "Yes",
+   "pets": "No",
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "mag-151",
+   "name": "NourishPHX",
+   "type": "hydration_station",
+   "center": [
+    33.442582,
+    -112.08446
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "Mo-Fr 9am-11am",
+   "hours_by_day": {
+    "Monday": [
+     "9:00 AM",
+     "11:00 AM"
+    ],
+    "Tuesday": [
+     "9:00 AM",
+     "11:00 AM"
+    ],
+    "Wednesday": [
+     "9:00 AM",
+     "11:00 AM"
+    ],
+    "Thursday": [
+     "9:00 AM",
+     "11:00 AM"
+    ],
+    "Friday": [
+     "9:00 AM",
+     "11:00 AM"
+    ]
+   },
+   "season": [
+    "2026-05-01",
+    "2026-09-30"
+   ],
+   "organization": "NourishPHX",
+   "address": "501 S. 9th Ave. Phoenix AZ 85007",
+   "phone": "602-775-5740",
+   "wheelchair": null,
+   "pets": null,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "mag-592",
+   "name": "Phoenix Citadel Corps",
+   "type": "cooling_center",
+   "center": [
+    33.45526,
+    -112.07809
+   ],
+   "air_conditioned": true,
+   "ac_assumed": false,
+   "water": true,
+   "hours": "Mo-Fr 8am-5pm",
+   "hours_by_day": {
+    "Monday": [
+     "8:00 AM",
+     "5:00 PM"
+    ],
+    "Tuesday": [
+     "8:00 AM",
+     "5:00 PM"
+    ],
+    "Wednesday": [
+     "8:00 AM",
+     "5:00 PM"
+    ],
+    "Thursday": [
+     "8:00 AM",
+     "5:00 PM"
+    ],
+    "Friday": [
+     "8:00 AM",
+     "5:00 PM"
+    ]
+   },
+   "season": [
+    "2026-05-01",
+    "2026-09-30"
+   ],
+   "organization": "The Salvation Army",
+   "address": "628 N. 3rd Ave. Phoenix AZ 85003",
+   "phone": "602-267-4193",
+   "wheelchair": "Yes",
+   "pets": "Yes",
+   "indoor_temp_f": 72,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "mag-541",
+   "name": "LaFrontera Arizona Empact Suicide Prevention Center",
+   "type": "hydration_station",
+   "center": [
+    33.446846,
+    -112.059493
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "Mo-Fr 8am-5pm",
+   "hours_by_day": {
+    "Monday": [
+     "8:00 AM",
+     "5:00 PM"
+    ],
+    "Tuesday": [
+     "8:00 AM",
+     "5:00 PM"
+    ],
+    "Wednesday": [
+     "8:00 AM",
+     "5:00 PM"
+    ],
+    "Thursday": [
+     "8:00 AM",
+     "5:00 PM"
+    ],
+    "Friday": [
+     "8:00 AM",
+     "5:00 PM"
+    ]
+   },
+   "season": [
+    "2026-05-14",
+    "2026-09-24"
+   ],
+   "organization": "LaFrontera",
+   "address": "1035 E. Jefferson St. Phoenix AZ 85034",
+   "phone": "602-251-0650",
+   "wheelchair": null,
+   "pets": null,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": true
+  }
+ ]
+}

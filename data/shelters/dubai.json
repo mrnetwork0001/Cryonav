@@ -1,0 +1,894 @@
+{
+ "city_id": "dubai",
+ "source": "openstreetmap_overpass",
+ "fetched_at": "2026-08-23T09:35:41Z",
+ "attribution": "Map data (c) OpenStreetMap contributors, ODbL",
+ "disclaimer": "Air-conditioning and hours are category-level assumptions where OSM carries no tags (measured coverage: opening_hours 2-6%, air_conditioning ~0%).",
+ "count": 52,
+ "shelters": [
+  {
+   "id": "osm-n604304348",
+   "name": "Burj Khalifa / Dubai Mall Metro Station",
+   "type": "cooled_transit",
+   "category": "metro",
+   "center": [
+    25.201437,
+    55.269545
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "05:00-00:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 73,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n605500214",
+   "name": "Emirates Towers Metro Station",
+   "type": "cooled_transit",
+   "category": "metro",
+   "center": [
+    25.217231,
+    55.279881
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "05:00-00:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 73,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n2418678459",
+   "name": "Business Bay Metro Station",
+   "type": "cooled_transit",
+   "category": "metro",
+   "center": [
+    25.191312,
+    55.260398
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "05:00-00:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 73,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n3661978625",
+   "name": "Burj Daman Masjid",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    25.210824,
+    55.281597
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n4427569289",
+   "name": "Community centre",
+   "type": "cooling_center",
+   "category": "community_centre",
+   "center": [
+    25.195089,
+    55.264385
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "08:00-20:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 73,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n4568922733",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    25.221272,
+    55.265742
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n4587216872",
+   "name": "City walk 2 mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    25.206013,
+    55.263769
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n4924472654",
+   "name": "Royal Way Grocery",
+   "type": "mall_refuge",
+   "category": "marketplace",
+   "center": [
+    25.203443,
+    55.253005
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "09:00-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 75,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n4924997870",
+   "name": "Shiseido",
+   "type": "mall_refuge",
+   "category": "mall",
+   "center": [
+    25.203558,
+    55.262705
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "10:00-23:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 71,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n5109369021",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    25.197429,
+    55.278471
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n6588569790",
+   "name": "Financial Centre Metro Station",
+   "type": "cooled_transit",
+   "category": "metro",
+   "center": [
+    25.210822,
+    55.275532
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "05:00-00:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 73,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n6588569798",
+   "name": "World Trade Centre Metro Station",
+   "type": "cooled_transit",
+   "category": "metro",
+   "center": [
+    25.224835,
+    55.285119
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "05:00-00:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 73,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n7548423128",
+   "name": "Business Time Centre",
+   "type": "mall_refuge",
+   "category": "mall",
+   "center": [
+    25.199495,
+    55.26844
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "Mo-Th,Sa-Su 08:30-18:30",
+   "hours_assumed": false,
+   "indoor_temp_f": 71,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n10671164883",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    25.223407,
+    55.286174
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n10671170144",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    25.217752,
+    55.259669
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n10671196675",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    25.226232,
+    55.263691
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n11355905438",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    25.193446,
+    55.274082
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n11717137569",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    25.212915,
+    55.280276
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n13238406701",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    25.197275,
+    55.272242
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-w91383643",
+   "name": "Mazaya Shopping Centre",
+   "type": "mall_refuge",
+   "category": "mall",
+   "center": [
+    25.199102,
+    55.265381
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "10:00-23:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 71,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w91383652",
+   "name": "Al Safa Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    25.193811,
+    55.260083
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w91393003",
+   "name": "Al Wasl Centre",
+   "type": "mall_refuge",
+   "category": "mall",
+   "center": [
+    25.19547,
+    55.262159
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "10:00-23:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 71,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w102844109",
+   "name": "Town Centre Jumeirah",
+   "type": "mall_refuge",
+   "category": "mall",
+   "center": [
+    25.215004,
+    55.25129
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "Sa-Th 10:00-22:00; Fr 13:30-22:00",
+   "hours_assumed": false,
+   "indoor_temp_f": 71,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w230790744",
+   "name": "Beach Centre",
+   "type": "mall_refuge",
+   "category": "mall",
+   "center": [
+    25.224861,
+    55.258933
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "10:00-23:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 71,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w257924779",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    25.213187,
+    55.248578
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w258908096",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    25.209539,
+    55.270917
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w258908110",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    25.215968,
+    55.266785
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w259056411",
+   "name": "Khadri Masjid",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    25.222395,
+    55.270815
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w259387987",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    25.211258,
+    55.26651
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w364691579",
+   "name": "Al Qasimi Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    25.199268,
+    55.260529
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w385581844",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    25.198737,
+    55.290698
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w385722495",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    25.220264,
+    55.294128
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w390833650",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    25.188852,
+    55.248782
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w390918679",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    25.20479,
+    55.266434
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w415395734",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    25.210202,
+    55.250675
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w437668917",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    25.188779,
+    55.273223
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w437668921",
+   "name": "Masjid Al Ghafoor",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    25.188728,
+    55.273299
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w440349259",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    25.192719,
+    55.251475
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w454470443",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    25.192128,
+    55.25005
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w455558071",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    25.19854,
+    55.290897
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w455559151",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    25.205802,
+    55.291024
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w455566787",
+   "name": "The Gate Avenue",
+   "type": "mall_refuge",
+   "category": "mall",
+   "center": [
+    25.210325,
+    55.278476
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "10:00-23:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 71,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w500769370",
+   "name": "Obai Bin Kaab",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    25.2196,
+    55.274783
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w501785583",
+   "name": "Neels Grocery",
+   "type": "mall_refuge",
+   "category": "marketplace",
+   "center": [
+    25.199685,
+    55.255009
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "09:00-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 75,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w501791393",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    25.199505,
+    55.250054
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w502113232",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    25.203692,
+    55.252802
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w549920745",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    25.188768,
+    55.251332
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w723555166",
+   "name": "Mosque",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    25.205843,
+    55.290719
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w1093943022",
+   "name": "Shaikha Abdulla Salem",
+   "type": "cooling_center",
+   "category": "mosque",
+   "center": [
+    25.193127,
+    55.28206
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "04:30-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 74,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w1329019329",
+   "name": "Bay Avenue \u200bMall",
+   "type": "mall_refuge",
+   "category": "mall",
+   "center": [
+    25.190671,
+    55.265401
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "10:00-23:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 71,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-r1715611",
+   "name": "Souk Al Bahar",
+   "type": "mall_refuge",
+   "category": "mall",
+   "center": [
+    25.194774,
+    55.276587
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "10:00-23:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 71,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-r18195959",
+   "name": "The Dubai Mall",
+   "type": "mall_refuge",
+   "category": "mall",
+   "center": [
+    25.197007,
+    55.278574
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "Mo-Su 10:00-2:00",
+   "hours_assumed": false,
+   "indoor_temp_f": 71,
+   "indoor_temp_assumed": true
+  }
+ ]
+}

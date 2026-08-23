@@ -36,6 +36,64 @@ service = FortyGuardService()
 engine = RoutingEngine(service)
 orchestrator = CryonavOrchestrator(service, engine)
 
+
+def _refresh_stale_calibration() -> None:
+    """Re-pull FortyGuard data in the background when the cached day is not today.
+
+    The systemd timer owns this in production; this hook covers laptops and freshly
+    deployed hosts so "today's curve" is actually today's without a manual run. Failures
+    are logged and ignored -- the app must serve the last good calibration regardless.
+    """
+    import threading
+    from datetime import datetime, timezone
+
+    if not service.live or os.getenv("CRYONAV_AUTO_CALIBRATE", "1") != "1":
+        return
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    stale = [
+        cid
+        for cid in service.city_ids()
+        if str((service.calibration(cid) or {}).get("date", ""))[:10] != today
+    ]
+    if not stale:
+        return
+
+    def run() -> None:
+        for cid in stale:
+            try:
+                cal = service.calibrate_city(cid)
+                print(f"[calibrate] {cid}: {cal['air_temp_min_f']}-{cal['air_temp_max_f']}F for {str(cal['date'])[:10]}")
+            except Exception as exc:  # noqa: BLE001 - keep serving cached data
+                print(f"[calibrate] {cid} FAILED: {exc}")
+            try:
+                hm = service.heatmap_fetch(cid)
+                print(f"[calibrate] {cid} raster: {hm['tile_count']} tiles")
+            except Exception as exc:  # noqa: BLE001 - raster coverage is US-only / flaky
+                print(f"[calibrate] {cid} raster skipped: {exc}")
+        # Invalidate hour-bucket graphs so new ambient curves take effect.
+        engine._graphs.clear()
+
+    threading.Thread(target=run, name="cryonav-calibrate", daemon=True).start()
+
+
+def _warm_graphs() -> None:
+    """Build each city's street graph off the request path.
+
+    The first build pays real-terrain sampling over the whole OSM network (~5 s for
+    Phoenix); warming in a background thread means no user request ever eats it.
+    """
+    import threading
+
+    def run() -> None:
+        for cid in service.city_ids():
+            try:
+                engine.graph(cid, 15.0)
+            except Exception as exc:  # noqa: BLE001
+                print(f"[warm] {cid} graph failed: {exc}")
+
+    threading.Thread(target=run, name="cryonav-warm", daemon=True).start()
+
+
 app = FastAPI(
     title="Cryonav",
     version=VERSION,
@@ -60,6 +118,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+def _startup_refresh() -> None:
+    _refresh_stale_calibration()
+    _warm_graphs()
 
 
 # --------------------------------------------------------------------------------------
@@ -260,20 +324,42 @@ def city_grid(
 
 @app.get(f"{API_PREFIX}/cities/{{city_id}}/layers")
 def city_layers(city_id: str) -> Dict[str, Any]:
-    """Urban-morphology layers (heat corridors, canopy corridors, zones) for map rendering."""
+    """Urban-morphology layers for map rendering.
+
+    Served from REAL OpenStreetMap geometry when the city has a fetched urban file
+    (parks with true areas, covered walkways, lane-counted arterials, actual parking
+    lots), and real shelter data (official MAG Heat Relief Network for Phoenix, OSM
+    POIs for the Gulf). Hand-authored fixtures remain only as fallback.
+    """
     try:
         city = service.city(city_id)
     except KeyError as exc:
         raise HTTPException(404, str(exc)) from exc
-    return {
-        "city_id": city_id,
-        "heat_islands": city["heat_islands"],
-        "heat_corridors": city.get("heat_corridors", []),
-        "canopy_zones": city["canopy_zones"],
-        "canopy_corridors": city.get("canopy_corridors", []),
-        "water_bodies": city.get("water_bodies", []),
-        "shelters": city["shelters"],
-    }
+
+    idx = service.urban(city_id)
+    shelters = service.shelters(city_id, radius_m=50_000.0, limit=500)
+    base: Dict[str, Any] = {"city_id": city_id, "shelter_source": service.shelter_source(city_id)}
+
+    if idx is not None:
+        from urban import display_layers  # noqa: PLC0415
+
+        layers = display_layers(idx)
+        layers.update(base)
+        layers["shelters"] = shelters
+        return layers
+
+    base.update(
+        {
+            "source": "hand_authored_fixture",
+            "heat_islands": city["heat_islands"],
+            "heat_corridors": city.get("heat_corridors", []),
+            "canopy_zones": city["canopy_zones"],
+            "canopy_corridors": city.get("canopy_corridors", []),
+            "water_bodies": city.get("water_bodies", []),
+            "shelters": shelters,
+        }
+    )
+    return base
 
 
 # --------------------------------------------------------------------------------------
