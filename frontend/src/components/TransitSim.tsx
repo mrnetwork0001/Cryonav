@@ -174,7 +174,12 @@ export default function TransitSim({ nav, cityId, hour, profileId, onFrame }: Pr
     if (e.frozenAt !== null && !e.dispatched) {
       ph = "immobile";
       if (e.t - e.frozenAt > IMMOBILE_SIM_MIN + 6) {
-        // Sentinel failed to escalate (shouldn't happen) — end the run defensively.
+        // A Sentinel that fails to escalate is exactly what a reviewer must see — say so
+        // loudly rather than ending as if the run completed normally.
+        setLog((l) => [
+          ...l,
+          { t: e.t, status: e.status, text: "⚠ Sentinel did NOT escalate within the immobility window — safety gap." },
+        ]);
         finish("done");
         return;
       }
@@ -339,11 +344,12 @@ export default function TransitSim({ nav, cityId, hour, profileId, onFrame }: Pr
 
       {phase === "done" && monitor?.status === "dispatch" && (
         <div className="mt-3 rounded-lg border border-rose-500/40 bg-rose-500/10 p-2.5 text-[11px] leading-relaxed text-rose-300">
-          Immobility in extreme heat detected — <b>{monitor.escalation_contact}</b> notified with
-          the walker's live position{monitor.nearest_shelters[0] ? (
+          Immobility in extreme heat detected. In deployment the Sentinel would notify{" "}
+          <b>{monitor.escalation_contact}</b> with the walker's live position
+          {monitor.nearest_shelters[0] ? (
             <> and nearest refuge (<b>{monitor.nearest_shelters[0].name}</b>)</>
-          ) : null}
-          .
+          ) : null}{" "}
+          — no real dispatch integration exists in this build.
         </div>
       )}
 

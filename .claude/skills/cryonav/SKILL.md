@@ -12,14 +12,14 @@ Hyperlocal thermal navigation & microclimate cool-routing engine. Full brief: [d
 Standard navigation optimizes distance/time. Cryonav optimizes **pedestrian thermal exposure at 2 m above ground**, using FortyGuard Temperature API® 10 mi² microclimate intelligence fused with urban canopy GIS, and returns two routes side by side:
 
 - **Path A — Standard Direct Route**: shortest distance, crosses unshaded asphalt heat traps.
-- **Path B — Cryonav Cool Route**: canopy-shaded corridor avoiding heat islands. Measured savings are 0–8.9 °F thermal load / 0–18.7% heat-strain dose / up to −34% time-in-high-risk. The brief's 35–50% claim is NOT met — don't restate it as fact.
+- **Path B — Cryonav Cool Route**: canopy-shaded corridor avoiding heat islands. Measured 2026-08-24: 0–6.7 °F thermal load / 0–27.4% heat-strain dose. Ranges DRIFT with the daily calibration — always re-measure before quoting; never restate the brief's 35–50% claim as met.
 
 ## Repo layout
 
 ```
-backend/     FastAPI service — fortyguard_service.py, thermal.py, routing_engine.py, agents.py, models.py, main.py
+backend/     FastAPI service — fortyguard_service.py, thermal.py, routing_engine.py, agents.py, urban.py, main.py
 frontend/    Vite + React + TS + Tailwind dark dashboard (Leaflet map, canvas thermal grid)
-data/        cities.json — Phoenix / Abu Dhabi / Dubai microclimate fixtures (heat islands, canopy, shelters, presets)
+data/        streets/ urban/ shelters/ calibration/ reports/ (real fetched data) + cities.json (tiles, presets, fallback fixtures)
 scripts/     setup.sh, dev.sh, smoke_test.sh, verify_fortyguard.sh
 docs/        PROJECT_SPEC.md
 ```
@@ -60,6 +60,7 @@ Verified against the live host on day 1 of the hackathon — `./scripts/verify_f
 - **Coverage is global.** The dashboard's "U.S. states only" onboarding gates dashboard access, NOT API coverage — Phoenix, Dubai and Abu Dhabi all calibrate live.
 - **Enterprise endpoints are ASYNC**: POST returns `activity_id`, then `GET /v1/status/{activity_id}` (path param — a query param 400s) until status is `Completed`.
 - **`/v1/heat_intelligence` returns a PDF**, not data, and takes ~145 s. Despite the name it cannot drive routing. Body: `latitude`, `longitude`, `temperature`, `date` (string), `analysis` (list of `geographic`/`environmental`/`urban`/`events`/`anthropogenic`).
+- **`/v1/heatmap` raster**: fetched+cached by calibrate.py (US-only — Gulf AOIs return empty; Phoenix ~2,407 tiles), integrated as the observed 2 m air anomaly (its presence DISABLES the synthetic UHI/canopy air offsets), and can be days older than the ambient calibration when its fetch fails — the raster carries its own date; surface it wherever quoted.
 - **`/v1/env_params` is the real data source** (~5 s, JSON, 24 hourly values × 15 parameters). Body: `latitude`, `longitude`, `temperature`, `date_time{start_date, filter_type: 1|2|3|4}`. Only `filter_type: 3` works reliably; 1/2/4 500 without an end date.
 - It has **no dry-bulb series** — invert wet-bulb + RH via `dry_bulb_from_wet_bulb_f`. Never use `apparent_temperature_celsius` as air temperature; it already contains the humidity term.
 - Everything is **Celsius**; `heat_index_celsius` just echoes the `temperature` you sent, so ignore it.

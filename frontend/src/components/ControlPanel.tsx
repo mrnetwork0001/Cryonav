@@ -47,7 +47,7 @@ export default function ControlPanel(p: Props) {
             >
               {c.name}
               <span className="mt-0.5 block text-[9px] font-normal text-slate-600">
-                {c.air_temp_max_f}°F peak
+                design {c.air_temp_max_f}°F
               </span>
             </button>
           ))}

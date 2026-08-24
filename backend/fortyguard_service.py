@@ -231,7 +231,16 @@ class FortyGuardService:
 
     @property
     def mode(self) -> str:
-        return "fortyguard_live" if self.api_key else "cryonav_simulation"
+        """Honest name for the data path actually serving requests.
+
+        A configured key does NOT make request-time readings live: the upstream
+        enterprise endpoints are async report/raster generators, so requests are always
+        served from the local field anchored to the cached FortyGuard calibration. The
+        old name "fortyguard_live" conflated key presence with data path.
+        """
+        if self.api_key:
+            return "fortyguard_calibrated"
+        return "cryonav_simulation"
 
     @property
     def live(self) -> bool:

@@ -389,7 +389,12 @@ export default function MapCanvas(props: Props) {
             ["Hours", s.hours],
             ["Air conditioned", s.air_conditioned ? "yes" : "no"],
             ["Drinking water", s.water ? "yes" : "no"],
-            ...(s.indoor_temp_f ? [["Indoor", `${s.indoor_temp_f} °F`] as [string, string]] : []),
+            ...(s.indoor_temp_f
+              ? [[
+                  "Indoor",
+                  `${s.indoor_temp_f} °F${s.indoor_temp_assumed ? " (assumed)" : ""}`,
+                ] as [string, string]]
+              : []),
           ]),
         )
         .addTo(group);
@@ -444,10 +449,10 @@ export default function MapCanvas(props: Props) {
       {sim?.status === "dispatch" && (
         <div className="pointer-events-none absolute top-3 left-1/2 z-[1001] -translate-x-1/2 rounded-lg border border-rose-500/60 bg-rose-950/95 px-4 py-2 text-center shadow-[0_0_40px_rgba(239,68,68,0.45)]">
           <div className="text-[11px] font-bold tracking-[0.18em] text-rose-300">
-            ⚠ EMERGENCY DISPATCH
+            ⚠ EMERGENCY DISPATCH · SIMULATED
           </div>
           <div className="tnum mt-0.5 text-[10px] text-rose-400/90">
-            immobility in extreme heat · position relayed to responders
+            immobility in extreme heat · would relay live position to responders
           </div>
         </div>
       )}

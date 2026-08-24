@@ -91,6 +91,8 @@ export interface Shelter {
   water: boolean;
   hours: string;
   indoor_temp_f: number | null;
+  indoor_temp_assumed?: boolean;
+  ac_assumed?: boolean;
   distance_m?: number;
   walk_minutes?: number;
   thermal_relief_f?: number;

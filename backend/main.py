@@ -453,6 +453,7 @@ def shelters_nearby(
     return {
         "city_id": city_id,
         "count": len(found),
+        "source": service.shelter_source(city_id),
         "search": {"lat": lat, "lon": lon, "radius_m": radius_m, "require_ac": require_ac},
         "shelters": found,
     }

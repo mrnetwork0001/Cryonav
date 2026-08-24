@@ -575,10 +575,15 @@ class CryonavOrchestrator:
 
         standard: Route = bb.facts["standard_route"]
         cool: Route = bb.facts["cool_route"]
+        graph = bb.facts["graph"]
         total_ms = (time.perf_counter() - started) * 1000.0
 
         return {
             "city_id": city_id,
+            "network": {
+                "source": graph.source,
+                "nodes": len(graph.nodes),
+            },
             "hour": hour,
             "profile": {
                 "id": profile["id"],

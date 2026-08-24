@@ -12,15 +12,17 @@ import { api, type CitySummary, type NavigationResult } from "../lib/api";
  * is unreachable the live card falls back to the last measured values, marked OFFLINE.
  */
 
+// Recorded 2026-08-24 from the live backend; rendered only when the backend is
+// unreachable, with the card pill flipped to OFFLINE. Refresh when re-measuring.
 const FALLBACK = {
-  pathA_load_f: 114,
-  leg_before_min: 48.3,
-  leg_after_min: 29.1,
-  load_saved_f: 1.2,
-  shade_gain_pct: 9,
-  added_min: 1.6,
-  shelter: "Justa Center Respite",
-  solve_ms: 150,
+  pathA_load_f: 116,
+  leg_before_min: 57.0,
+  leg_after_min: 41.0,
+  load_saved_f: 2.2,
+  shade_gain_pct: 16,
+  added_min: 3.4,
+  shelter: "20 W Jackson",
+  solve_ms: 270,
 };
 
 interface CalSummary {
@@ -216,7 +218,8 @@ export default function Landing() {
                 <span className="text-[11px] text-slate-500">just now</span>
               </div>
               <div className="mt-2 text-[17px] font-semibold text-slate-100">
-                Capitol Mall → Roosevelt Row · 2.86 km
+                Capitol Mall → Roosevelt Row ·{" "}
+                {(nav?.routes.standard.metrics.distance_km ?? 3.4).toFixed(2)} km
               </div>
               <div className="mt-1 text-[11px] font-medium tracking-[0.16em] text-slate-500">
                 OUTDOOR DELIVERY WORKER · 15:00 MST
@@ -546,8 +549,8 @@ export default function Landing() {
               figures are real and measured.
             </p>
             <div className="mt-8 grid grid-cols-3 gap-6">
-              <Stat label="PAYLOAD" value="1,953 B" />
-              <Stat label="SOLVE" value="~12 ms" />
+              <Stat label="PAYLOAD" value="~2 KB" />
+              <Stat label="SOLVE" value="~270 ms" />
               <Stat label="OFFLINE" value="✓" />
             </div>
           </div>
@@ -564,7 +567,7 @@ export default function Landing() {
                   Carry 555 ml water.",
   "edge": {
     "runtime": "NVIDIA Jetson Orin Nano (simulated)",
-    "inference_ms": 12.6, "payload_bytes": 1953,
+    "inference_ms": 271.4, "payload_bytes": 2070,
     "offline_capable": true
   }
 }`}</pre>
@@ -588,7 +591,7 @@ export default function Landing() {
 
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <ProofCard
-              stat="127"
+              stat="130"
               label="tests"
               desc="Physics, routing, agents, API surface, upstream failure modes — including a no-regression sweep across all 27 corridor × profile combinations."
             />
@@ -605,7 +608,7 @@ export default function Landing() {
             <ProofCard
               stat="(city, t)"
               label="deterministic"
-              desc="Every simulated reading is a pure function of place and time. Screenshots, tests and demos reproduce byte-for-byte."
+              desc="Every reading is a pure function of place, time and the day's FortyGuard calibration — runs reproduce byte-for-byte within a calibration day."
             />
           </div>
         </div>
