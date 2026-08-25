@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { fetchFacts, type Facts } from "../lib/api";
 import { DOCS, type Block, type Section } from "../lib/docsContent";
 
 /**
@@ -306,6 +307,88 @@ function LiveCities({ note }: { note?: string }) {
   );
 }
 
+/**
+ * The two-street comparison, sampled rather than quoted.
+ *
+ * This table carries the product's central claim, and it moves with every daily calibration.
+ * Frozen, it was already wrong: it asserted a 10 degree air gap where the live sample measured
+ * 0.2 degrees, which is a stronger statement of the same thesis. A claim this load-bearing is
+ * the last thing that should be a literal.
+ */
+function LiveContrast({ note }: { note?: string }) {
+  const [f, setF] = useState<Facts | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    fetchFacts().then(setF).catch(() => setFailed(true));
+  }, []);
+
+  if (failed) {
+    return (
+      <div className="border-l-2 border-amber-500/50 bg-amber-500/[0.05] px-5 py-4 text-[14px] leading-[1.75] text-amber-200/90">
+        This comparison is sampled from the live API, which is unreachable from here. It is
+        deliberately not backed by remembered figures - the readings move with every daily
+        calibration, so a stored copy would be wrong without saying so.
+      </div>
+    );
+  }
+  if (!f) return <div className="text-[13px] text-slate-600">Sampling both streets...</div>;
+
+  const { hot, cool, air_gap_f, radiant_gap_f, exposure_gap_f } = f.contrast;
+  const rows: [string, string, string, string][] = [
+    ["Air temperature @ 2 m", `${hot.air_temp_2m_f.toFixed(1)} °F`, `${cool.air_temp_2m_f.toFixed(1)} °F`, `${Math.abs(air_gap_f).toFixed(1)} °F`],
+    ["Surface temperature", `${hot.surface_temp_f.toFixed(1)} °F`, `${cool.surface_temp_f.toFixed(1)} °F`, `${Math.abs(hot.surface_temp_f - cool.surface_temp_f).toFixed(1)} °F`],
+    ["Mean radiant temperature", `${hot.mean_radiant_temp_f.toFixed(1)} °F`, `${cool.mean_radiant_temp_f.toFixed(1)} °F`, `${Math.abs(radiant_gap_f).toFixed(1)} °F`],
+    ["Measured canopy", `${hot.canopy_cover_pct.toFixed(0)} %`, `${cool.canopy_cover_pct.toFixed(0)} %`, ""],
+    ["Exposure index", `${hot.exposure_index_f.toFixed(1)} °F`, `${cool.exposure_index_f.toFixed(1)} °F`, `${Math.abs(exposure_gap_f).toFixed(1)} °F`],
+    ["Risk band", hot.risk_level.toUpperCase(), cool.risk_level.toUpperCase(), ""],
+  ];
+
+  return (
+    <div>
+      <div className="cell cell-grid overflow-x-auto">
+        <table className="w-full min-w-[600px] text-left text-[13.5px]">
+          <thead>
+            <tr className="border-b border-slate-800/70 text-[9.5px] uppercase tracking-[0.2em] text-slate-500">
+              <th className="px-5 py-3.5 font-semibold">Measure</th>
+              <th className="px-5 py-3.5 font-semibold">{hot.name}</th>
+              <th className="px-5 py-3.5 font-semibold">{cool.name}</th>
+              <th className="px-5 py-3.5 font-semibold">Gap</th>
+            </tr>
+          </thead>
+          <tbody className="tnum">
+            {rows.map((r, i) => (
+              <tr key={i} className="border-b border-slate-800/50 last:border-0">
+                {r.map((cell, j) => (
+                  <td
+                    key={j}
+                    className={`px-5 py-3.5 align-top ${
+                      j === 0
+                        ? "font-medium text-slate-200"
+                        : j === 3
+                          ? "text-cyan-300"
+                          : "text-slate-400"
+                    }`}
+                  >
+                    {cell}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-2.5 text-[10.5px] leading-relaxed text-slate-600">
+        {note} {hot.kind} against {cool.kind}, both at {f.contrast.hour.toFixed(0)}:00 local in{" "}
+        {f.contrast.city_id}. The air layer separates them by{" "}
+        {Math.abs(air_gap_f).toFixed(1)} °F; the radiant load separates them by{" "}
+        {Math.abs(radiant_gap_f).toFixed(1)} °F. That is the whole argument, and it is sampled
+        rather than stated.
+      </p>
+    </div>
+  );
+}
+
 function BlockView({ block }: { block: Block }) {
   switch (block.kind) {
     case "h2":
@@ -347,6 +430,9 @@ function BlockView({ block }: { block: Block }) {
 
     case "live-cities":
       return <LiveCities note={block.text} />;
+
+    case "live-contrast":
+      return <LiveContrast note={block.text} />;
 
     case "table":
       return (

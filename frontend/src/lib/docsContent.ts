@@ -15,9 +15,12 @@
  * until it is updated. It is not generated at build time and nothing checks it. Treat a docs
  * edit as part of the change that made it necessary.
  *
- * The one exception is the coverage table, which is a "live-cities" block rendered from
- * /api/v1/cities and /api/v1/meta at page load. Those figures move whenever a city is
- * onboarded or a tile recalibrated, so freezing them here guaranteed drift.
+ * Two blocks are exceptions and render from the running system instead. "live-cities" is
+ * the coverage table, whose figures move whenever a city is onboarded or a tile recalibrated.
+ * "live-contrast" is the two-street comparison that carries the product's central claim; it
+ * moves with every daily calibration, and the frozen version was already wrong - it asserted
+ * a 10 degree air gap where the live sample measured 0.2, which is a stronger statement of the
+ * same thesis that no literal would ever have caught up with.
  *
  * Where something is simulated, modelled or limited, the sentence making the claim also
  * carries the qualification. Stating a capability in one place and its caveat in another is
@@ -32,7 +35,7 @@ export interface Block {
    * recalibrating a tile left the documentation quietly wrong while the landing page updated.
    * Prose belongs here; numbers the system already knows about itself do not.
    */
-  kind: "h2" | "p" | "ul" | "table" | "code" | "note" | "live-cities";
+  kind: "h2" | "p" | "ul" | "table" | "code" | "note" | "live-cities" | "live-contrast";
   text?: string;
   items?: string[];
   headers?: string[];
@@ -64,43 +67,12 @@ export const DOCS: Section[] = [
         "text": "Every navigation app optimises metres and minutes. A weather feed sampled at 2 m above ground is nearly useless for separating a bare asphalt arterial from a shaded one, because the well-mixed air layer looks similar over both; the radiant load streaming off the surface does not. Here are two Phoenix streets 500 m apart, at the same moment, 15:00 local, as shown on the Cryonav landing page."
       },
       {
-        "kind": "table",
-        "headers": [
-          "Measure",
-          "Van Buren St x 7th Ave (unshaded asphalt corridor)",
-          "Central Ave canopy spine (mature mesquite alley)"
-        ],
-        "rows": [
-          [
-            "Air temperature @ 2 m",
-            "114.8 °F",
-            "104.6 °F"
-          ],
-          [
-            "Asphalt surface temperature",
-            "179.7 °F",
-            "120.5 °F"
-          ],
-          [
-            "Mean radiant temperature",
-            "155.4 °F",
-            "109.8 °F"
-          ],
-          [
-            "Exposure index (thermal load)",
-            "123.8 °F",
-            "102.9 °F"
-          ],
-          [
-            "Risk band",
-            "EXTREME",
-            "MODERATE"
-          ]
-        ]
+        "kind": "live-contrast",
+        "text": "Sampled from /api/v1/facts when this page loads."
       },
       {
         "kind": "p",
-        "text": "The air gap between them is 10.2 °F. The mean-radiant gap is 45.6 °F, and the exposure index that Cryonav routes on - heat index plus 0.32 x max(MRT - T_air, 0), with that radiant term capped at the 15 °F the NWS publishes as the maximum full-sun correction - separates them by 20.9 °F. These are figures from this repository's own thermal model over FortyGuard microclimate data, not direct observations of each street: FortyGuard supplies the ambient curve, canopy is measured from the Meta / WRI canopy-height map at 1.19 m, the surface anomaly is measured from Landsat Collection 2 surface temperature at 30 m and from NASA ECOSTRESS at 70 m for the afternoon overpass Landsat never samples, and the mean-radiant step over that geometry is Cryonav's own model. The numbers also move with each day's calibration, and the direction of that movement matters - a later run on the 2026-08-24 calibration, using FortyGuard's observed /v1/heatmap raster for Phoenix's spatial air field, put the same two streets 0.1 °F apart on air temperature and 37 °F apart on mean radiant temperature. The observed air layer genuinely cannot tell the streets apart. That is the thesis, not a caveat against it."
+        "text": "The gaps are shown live in the table below rather than stated here, because they move with each day's calibration and a second copy in prose could only drift away from the first. The index Cryonav routes on is the heat index plus 0.32 x max(MRT - T_air, 0), with that radiant term capped at the 15 °F the NWS publishes as the maximum full-sun correction. These are figures from this repository's own thermal model over FortyGuard microclimate data, not direct observations of each street: FortyGuard supplies the ambient curve, canopy is measured from the Meta / WRI canopy-height map at 1.19 m, the surface anomaly is measured from Landsat Collection 2 surface temperature at 30 m and from NASA ECOSTRESS at 70 m for the afternoon overpass Landsat never samples, and the mean-radiant step over that geometry is Cryonav's own model. The numbers also move with each day's calibration, and the direction of that movement matters - a later run on the 2026-08-24 calibration, using FortyGuard's observed /v1/heatmap raster for Phoenix's spatial air field, put the same two streets 0.1 °F apart on air temperature and 37 °F apart on mean radiant temperature. The observed air layer genuinely cannot tell the streets apart. That is the thesis, not a caveat against it."
       },
       {
         "kind": "note",
@@ -682,7 +654,7 @@ export const DOCS: Section[] = [
       },
       {
         "kind": "p",
-        "text": "Canopy fraction is counted pixels of vegetation at least 3 m tall in the Meta / WRI Canopy Height Maps v6 at 1.194 m ground sample, over a window of 21.3 to 25.2 million pixels per city. It is not a per-class estimate. The difference matters: Phoenix's 39 park polygons average 17.3% canopy, and Margaret T. Hance Park - 13.7 hectares - measures 14.1%, against the 74% the hand-authored fixture in cities.json assigned it. Civic Space Park measures 28.5% against a fixture of 61%. Those fixtures now serve only as fallback when a fetched file is absent."
+        "text": "Canopy fraction is counted pixels of vegetation at least 3 m tall in the Meta / WRI Canopy Height Maps v6 at 1.194 m ground sample, over a window of 21.3 to 25.2 million pixels per city. It is not a per-class estimate. The difference matters: Phoenix's 39 park polygons average 16.2% canopy, and Margaret T. Hance Park - 13.7 hectares - measures 14.1%, against the 74% the hand-authored fixture in cities.json assigned it. Civic Space Park measures 28.5% against a fixture of 61%. Those fixtures now serve only as fallback when a fetched file is absent."
       },
       {
         "kind": "p",

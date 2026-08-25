@@ -18,6 +18,9 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from functools import lru_cache
+from pathlib import Path
+
 from pydantic import BaseModel, Field
 
 import standards
@@ -323,6 +326,129 @@ def meta() -> Dict[str, Any]:
         # Where the terrain numbers physically come from, per city, straight out of the data
         # files rather than a hand-written list that could drift from them.
         "observed_data": service.data_provenance(),
+    }
+
+
+# --------------------------------------------------------------------------------------
+# Facts about the system, computed rather than quoted
+# --------------------------------------------------------------------------------------
+
+#: The two coordinates the landing page and the docs use to show that air temperature cannot
+#: separate two streets. They are fixed because they are geographic places with names, but
+#: their READINGS are always sampled live - a hardcoded temperature goes stale the moment the
+#: calibration changes, and this pair carries the product's central claim.
+CONTRAST_POINTS = {
+    "hot": ("Van Buren St x 7th Ave", "unshaded asphalt corridor", 33.4520, -112.0825),
+    "cool": ("Virginia G. Piper Plaza", "highest measured canopy in the tile", 33.4508, -112.0691),
+}
+
+
+@lru_cache(maxsize=8)
+def _street_node_count(city_id: str) -> int:
+    """Routable nodes in a city's fetched OSM graph.
+
+    Read from the streets file's own node_count rather than by building the routing graph,
+    which is expensive and would make a metadata endpoint slower than a route solve.
+    """
+    path = Path(__file__).resolve().parent.parent / "data" / "streets" / f"{city_id}.json"
+    if not path.exists():
+        return 0
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            return int(json.load(fh).get("node_count", 0))
+    except Exception:
+        return 0
+
+
+@lru_cache(maxsize=1)
+def _test_count() -> int:
+    """Number of test functions in the suite, counted from the files.
+
+    The landing page and the docs both quote this. Quoting it as a literal meant the number
+    was correct only until the next test was written, and nothing would have caught the drift.
+    """
+    total = 0
+    tests_dir = Path(__file__).resolve().parent / "tests"
+    for path in tests_dir.glob("test_*.py"):
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if line.lstrip().startswith("def test_"):
+                total += 1
+    return total
+
+
+@app.get(f"{API_PREFIX}/facts")
+def facts() -> Dict[str, Any]:
+    """Every figure the interface quotes about Cryonav itself, computed at request time.
+
+    This endpoint exists because the landing page and the documentation had accumulated
+    forty-odd hardcoded numbers - canopy resolutions, node counts, payload sizes, the
+    two-street temperature comparison. Each was true when written and had no mechanism to stay
+    true. A page that states a stale figure confidently is worse than one that states nothing,
+    so the figures now come from the running system and cannot disagree with it.
+
+    Fixed here are only the things that genuinely are fixed: which two coordinates illustrate
+    the contrast, and their street names. Every value attached to them is sampled.
+    """
+    cities = service.cities()
+    provenance = service.data_provenance()
+
+    layers, still_assumed = set(), 0
+    nodes = 0
+    for cid in service.city_ids():
+        prov = provenance.get(cid, {})
+        if prov.get("geometry"):
+            layers.update({"osm_streets", "osm_urban", "osm_shelters"})
+        if prov.get("canopy"):
+            layers.add("canopy")
+        if prov.get("surface_temperature"):
+            layers.add("surface_temperature")
+        if prov.get("surface_temperature_peak"):
+            layers.add("surface_temperature_peak")
+        if prov.get("still_estimated"):
+            still_assumed += len(prov["still_estimated"])
+        nodes += _street_node_count(cid)
+
+    hour = 15.0
+    contrast: Dict[str, Any] = {"city_id": "phoenix", "hour": hour}
+    for key, (name, kind, lat, lon) in CONTRAST_POINTS.items():
+        r = service.sample("phoenix", lat, lon, hour)
+        contrast[key] = {
+            "name": name,
+            "kind": kind,
+            "coords": [lat, lon],
+            "air_temp_2m_f": r.air_temp_2m_f,
+            "surface_temp_f": r.surface_temp_f,
+            "mean_radiant_temp_f": r.mean_radiant_temp_f,
+            "exposure_index_f": r.exposure_index_f,
+            "canopy_cover_pct": r.canopy_cover_pct,
+            "risk_level": r.risk_level,
+        }
+    contrast["air_gap_f"] = round(
+        contrast["hot"]["air_temp_2m_f"] - contrast["cool"]["air_temp_2m_f"], 1
+    )
+    contrast["radiant_gap_f"] = round(
+        contrast["hot"]["mean_radiant_temp_f"] - contrast["cool"]["mean_radiant_temp_f"], 1
+    )
+    contrast["exposure_gap_f"] = round(
+        contrast["hot"]["exposure_index_f"] - contrast["cool"]["exposure_index_f"], 1
+    )
+
+    phx = provenance.get("phoenix", {})
+    return {
+        "cities": len(cities),
+        "shelters": sum(int(c.get("shelter_count", 0)) for c in cities),
+        "raster_cells": sum(int(c.get("raster_tiles", 0)) for c in cities),
+        "routable_nodes": nodes or None,
+        "measured_layers": len(layers),
+        "assumed_constants_remaining": still_assumed,
+        "tests": _test_count(),
+        "resolution": {
+            "sensing_agl_m": SENSING_ELEVATION_M,
+            "canopy_m": (phx.get("canopy") or {}).get("resolution_m"),
+            "surface_m": (phx.get("surface_temperature") or {}).get("resolution_m"),
+            "surface_peak_m": (phx.get("surface_temperature_peak") or {}).get("resolution_m"),
+        },
+        "contrast": contrast,
     }
 
 

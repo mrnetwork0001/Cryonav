@@ -312,3 +312,62 @@ class TestJetsonEdge:
         instruction = self._post(client).json()["instruction"]
         assert "COOL ROUTE" in instruction
         assert "ml water" in instruction
+
+
+class TestFactsAreComputed:
+    """The /facts endpoint exists so the interface stops quoting literals about itself.
+
+    The landing page and the documentation had accumulated roughly forty hardcoded figures -
+    canopy resolutions, node counts, the two-street temperature comparison. Every one was true
+    when written and had no mechanism to stay true, and at least one had already gone wrong:
+    the copy asserted a 10 degree air gap between the two streets where the live sample
+    measured 0.2. These tests guard the replacement.
+    """
+
+    def test_counts_match_the_catalogue(self, client):
+        f = client.get("/api/v1/facts").json()
+        cities = client.get("/api/v1/cities").json()
+        assert f["cities"] == cities["count"]
+        assert f["shelters"] == sum(c["shelter_count"] for c in cities["cities"])
+        assert f["raster_cells"] == sum(c["raster_tiles"] for c in cities["cities"])
+
+    def test_test_count_is_counted_not_quoted(self, client):
+        """The figure the site prints must be the number of tests that actually exist."""
+        import pathlib
+
+        real = 0
+        for path in (pathlib.Path(__file__).parent).glob("test_*.py"):
+            real += sum(
+                1 for line in path.read_text().splitlines() if line.lstrip().startswith("def test_")
+            )
+        assert client.get("/api/v1/facts").json()["tests"] == real
+
+    def test_contrast_is_sampled_not_stored(self, client):
+        """Both points must carry live readings, and the gaps must follow from them."""
+        c = client.get("/api/v1/facts").json()["contrast"]
+        for side in ("hot", "cool"):
+            p = c[side]
+            assert p["air_temp_2m_f"] > 0 and p["surface_temp_f"] > 0
+            assert p["risk_level"] in ("low", "moderate", "high", "extreme")
+        assert c["air_gap_f"] == pytest.approx(
+            c["hot"]["air_temp_2m_f"] - c["cool"]["air_temp_2m_f"], abs=0.06
+        )
+        assert c["radiant_gap_f"] == pytest.approx(
+            c["hot"]["mean_radiant_temp_f"] - c["cool"]["mean_radiant_temp_f"], abs=0.06
+        )
+
+    def test_the_shaded_point_really_is_shaded(self, client):
+        """The contrast means nothing if the two points are not actually different.
+
+        This guards the pair itself: an earlier version used a Central Ave coordinate that
+        measurement later put at 21% canopy, so the "canopy spine" was not one.
+        """
+        c = client.get("/api/v1/facts").json()["contrast"]
+        assert c["cool"]["canopy_cover_pct"] > c["hot"]["canopy_cover_pct"] + 30
+        assert c["radiant_gap_f"] > 10
+
+    def test_resolutions_come_from_the_data_files(self, client):
+        res = client.get("/api/v1/facts").json()["resolution"]
+        assert res["canopy_m"] == 1.194
+        assert res["surface_m"] in (30, 70)
+        assert res["sensing_agl_m"] == 2.0

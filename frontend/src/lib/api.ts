@@ -395,3 +395,57 @@ export async function verifyLive(
       : null,
   };
 }
+
+
+/** A sampled point in the two-street contrast. */
+export interface ContrastPoint {
+  name: string;
+  kind: string;
+  coords: [number, number];
+  air_temp_2m_f: number;
+  surface_temp_f: number;
+  mean_radiant_temp_f: number;
+  exposure_index_f: number;
+  canopy_cover_pct: number;
+  risk_level: string;
+}
+
+/**
+ * Figures the interface quotes about Cryonav itself, computed by the backend at request time.
+ *
+ * These used to be literals scattered through the landing page and the documentation. Each was
+ * true when written and had no way to stay true: recalibrating a tile or onboarding a city left
+ * the pages confidently wrong. The first live read made the point - the two-street air gap the
+ * copy called "10 degrees" measured 0.2 degrees against that day's calibration, which is a
+ * stronger statement of the same thesis and one no literal would ever have caught up with.
+ */
+export interface Facts {
+  cities: number;
+  shelters: number;
+  raster_cells: number;
+  routable_nodes: number | null;
+  measured_layers: number;
+  assumed_constants_remaining: number;
+  tests: number;
+  resolution: {
+    sensing_agl_m: number;
+    canopy_m: number | null;
+    surface_m: number | null;
+    surface_peak_m: number | null;
+  };
+  contrast: {
+    city_id: string;
+    hour: number;
+    hot: ContrastPoint;
+    cool: ContrastPoint;
+    air_gap_f: number;
+    radiant_gap_f: number;
+    exposure_gap_f: number;
+  };
+}
+
+export async function fetchFacts(): Promise<Facts> {
+  const r = await fetch("/api/v1/facts");
+  if (!r.ok) throw new Error(`facts returned ${r.status}`);
+  return r.json();
+}

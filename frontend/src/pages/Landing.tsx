@@ -1,6 +1,13 @@
 import type React from "react";
 import { useEffect, useState } from "react";
-import { api, type CitySummary, type NavigationResult } from "../lib/api";
+import {
+  api,
+  fetchFacts,
+  type CitySummary,
+  type ContrastPoint,
+  type Facts,
+  type NavigationResult,
+} from "../lib/api";
 import {
   IconArrow,
   IconInstant,
@@ -91,11 +98,17 @@ export default function Landing() {
   const [nav, setNav] = useState<NavigationResult | null>(null);
   const [cals, setCals] = useState<Record<string, CalSummary>>({});
   const [offline, setOffline] = useState(false);
+  // Every figure this page states about Cryonav itself. Previously these were literals;
+  // see lib/api.ts Facts for why that could not hold.
+  const [facts, setFacts] = useState<Facts | null>(null);
 
   useEffect(() => {
     api
       .cities()
       .then((c) => setCities(c.cities))
+      .catch(() => setOffline(true));
+    fetchFacts()
+      .then(setFacts)
       .catch(() => setOffline(true));
     fetch("/api/v1/health")
       .then((r) => r.json())
@@ -114,7 +127,7 @@ export default function Landing() {
       .catch(() => setOffline(true));
   }, []);
 
-  useScrollReveal([cities.length, !!nav]);
+  useScrollReveal([cities.length, !!nav, !!facts]);
 
   const pathALoad = nav?.routes.standard.metrics.mean_exposure_index_f ?? FALLBACK.pathA_load_f;
   const reroute = nav?.shelter_reroute;
@@ -315,40 +328,43 @@ export default function Landing() {
               Air temperature can&apos;t tell these two streets apart.{" "}
               <span className="text-slate-500">A body can.</span>
             </h2>
+            {/* The gaps are read from the live sample rather than asserted. The frozen copy
+                claimed a 10 degree air difference; on the day this was wired the real air gap
+                measured 0.2 degrees while the radiant gap measured 27 - a stronger statement
+                of the same thesis, and one a literal would never have caught up with. */}
             <p className="mt-7 text-[15px] leading-[1.75] text-slate-400">
-              Two Phoenix streets, 500 metres apart, same moment - measured by this repo&apos;s own
-              thermal model over FortyGuard microclimate data. A weather API sees a 10&deg;
-              difference. A pedestrian&apos;s body absorbs a 46&deg; difference in radiant load, and
-              that is where heat illness actually comes from.
+              Two Phoenix streets, sampled at the same moment from FortyGuard microclimate data
+              fused with measured canopy and surface temperature.{" "}
+              {facts ? (
+                <>
+                  A weather API sees{" "}
+                  <span className="text-slate-200">
+                    {Math.abs(facts.contrast.air_gap_f).toFixed(1)}&deg;F
+                  </span>{" "}
+                  between them. A pedestrian&apos;s body absorbs{" "}
+                  <span className="text-slate-200">
+                    {Math.abs(facts.contrast.radiant_gap_f).toFixed(1)}&deg;F
+                  </span>{" "}
+                  of radiant difference, and that is where heat illness actually comes from.
+                </>
+              ) : (
+                <>
+                  The air layer barely separates them. The radiant load does, and that is where
+                  heat illness actually comes from.
+                </>
+              )}
             </p>
           </div>
 
-          <div className="cell-grid reveal mt-14 grid lg:grid-cols-[1.3fr_1fr]">
-            <StreetCell
-              tone="hot"
-              name="Van Buren St x 7th Ave"
-              kind="unshaded asphalt corridor"
-              rows={[
-                ["Air @ 2 m", "114.8 °F"],
-                ["Asphalt surface", "179.7 °F"],
-                ["Mean radiant temp", "155.4 °F"],
-              ]}
-              exposure="123.8 &deg;F"
-              tier="EXTREME"
-            />
-            <StreetCell
-              tone="cool"
-              name="Central Ave canopy spine"
-              kind="mature mesquite alley"
-              rows={[
-                ["Air @ 2 m", "104.6 °F"],
-                ["Asphalt surface", "120.5 °F"],
-                ["Mean radiant temp", "109.8 °F"],
-              ]}
-              exposure="102.9 &deg;F"
-              tier="MODERATE"
-            />
-          </div>
+          {/* Sampled live from /api/v1/facts, not quoted. These two coordinates carry the
+              product's central claim, and a frozen temperature stops being true the moment
+              the calibration moves - which it does daily. */}
+          {facts && (
+            <div className="cell-grid reveal mt-14 grid lg:grid-cols-[1.3fr_1fr]">
+              <StreetCell tone="hot" point={facts.contrast.hot} />
+              <StreetCell tone="cool" point={facts.contrast.cool} />
+            </div>
+          )}
 
           <p className="tnum reveal mt-5 text-[10.5px] leading-relaxed text-slate-600">
             Reproduce:{" "}
@@ -381,12 +397,18 @@ export default function Landing() {
             </p>
           </div>
           <div className="cell-grid reveal mt-12 grid grid-cols-2 lg:mt-0 lg:grid-cols-3">
-            <BigStat value="1.19 m" label="canopy resolution" />
-            <BigStat value="4" label="cities onboarded" />
-            <BigStat value="6" label="measured layers" />
-            <BigStat value="142" label="tests passing" />
-            <BigStat value="30 m" label="surface temperature" />
-            <BigStat value="0" label="assumed constants left" />
+            <BigStat value={facts ? `${facts.resolution.canopy_m} m` : "-"} label="canopy resolution" />
+            <BigStat value={facts ? String(facts.cities) : "-"} label="cities onboarded" />
+            <BigStat value={facts ? String(facts.measured_layers) : "-"} label="measured layers" />
+            <BigStat value={facts ? String(facts.tests) : "-"} label="tests passing" />
+            <BigStat
+              value={facts ? `${facts.resolution.surface_peak_m ?? facts.resolution.surface_m} m` : "-"}
+              label="surface temperature"
+            />
+            <BigStat
+              value={facts ? String(facts.assumed_constants_remaining) : "-"}
+              label="assumed constants left"
+            />
           </div>
         </div>
       </section>
@@ -838,15 +860,14 @@ function ProofCell(props: { stat: string; label: string; desc: string }) {
   );
 }
 
-function StreetCell(props: {
-  tone: "hot" | "cool";
-  name: string;
-  kind: string;
-  rows: [string, string][];
-  exposure: string;
-  tier: string;
-}) {
-  const hot = props.tone === "hot";
+function StreetCell({ tone, point }: { tone: "hot" | "cool"; point: ContrastPoint }) {
+  const hot = tone === "hot";
+  const rows: [string, string][] = [
+    ["Air @ 2 m", `${point.air_temp_2m_f.toFixed(1)} °F`],
+    ["Surface", `${point.surface_temp_f.toFixed(1)} °F`],
+    ["Mean radiant temp", `${point.mean_radiant_temp_f.toFixed(1)} °F`],
+    ["Measured canopy", `${point.canopy_cover_pct.toFixed(0)} %`],
+  ];
   return (
     <div
       className="cell relative flex flex-col overflow-hidden p-7 sm:p-9"
@@ -858,9 +879,9 @@ function StreetCell(props: {
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-[18px] font-medium text-slate-100">{props.name}</div>
+          <div className="text-[18px] font-medium text-slate-100">{point.name}</div>
           <div className="mt-1 text-[10px] uppercase tracking-[0.18em] text-slate-500">
-            {props.kind}
+            {point.kind}
           </div>
         </div>
         <span
@@ -868,11 +889,11 @@ function StreetCell(props: {
             hot ? "bg-rose-500/15 text-rose-400" : "bg-yellow-400/10 text-yellow-300"
           }`}
         >
-          {props.tier}
+          {point.risk_level.toUpperCase()}
         </span>
       </div>
       <div className="tnum mt-8 flex-1 space-y-3 text-[13px]">
-        {props.rows.map(([k, v]) => (
+        {rows.map(([k, v]) => (
           <div key={k} className="flex justify-between border-b border-slate-800/50 pb-3">
             <span className="text-slate-500">{k}</span>
             <span className="font-medium text-slate-200">{v}</span>
@@ -885,8 +906,9 @@ function StreetCell(props: {
           className={`tnum font-mono text-[34px] font-light sm:text-[40px] ${
             hot ? "text-rose-400" : "text-cyan-300"
           }`}
-          dangerouslySetInnerHTML={{ __html: props.exposure }}
-        />
+        >
+          {point.exposure_index_f.toFixed(1)} °F
+        </span>
       </div>
     </div>
   );
