@@ -13,3 +13,6 @@ frontend/dist/
 frontend/tsconfig.tsbuildinfo
 demo/node_modules/
 demo/footage/
+
+# Stray WMS capabilities dump from an early NLCD data-source probe; not an input.
+mrlc_caps.xml
