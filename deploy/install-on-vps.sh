@@ -123,8 +123,15 @@ export NEEDRESTART_MODE=l
 export NEEDRESTART_SUSPEND=1
 
 missing=""
-python3 -c 'import venv' 2>/dev/null || missing="$missing python3-venv"
-python3 -c 'import ensurepip' 2>/dev/null || missing="$missing python3-pip"
+# Debian and Ubuntu ship the `venv` MODULE in the stdlib but move the bundled wheels into the
+# python3-venv PACKAGE. So `import venv` and even `python3 -m venv --help` both succeed on a
+# box where `python3 -m venv foo` then dies with "ensurepip is not available". The only
+# honest test is to actually build one.
+_probe=$(mktemp -d)
+if ! python3 -m venv "$_probe/v" >/dev/null 2>&1; then
+  missing="$missing python3-venv"
+fi
+rm -rf "$_probe"
 command -v curl >/dev/null 2>&1 || missing="$missing curl"
 
 if [ -n "$missing" ]; then
