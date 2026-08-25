@@ -62,7 +62,16 @@ API_KEY_HEADER = "api-key"
 
 #: Advertised capability of the FortyGuard Temperature API(R) product we integrate against.
 SENSING_ELEVATION_M = 2.0
-MICROCLIMATE_RESOLUTION_MI2 = 10.0
+#: How many points of a request are fetched live. /v1/env_params is an asynchronous poll
+#: costing seconds per point, so a route that samples hundreds of coordinates cannot be
+#: fully live. The response always states how many actually were.
+MAX_LIVE_POINTS = 4
+
+#: How long an INTERACTIVE live call waits for the async job before giving up and serving the
+#: calibrated field. The upstream queue is unbounded in practice -- the same two-point request
+#: measured 22 s once and over 120 s a few minutes later -- so a request path that waits for it
+#: indefinitely will hang. The daily calibration job uses the long timeout; this one does not.
+LIVE_POLL_TIMEOUT_S = 25.0
 
 #: The metrics we ask the upstream for. Also the checklist used to report how much of a
 #: "live" reading was genuinely upstream data versus locally modelled.
@@ -174,9 +183,8 @@ class FeedStatus:
     status_code: int
     ok: bool
     latency_ms: float
-    resolution_mi2: float = MICROCLIMATE_RESOLUTION_MI2
     elevation_m: float = SENSING_ELEVATION_M
-    endpoint: str = HEAT_INTELLIGENCE_PATH
+    endpoint: str = ENV_PARAMS_PATH
     detail: str = ""
     #: True when a live feed was configured and attempted but the simulation had to stand in.
     #: Without this a 401 or a wrong endpoint path is indistinguishable from a healthy feed.
@@ -216,6 +224,12 @@ class FortyGuardService:
         self._heatmaps: Dict[str, Dict[str, Any]] = {}
         self._urban: Dict[str, Optional[UrbanIndex]] = {}
         self._real_shelters: Dict[str, Dict[str, Any]] = {}
+        #: Memoised per-point env_params series, keyed (lat3, lon3, date). The upstream is
+        #: an async poll, so a request that samples one coordinate repeatedly must not
+        #: re-fetch it. Bounded by the number of distinct points a session touches.
+        self._live_cache: Dict[Tuple[float, float, str], Dict[str, Any]] = {}
+        #: How many points of the last request were genuinely fetched live.
+        self._live_point_count: int = 0
         self._load_cities(cities_path)
         self._load_calibrations()
         self._load_heatmaps()
@@ -768,24 +782,11 @@ class FortyGuardService:
             city["center"][0], city["center"][1], clim["air_temp_max_f"], date=date
         )
 
-        loc = (result.get("locations") or [{}])[0]
-        params = loc.get("parameters") or {}
-        rh = params.get("relative_humidity_percent") or []
-        wb_c = params.get("wet_bulb_temperature_celsius") or []
-        if len(rh) < 24 or len(wb_c) < 24:
-            raise FortyGuardUpstreamError(
-                f"expected 24 hourly samples, got rh={len(rh)} wet_bulb={len(wb_c)}"
-            )
-
-        air_f = [
-            round(self.dry_bulb_from_wet_bulb_f(thermal.c_to_f(wb_c[h]), rh[h]), 2) for h in range(24)
-        ]
-        clouds = params.get("cloud_cover_octas") or []
-        clearness = [
-            round(clamp(1.0 - (clouds[h] / 100.0) * 0.6, 0.35, 1.0), 3) if h < len(clouds) else clim["sky_clearness"]
-            for h in range(24)
-        ]
-        solar = (loc.get("solar_irradiance") or {}).get("clear_sky") or {}
+        parsed = self._parse_env_series(result, clim)
+        loc, air_f, rh, wb_c, clearness, solar = (
+            parsed["loc"], parsed["air_f"], parsed["rh"], parsed["wb_c"],
+            parsed["clearness"], parsed["solar"],
+        )
 
         calibration = {
             "city_id": city_id,
@@ -817,6 +818,35 @@ class FortyGuardService:
                 json.dump(calibration, fh, indent=2)
         self._calibration[city_id] = calibration
         return calibration
+
+    def _parse_env_series(self, result: Dict[str, Any], clim: Dict[str, Any]) -> Dict[str, Any]:
+        """The 24 h arrays inside an /v1/env_params response.
+
+        Shared by the daily city calibration and the per-request live call, so the two can
+        never drift into interpreting the same upstream payload differently.
+        """
+        loc = (result.get("locations") or [{}])[0]
+        params = loc.get("parameters") or {}
+        rh = params.get("relative_humidity_percent") or []
+        wb_c = params.get("wet_bulb_temperature_celsius") or []
+        if len(rh) < 24 or len(wb_c) < 24:
+            raise FortyGuardUpstreamError(
+                f"expected 24 hourly samples, got rh={len(rh)} wet_bulb={len(wb_c)}"
+            )
+        air_f = [
+            round(self.dry_bulb_from_wet_bulb_f(thermal.c_to_f(wb_c[h]), rh[h]), 2) for h in range(24)
+        ]
+        clouds = params.get("cloud_cover_octas") or []
+        clearness = [
+            round(clamp(1.0 - (clouds[h] / 100.0) * 0.6, 0.35, 1.0), 3)
+            if h < len(clouds) else clim["sky_clearness"]
+            for h in range(24)
+        ]
+        solar = (loc.get("solar_irradiance") or {}).get("clear_sky") or {}
+        return {
+            "loc": loc, "air_f": air_f, "rh": rh, "wb_c": wb_c,
+            "clearness": clearness, "solar": solar,
+        }
 
     def heatmap_fetch(
         self, city_id: str, date: Optional[str] = None, persist: bool = True,
@@ -1209,6 +1239,9 @@ class FortyGuardService:
         started = time.perf_counter()
         readings: Optional[List[ThermalReading]] = None
         status = FeedStatus(source="cryonav_simulation", status_code=200, ok=True, latency_ms=0.0)
+        # Per-request, not per-instance. Left as instance state it survived into the NEXT
+        # request and reported points as live that this call never fetched.
+        self._live_point_count = 0
 
         if prefer_live and self.live:
             try:
@@ -1276,11 +1309,23 @@ class FortyGuardService:
             "city_id": resolved_city,
             "hour": hour,
             "feed": status.as_dict(),
+            # Resolution is reported as what each source actually delivers. A single
+            # "resolution_mi2: 10.0" used to sit here; it was Cryonav's own invention, sent
+            # to an endpoint that has no resolution parameter, and published as though it
+            # were FortyGuard's specification.
             "sensing": {
                 "elevation_m": SENSING_ELEVATION_M,
-                "resolution_mi2": MICROCLIMATE_RESOLUTION_MI2,
+                "endpoint": ENV_PARAMS_PATH,
                 "tile_area_mi2": self.tile_area_mi2(resolved_city),
-                "endpoint": HEAT_INTELLIGENCE_PATH,
+                "live_points": getattr(self, "_live_point_count", 0),
+                "resolution": {
+                    "fortyguard_ambient": "point query, 24 h hourly series (no spatial parameter)",
+                    "fortyguard_raster_m": 100 if resolved_city in self._heatmaps else None,
+                    "canopy_m": 1.19,
+                    "surface_temp_m": 70 if "surface_temperature_peak" in (
+                        getattr(self._urban.get(resolved_city), "data", {}) or {}
+                    ) else 30,
+                },
                 "calibration": self.calibration_summary(resolved_city),
             },
             "count": len(readings),
@@ -1300,122 +1345,95 @@ class FortyGuardService:
     def _call_live(
         self, points: Sequence[Tuple[float, float]], city_id: str, hour: float
     ) -> Tuple[List[ThermalReading], List[str]]:
-        """Real FortyGuard call. Imported lazily so the offline path has no hard dependency.
+        """Per-request call to the real FortyGuard API, one point at a time.
 
-        Returns the readings plus the list of metric fields that genuinely came back from
-        upstream. Every failure mode below raises :class:`FortyGuardUpstreamError` carrying the
-        real HTTP status, because the caller degrades to simulation and must be able to say
-        *why* rather than reporting a healthy feed.
+        WHAT THIS USED TO DO, AND WHY IT WAS WRONG. It POSTed a ``locations`` array plus a
+        ``resolution_mi2`` field to /v1/heat_intelligence. That endpoint accepts neither: it
+        wants a flat latitude/longitude, and it has no resolution parameter at all. Every call
+        returned 422, the caller caught it, and the app silently served its daily calibration
+        while reporting a green feed. The invented ``resolution_mi2: 10.0`` was then published
+        in the API response as if it were FortyGuard's figure.
+
+        The real contract is /v1/env_params: flat lat/lon plus a reference temperature and a
+        date_time object, answered ASYNCHRONOUSLY -- the POST returns an activity_id and the
+        payload is collected from /v1/status/{id}. It yields the observed 24 h series for that
+        point, which is what a per-request live call should use.
+
+        Because each call is a poll costing seconds, only the first MAX_LIVE_POINTS points are
+        fetched live; the rest come from the calibrated field. The caller is told exactly how
+        many were live, so a partially-live answer never presents itself as fully live.
         """
-        import httpx  # noqa: PLC0415
+        date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        clim = self.city(city_id)["climate"]
+        h = int(clamp(hour, 0, 23))
 
-        body = {
-            "locations": [{"latitude": lat, "longitude": lon} for lat, lon in points],
-            "elevation_m": SENSING_ELEVATION_M,
-            "resolution_mi2": MICROCLIMATE_RESOLUTION_MI2,
-            "metrics": list(LIVE_METRIC_FIELDS),
-            "units": "imperial",
-        }
-        url = f"{self.base_url}{HEAT_INTELLIGENCE_PATH}"
+        readings: List[ThermalReading] = []
+        live_count = 0
+        fields: set = set()
 
-        try:
-            resp = httpx.post(
-                url,
-                json=body,
-                headers={
-                    API_KEY_HEADER: self.api_key,
-                    "Content-Type": "application/json",
-                    "Accept": "application/json",
-                    "User-Agent": "Cryonav/1.0 (FortyGuard Hackathon 26)",
-                },
-                timeout=self.timeout_s,
-            )
-        except httpx.HTTPError as exc:
-            raise FortyGuardUpstreamError(f"transport error contacting {url}: {exc}") from exc
+        for idx, (lat, lon) in enumerate(points):
+            if idx >= MAX_LIVE_POINTS:
+                readings.append(self.sample(city_id, lat, lon, hour))
+                continue
+            series = self._live_series(lat, lon, clim["air_temp_max_f"], date)
+            record = {
+                "air_temperature_2m": series["air_f"][h],
+                "relative_humidity": float(series["rh"][h]),
+                "wind_speed": clim["wind_speed_mph"],
+                "solar_irradiance": self._hour_irradiance(series, h),
+            }
+            fields.update(("air_temperature_2m", "relative_humidity"))
+            if series["solar"].get("ghi") is not None:
+                fields.add("solar_irradiance")
+            readings.append(self._reading_from_live(city_id, (lat, lon), record))
+            live_count += 1
 
-        if resp.status_code >= 400:
-            # Surface the body: an auth or quota rejection almost always explains itself there,
-            # and that message is what tells us whether the key, the path or the plan is wrong.
-            snippet = resp.text[:200].replace("\n", " ").strip()
-            raise FortyGuardUpstreamError(
-                f"{resp.reason_phrase or 'HTTP error'} from {HEAT_INTELLIGENCE_PATH}"
-                + (f" -- {snippet}" if snippet else ""),
-                status_code=resp.status_code,
-            )
-
-        try:
-            payload = resp.json()
-        except ValueError as exc:
-            raise FortyGuardUpstreamError(
-                f"upstream returned non-JSON ({resp.headers.get('content-type', 'unknown type')})",
-                status_code=resp.status_code,
-            ) from exc
-
-        # FortyGuard wraps every response in its own envelope and signals failure with an
-        # in-body flag, e.g.
-        #   {"error": true, "status_code": 401, "details": {"message": "Missing ... 'api-key' ..."}}
-        # An HTTP 200 carrying error:true must not be read as success.
-        if isinstance(payload, dict) and payload.get("error"):
-            details = payload.get("details") or {}
-            message = (
-                details.get("message")
-                if isinstance(details, dict)
-                else str(details)
-            ) or payload.get("message") or "upstream reported an error"
-            raise FortyGuardUpstreamError(
-                str(message), status_code=payload.get("status_code") or resp.status_code
-            )
-
-        records = self._extract_records(payload)
-        if records is None:
-            raise FortyGuardUpstreamError(
-                "unrecognised response envelope: expected a list under 'results', 'data', "
-                f"'readings' or 'locations', got keys {sorted(payload)[:8]}",
-                status_code=resp.status_code,
-            )
-
-        # Records are matched to request points by position, so a length mismatch would
-        # silently attach one location's temperature to another's coordinates. Refusing is the
-        # only safe response -- zip() would just truncate and report a plausible wrong answer.
-        if len(records) != len(points):
-            raise FortyGuardUpstreamError(
-                f"expected {len(points)} records, got {len(records)}; refusing to align "
-                f"readings to coordinates by position",
-                status_code=resp.status_code,
-            )
-
-        live_fields = sorted(
-            {f for rec in records if isinstance(rec, dict) for f in LIVE_METRIC_FIELDS if f in rec}
-        )
-        readings = [
-            self._reading_from_live(city_id, point, record if isinstance(record, dict) else {})
-            for point, record in zip(points, records)
-        ]
-        return readings, live_fields
+        if live_count == 0:
+            raise FortyGuardUpstreamError("no point could be fetched live", status_code=503)
+        self._live_point_count = live_count
+        return readings, sorted(fields)
 
     @staticmethod
-    def _extract_records(payload: Any) -> Optional[List[Any]]:
-        """Locate the per-location record array in an upstream payload.
+    def _hour_irradiance(series: Dict[str, Any], hour: int) -> float:
+        """Irradiance at one hour, W/m^2.
 
-        The published contract is not pinned down, so several plausible envelope spellings are
-        accepted -- but an unrecognised shape returns ``None`` so the caller can degrade
-        loudly. Previously a missing envelope yielded ``[]``, which skipped the simulation
-        fallback entirely and surfaced as an opaque HTTP 400 from an empty ``max()``.
+        env_params reports clear-sky GHI as a SINGLE daily figure, not an hourly array, while
+        cloud cover -- and therefore sky clearness -- is hourly. So the hour's load is the
+        day's clear-sky ceiling shaped by the sun's elevation and then reduced by the cloud
+        actually observed in that hour. Both inputs are upstream measurements; only the
+        elevation curve is ours, and it is the same one the modelled path uses.
+
+        Handles a list too, in case the upstream starts returning an hourly series.
         """
-        if isinstance(payload, list):
-            return payload
-        if not isinstance(payload, dict):
-            return None
-        for key in ("results", "data", "readings", "locations", "points", "items"):
-            value = payload.get(key)
-            if isinstance(value, list):
-                return value
-            # Some APIs nest one level: {"data": {"results": [...]}}
-            if isinstance(value, dict):
-                for inner in ("results", "readings", "items"):
-                    if isinstance(value.get(inner), list):
-                        return value[inner]
-        return None
+        ghi = series["solar"].get("ghi")
+        if ghi is None:
+            return 0.0
+        if isinstance(ghi, (list, tuple)):
+            return float(ghi[hour]) if hour < len(ghi) else 0.0
+        clearness = series["clearness"]
+        c = float(clearness[hour]) if hour < len(clearness) else 1.0
+        return round(float(ghi) * thermal.solar_elevation_factor(float(hour)) * c, 1)
+
+    def _live_series(
+        self, lat: float, lon: float, reference_temp_f: float, date: str
+    ) -> Dict[str, Any]:
+        """Observed 24 h series for one point, memoised.
+
+        env_params is an async poll, so the same coordinate must not be re-fetched within a
+        request that samples it repeatedly. Keyed at 3 decimal places -- about 110 m, finer
+        than the upstream's own sampling, so the cache never merges genuinely distinct places.
+        """
+        key = (round(lat, 3), round(lon, 3), date)
+        cached = self._live_cache.get(key)
+        if cached is not None:
+            return cached
+        result = self.env_params(
+            lat, lon, reference_temp_f, date=date,
+            poll_timeout_s=LIVE_POLL_TIMEOUT_S, poll_interval_s=2.0,
+        )
+        parsed = self._parse_env_series(result, self.city(self.resolve_city(lat, lon))["climate"])
+        self._live_cache[key] = parsed
+        return parsed
 
     def _reading_from_live(
         self, city_id: str, point: Tuple[float, float], record: Dict[str, Any]

@@ -24,8 +24,8 @@ import standards
 import thermal
 from agents import CryonavOrchestrator, EXTREME_AIR_TEMP_F
 from fortyguard_service import (
+    ENV_PARAMS_PATH,
     HEAT_INTELLIGENCE_PATH,
-    MICROCLIMATE_RESOLUTION_MI2,
     SENSING_ELEVATION_M,
     FortyGuardService,
 )
@@ -150,9 +150,14 @@ class HeatIntelligenceRequest(BaseModel):
     prefer_live: bool = Field(
         False,
         description=(
-            "Attempt a synchronous upstream call instead of the calibrated local field. "
-            "Default off: the upstream endpoint is an async report generator, so a live call "
-            "submits a billable job per request and cannot return in-band data anyway."
+            "Call FortyGuard per request instead of serving the calibrated local field. "
+            "Off by default because the upstream is an asynchronous job queue whose latency "
+            "is not bounded: the same two-point call was measured at 22 s and then at over "
+            "120 s minutes apart. A synchronous HTTP endpoint cannot depend on that, so live "
+            "is opt-in, capped at the first few points, and abandoned after "
+            "25 s rather than left hanging. Results are memoised per "
+            "coordinate per day, so a repeat is instant. sensing.live_points reports how many "
+            "points were genuinely live; the feed says so when it had to fall back."
         ),
     )
 
@@ -256,8 +261,10 @@ def health() -> Dict[str, Any]:
         "fortyguard": {
             "mode": service.mode,
             "live": service.live,
-            "endpoint": HEAT_INTELLIGENCE_PATH,
-            "resolution_mi2": MICROCLIMATE_RESOLUTION_MI2,
+            # The endpoint the live path actually calls. It used to say heat_intelligence
+            # while _call_live posted a shape that endpoint rejects; health reported the
+            # intention rather than the behaviour.
+            "endpoint": ENV_PARAMS_PATH,
             "elevation_m": SENSING_ELEVATION_M,
             "last_status": service.last_status.as_dict(),
         },
@@ -557,7 +564,7 @@ def jetson_kiosk(req: JetsonKioskRequest) -> Dict[str, Any]:
         "feed": {
             "source": result["feed"]["source"],
             "status": result["feed"]["status_code"],
-            "resolution_mi2": result["sensing"]["resolution_mi2"],
+            "resolution": result["sensing"]["resolution"],
             "elevation_m": result["sensing"]["elevation_m"],
         },
         "now": {

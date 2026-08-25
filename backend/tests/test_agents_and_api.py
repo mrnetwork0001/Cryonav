@@ -36,7 +36,7 @@ class TestOrchestration:
     def test_sensing_agent_reports_feed_and_radiant_spike(self, orchestrator):
         out = orchestrator.navigate("phoenix", PHX_ORIGIN, PHX_DEST, 15.0)
         assert out["feed"]["status_code"] == 200
-        assert out["sensing"]["resolution_mi2"] == 10.0
+        assert out["sensing"]["resolution"]["canopy_m"] == 1.19
         assert out["sensing"]["elevation_m"] == 2.0
         assert out["risk_vector"]["asphalt_radiation_spike_f"] > 0
 
@@ -155,7 +155,10 @@ class TestApi:
     def test_health(self, client):
         body = client.get("/api/v1/health").json()
         assert body["status"] == "ok"
-        assert body["fortyguard"]["resolution_mi2"] == 10.0
+        # /health describes the FEED, not the derived layers. The endpoint it names must be
+        # the one the live path actually calls -- naming heat_intelligence while calling
+        # env_params is how a broken integration stayed invisible.
+        assert body["fortyguard"]["endpoint"] == "/v1/env_params"
         assert body["fortyguard"]["elevation_m"] == 2.0
 
     def test_meta_exposes_profiles_bands_and_agents(self, client):

@@ -50,6 +50,7 @@ import math
 import os
 import pathlib
 import sys
+import tempfile
 import time
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
@@ -57,8 +58,7 @@ os.environ.setdefault("GDAL_DISABLE_READDIR_ON_OPEN", "EMPTY_DIR")
 os.environ.setdefault("VSI_CACHE", "TRUE")
 os.environ.setdefault("GDAL_HTTP_MAX_RETRY", "4")
 os.environ.setdefault("GDAL_HTTP_RETRY_DELAY", "2")
-os.environ.setdefault("GDAL_HTTP_COOKIEFILE", "/tmp/cryonav_edl_cookies")
-os.environ.setdefault("GDAL_HTTP_COOKIEJAR", "/tmp/cryonav_edl_cookies")
+
 
 import numpy as np  # noqa: E402
 import rasterio  # noqa: E402
@@ -74,8 +74,12 @@ CMR = "https://cmr.earthdata.nasa.gov/search/granules.json"
 COLLECTION = "C3998139651-LPCLOUD"  # ECO_L2T_LSTE v003
 SHORT_NAME = "ECO_L2T_LSTE"
 
-#: ECOSTRESS L2T LST is uint16 kelvin with this scale; 0 is fill.
-LST_SCALE = 0.02
+#: The HDF5 distribution of ECO_L2T_LSTE stores LST as uint16 with a 0.02 scale factor, and
+#: that figure is what the product documentation quotes. The CLOUD-OPTIMIZED GEOTIFF that
+#: LP DAAC serves has already applied it: the band arrives float32, in kelvin, with
+#: scales=(1.0,) and nodata=nan. Applying 0.02 again turned a 59 C rooftop into -266 C, which
+#: is why this is decided from the dtype rather than from a constant.
+LST_SCALE_INT = 0.02
 
 #: The window that matters. Landsat cannot see it; this is the entire point of the script.
 PEAK_LOCAL_HOURS = (13, 17)
@@ -114,22 +118,76 @@ temperature; ECOSTRESS only sharpens the afternoon. Nothing was written.
 """
 
 
-def configure_auth() -> str:
-    """Wire Earthdata credentials into GDAL's HTTP layer. Returns the method used."""
+def _auth_kwargs() -> Dict[str, Any]:
+    """Credentials for the HTTP client. Raises with instructions if none are configured."""
     token = os.getenv("EARTHDATA_TOKEN", "").strip()
     if token:
-        os.environ["GDAL_HTTP_HEADERS"] = f"Authorization: Bearer {token}"
-        return "bearer_token"
+        return {"headers": {"Authorization": f"Bearer {token}"}, "_method": "bearer_token"}
     user = os.getenv("EARTHDATA_USERNAME", "").strip()
     pwd = os.getenv("EARTHDATA_PASSWORD", "").strip()
     if user and pwd:
-        # EDL answers with a 302 to its OAuth endpoint; GDAL must follow it and keep the
-        # session cookie, or every tile read restarts the handshake.
-        os.environ["GDAL_HTTP_AUTH"] = "BASIC"
-        os.environ["GDAL_HTTP_USERPWD"] = f"{user}:{pwd}"
-        os.environ["CPL_VSIL_CURL_USE_HEAD"] = "NO"
-        return "earthdata_basic"
+        return {"auth": (user, pwd), "_method": "earthdata_basic"}
     raise SystemExit(CREDENTIAL_HELP)
+
+
+def configure_auth() -> str:
+    return str(_auth_kwargs()["_method"])
+
+
+def download_granule(href: str, dest: pathlib.Path) -> None:
+    """Fetch one granule to a local file.
+
+    NOT a /vsicurl windowed read, and the reason is specific. Earthdata Login answers with a
+    302 into an OAuth endpoint and then on to CloudFront with the authorisation already baked
+    into signed query parameters. GDAL forwards the `Authorization: Bearer` header through
+    that whole chain, CloudFront rejects the duplicate credential, and GDAL surfaces the error
+    page as "not recognized as being in a supported file format" -- an unhelpful message for
+    what is really a 401.
+
+    Range reads earn their complexity on the 228 MB canopy tiles. An ECOSTRESS L2T tile is
+    about 1 MB, so downloading it whole costs nothing and removes the entire failure mode.
+    """
+    import httpx  # noqa: PLC0415
+
+    kw = _auth_kwargs()
+    kw.pop("_method", None)
+    with httpx.stream("GET", href, follow_redirects=True, timeout=120.0, **kw) as r:
+        if r.status_code == 401:
+            raise SystemExit(CREDENTIAL_HELP)
+        r.raise_for_status()
+        with dest.open("wb") as fh:
+            for chunk in r.iter_bytes(65536):
+                fh.write(chunk)
+
+
+def to_kelvin(arr: np.ndarray, src: Any) -> np.ndarray:
+    """Kelvin from whatever form this particular file uses, then sanity-bounded.
+
+    Integer bands still carry the documented 0.02 scale; float bands are already kelvin.
+    Anything landing outside MIN_K..MAX_K after conversion is fill, cloud shadow, or a
+    scaling mistake, and is discarded rather than averaged in.
+    """
+    a = arr.astype("float32")
+    if np.issubdtype(np.dtype(src.dtypes[0]), np.integer):
+        a = a * LST_SCALE_INT
+        a[arr == 0] = np.nan
+    if src.nodata is not None and not np.isnan(src.nodata):
+        a[arr == src.nodata] = np.nan
+    a[(a < MIN_K) | (a > MAX_K)] = np.nan
+    return a
+
+
+def covers_bbox(src: Any, bbox: Dict[str, float], need: float = 0.98) -> float:
+    """Fraction of the city bbox that falls inside this granule's footprint.
+
+    ECOSTRESS tiles are 1568 x 1568 at 70 m, so a city can sit near an edge and be half
+    outside. Averaging such a granule silently drops whichever streets fell off the tile.
+    """
+    gb = transform_bounds(src.crs, "EPSG:4326", *src.bounds)
+    ow = max(0.0, min(gb[2], bbox["east"]) - max(gb[0], bbox["west"]))
+    oh = max(0.0, min(gb[3], bbox["north"]) - max(gb[1], bbox["south"]))
+    area = (bbox["east"] - bbox["west"]) * (bbox["north"] - bbox["south"])
+    return (ow * oh) / area if area > 0 else 0.0
 
 
 def search_granules(bbox: Dict[str, float], city_id: str) -> List[Dict[str, Any]]:
@@ -196,18 +254,27 @@ def search_granules(bbox: Dict[str, float], city_id: str) -> List[Dict[str, Any]
     return out
 
 
-class PeakWindow:
-    """Per-pixel mean peak-hour surface temperature, kelvin."""
 
-    def __init__(self, mean_k: np.ndarray, transform: Any, crs: Any, granules: List[Dict[str, Any]]):
-        self.k = mean_k
+class GranuleSampler:
+    """One granule, in its own projection, with its own baseline.
+
+    Deliberately NOT a mosaic. ECOSTRESS tiles arrive on per-tile UTM grids, and a city near a
+    zone boundary -- Abu Dhabi sits on the 39/40 line -- yields granules that cannot be stacked
+    pixel-for-pixel without resampling. Stacking discarded half of them.
+
+    So nothing is stacked. Each granule is sampled independently, each gets its own road-median
+    baseline, and what gets averaged across granules is the ANOMALY, not the temperature. That
+    is the quantity we actually want: it is dimensionless with respect to the day's air mass,
+    so averaging across acquisitions weeks apart is meaningful in a way averaging absolute
+    surface temperatures would not be. It also uses every usable granule regardless of zone.
+    """
+
+    def __init__(self, k: np.ndarray, transform: Any, crs: Any) -> None:
+        self.k = k
         self.transform = transform
         self.crs = crs
-        self.granules = granules
-        valid = mean_k[np.isfinite(mean_k)]
-        self.baseline_k = float(np.median(valid)) if valid.size else float("nan")
-        self.baseline_source = "city_median"
-        self.baseline_pixels = int(valid.size)
+        self.baseline_k = float("nan")
+        self.baseline_pixels = 0
 
     def path_values(self, path: Sequence[Sequence[float]]) -> List[float]:
         vals: List[float] = []
@@ -227,17 +294,16 @@ class PeakWindow:
                         vals.append(float(v))
         return vals
 
-    def set_road_baseline(self, roads: Sequence[Dict[str, Any]]) -> None:
-        """Same reference as fetch_lst.py, so the two anomalies are directly comparable."""
+    def set_road_baseline(self, roads: Sequence[Dict[str, Any]]) -> bool:
+        """Same reference as fetch_lst.py, so morning and afternoon are comparable."""
         vals: List[float] = []
         for r in roads:
             vals.extend(self.path_values(r.get("path", [])))
         if len(vals) < 50:
-            print(f"      road baseline unusable ({len(vals)} px); keeping city median")
-            return
+            return False
         self.baseline_k = float(np.median(vals))
-        self.baseline_source = "road_network_median"
         self.baseline_pixels = len(vals)
+        return True
 
     def ring_anomaly_f(self, ring: Sequence[Sequence[float]]) -> Optional[Tuple[float, float, int]]:
         if len(ring) < 3:
@@ -247,7 +313,9 @@ class PeakWindow:
         xs, ys = warp_transform("EPSG:4326", self.crs, lons, lats)
         geom = {"type": "Polygon", "coordinates": [list(zip(xs, ys))]}
         try:
-            mask = geometry_mask([geom], out_shape=self.k.shape, transform=self.transform, invert=True)
+            mask = geometry_mask(
+                [geom], out_shape=self.k.shape, transform=self.transform, invert=True
+            )
         except Exception:
             return None
         mask &= np.isfinite(self.k)
@@ -264,59 +332,35 @@ class PeakWindow:
         return (float(np.mean(vals)) - self.baseline_k) * 1.8, len(vals)
 
 
-def build_window(bbox: Dict[str, float], city_id: str) -> PeakWindow:
-    granules = search_granules(bbox, city_id)
-    if not granules:
-        raise SystemExit(f"no ECOSTRESS granules for {city_id} in the peak-hour window")
-    print(f"    {len(granules)} candidate granules in {PEAK_LOCAL_HOURS[0]}:00-{PEAK_LOCAL_HOURS[1]}:00 local")
-
-    stack: List[np.ndarray] = []
-    used: List[Dict[str, Any]] = []
-    ref_transform = ref_crs = ref_shape = None
-    for g in granules:
-        if len(used) >= GRANULE_LIMIT:
-            break
-        url = "/vsicurl/" + g["lst_href"]
-        try:
-            with rasterio.open(url) as src:
-                b = transform_bounds(
-                    "EPSG:4326", src.crs, bbox["west"], bbox["south"], bbox["east"], bbox["north"]
-                )
-                win = from_bounds(*b, transform=src.transform)
-                dn = src.read(1, window=win).astype("float32")
-                tr = src.window_transform(win)
-                if ref_transform is None:
-                    ref_transform, ref_crs, ref_shape = tr, src.crs, dn.shape
-                elif dn.shape != ref_shape or src.crs != ref_crs:
-                    print(f"      skip {g['local_time']}: grid {dn.shape}/{src.crs} differs")
-                    continue
-                k = dn * LST_SCALE
-                k[(dn == 0) | (k < MIN_K) | (k > MAX_K)] = np.nan
-                frac = float(np.isfinite(k).mean())
-                if frac < MIN_VALID_FRACTION:
-                    print(f"      skip {g['local_time']}: {frac:.0%} valid (cloud)")
-                    continue
-                stack.append(k)
-                g = dict(g, valid_pixel_fraction=round(frac, 3))
-                used.append(g)
-                print(
-                    f"      {g['local_time']} local  mean {np.nanmean(k) - 273.15:5.1f} C"
-                    f"  valid {frac:.0%}"
-                )
-        except SystemExit:
-            raise
-        except Exception as exc:
-            msg = str(exc)
-            if "401" in msg or "Access denied" in msg or "403" in msg:
-                raise SystemExit(CREDENTIAL_HELP)
-            print(f"      skip {g['local_time']}: {type(exc).__name__}")
-            continue
-
-    if not stack:
-        raise SystemExit("no usable ECOSTRESS granules after quality filtering")
-    with np.errstate(invalid="ignore"):
-        mean_k = np.nanmean(np.stack(stack), axis=0)
-    return PeakWindow(mean_k, ref_transform, ref_crs, used)
+def load_granule(g: Dict[str, Any], bbox: Dict[str, float]) -> Optional[Tuple[GranuleSampler, float]]:
+    """Download, validate and window one granule. Returns (sampler, valid_fraction) or None."""
+    local = pathlib.Path(tempfile.gettempdir()) / f"cryonav_eco_{g['id'].replace('/', '_')}.tif"
+    try:
+        if not local.exists() or local.stat().st_size == 0:
+            download_granule(g["lst_href"], local)
+        with rasterio.open(local) as src:
+            cov = covers_bbox(src, bbox)
+            if cov < 0.98:
+                print(f"      skip {g['local_time']}: covers only {cov:.0%} of the city")
+                return None
+            b = transform_bounds(
+                "EPSG:4326", src.crs, bbox["west"], bbox["south"], bbox["east"], bbox["north"]
+            )
+            win = from_bounds(*b, transform=src.transform)
+            raw = src.read(1, window=win)
+            k = to_kelvin(raw, src)
+            frac = float(np.isfinite(k).mean())
+            if frac < MIN_VALID_FRACTION:
+                print(f"      skip {g['local_time']}: {frac:.0%} valid (cloud)")
+                return None
+            return GranuleSampler(k, src.window_transform(win), src.crs), frac
+    except SystemExit:
+        raise
+    except Exception as exc:
+        print(f"      skip {g['local_time']}: {type(exc).__name__}: {str(exc)[:90]}")
+        return None
+    finally:
+        local.unlink(missing_ok=True)
 
 
 def process(city_id: str) -> None:
@@ -324,45 +368,116 @@ def process(city_id: str) -> None:
     data = json.loads(path.read_text())
     print(f"\n{city_id}")
     started = time.time()
-    win = build_window(data["bbox"], city_id)
-    win.set_road_baseline(data.get("roads", []))
+
+    granules = search_granules(data["bbox"], city_id)
+    if not granules:
+        raise SystemExit(f"no ECOSTRESS granules for {city_id} in the peak-hour window")
+    # One acquisition can be delivered as several granules covering neighbouring tiles. They
+    # are the same observation, so keeping more than one would weight that moment repeatedly.
+    seen_times = set()
+    unique = []
+    for g in granules:
+        if g["utc"] in seen_times:
+            continue
+        seen_times.add(g["utc"])
+        unique.append(g)
     print(
-        f"    {len(win.granules)} granules averaged | grid {win.k.shape[1]} x {win.k.shape[0]} px"
-        f" | baseline {win.baseline_k - 273.15:.1f} C ({win.baseline_source})"
+        f"    {len(granules)} candidate granules in {PEAK_LOCAL_HOURS[0]}:00-{PEAK_LOCAL_HOURS[1]}:00"
+        f" local ({len(unique)} distinct acquisitions)"
     )
 
+    roads = data.get("roads", [])
+    # feature key -> list of anomalies, one per granule
+    acc: Dict[Tuple[str, int], List[float]] = {}
+    abs_k: Dict[Tuple[str, int], List[float]] = {}
+    pix: Dict[Tuple[str, int], int] = {}
+    used: List[Dict[str, Any]] = []
+
+    for g in unique:
+        if len(used) >= GRANULE_LIMIT:
+            break
+        loaded = load_granule(g, data["bbox"])
+        if loaded is None:
+            continue
+        sampler, frac = loaded
+        if not sampler.set_road_baseline(roads):
+            print(f"      skip {g['local_time']}: too few road pixels for a baseline")
+            continue
+
+        n_feat = 0
+        for group in ("hot", "green", "water"):
+            for i, feat in enumerate(data.get(group, [])):
+                res = sampler.ring_anomaly_f(feat.get("ring", []))
+                if res is None:
+                    continue
+                anomaly_f, mean_k, n = res
+                acc.setdefault((group, i), []).append(anomaly_f)
+                abs_k.setdefault((group, i), []).append(mean_k)
+                pix[(group, i)] = max(pix.get((group, i), 0), n)
+                n_feat += 1
+        for i, feat in enumerate(roads):
+            res = sampler.path_anomaly_f(feat.get("path", []))
+            if res is None:
+                continue
+            anomaly_f, n = res
+            acc.setdefault(("roads", i), []).append(anomaly_f)
+            pix[("roads", i)] = max(pix.get(("roads", i), 0), n)
+            n_feat += 1
+
+        used.append(
+            dict(
+                g,
+                valid_pixel_fraction=round(frac, 3),
+                baseline_surface_c=round(sampler.baseline_k - 273.15, 2),
+                baseline_pixels=sampler.baseline_pixels,
+                features_measured=n_feat,
+            )
+        )
+        print(
+            f"      {g['local_time']} local  road baseline {sampler.baseline_k - 273.15:5.1f} C"
+            f"  valid {frac:3.0%}  features {n_feat}"
+        )
+
+    if not used:
+        raise SystemExit("no usable ECOSTRESS granules after quality filtering")
+
+    # ---- write the averaged anomalies ---------------------------------------------------
     stats: Dict[str, int] = {}
 
     def bump(k: str) -> None:
         stats[k] = stats.get(k, 0) + 1
 
     for group in ("hot", "green", "water"):
-        for feat in data.get(group, []):
-            res = win.ring_anomaly_f(feat.get("ring", []))
-            if res is None:
+        for i, feat in enumerate(data.get(group, [])):
+            vals = acc.get((group, i))
+            if not vals:
                 bump(f"{group}:unmeasured")
                 continue
-            anomaly_f, mean_k, n = res
-            feat["lst_peak_anomaly_f"] = round(anomaly_f, 2)
-            feat["lst_peak_mean_c"] = round(mean_k - 273.15, 2)
-            feat["lst_peak_pixels"] = n
+            mean_anom = sum(vals) / len(vals)
+            feat["lst_peak_anomaly_f"] = round(mean_anom, 2)
+            feat["lst_peak_granules"] = len(vals)
+            ks = abs_k.get((group, i)) or []
+            if ks:
+                feat["lst_peak_mean_c"] = round(sum(ks) / len(ks) - 273.15, 2)
+            feat["lst_peak_pixels"] = pix.get((group, i), 0)
             if group == "hot":
-                # Peak-hour supersedes the morning value for the field the model reads. The
-                # Landsat number stays under lst_anomaly_f so the divergence is inspectable.
-                feat["boost_f"] = round(max(0.0, anomaly_f), 2)
+                # The field urban.py reads. Peak-hour supersedes the morning value; the
+                # Landsat number is preserved so the divergence stays inspectable.
+                feat["boost_f"] = round(max(0.0, mean_anom), 2)
                 feat["boost_source"] = "ecostress_peak"
             bump(f"{group}:measured")
 
-    for feat in data.get("roads", []):
-        res = win.path_anomaly_f(feat.get("path", []))
-        if res is None:
+    for i, feat in enumerate(roads):
+        vals = acc.get(("roads", i))
+        if not vals:
             bump("roads:unmeasured")
             continue
-        anomaly_f, n = res
-        feat["lst_peak_anomaly_f"] = round(anomaly_f, 2)
-        # urban.py reads lst_anomaly_f; point it at the hour the product is designed for.
-        feat["lst_anomaly_morning_f"] = feat.get("lst_anomaly_f")
-        feat["lst_anomaly_f"] = round(anomaly_f, 2)
+        mean_anom = sum(vals) / len(vals)
+        feat["lst_peak_anomaly_f"] = round(mean_anom, 2)
+        feat["lst_peak_granules"] = len(vals)
+        if "lst_anomaly_morning_f" not in feat:
+            feat["lst_anomaly_morning_f"] = feat.get("lst_anomaly_f")
+        feat["lst_anomaly_f"] = round(mean_anom, 2)
         feat["lst_measured"] = True
         bump("roads:measured")
 
@@ -372,22 +487,22 @@ def process(city_id: str) -> None:
         "short_name": SHORT_NAME,
         "provider": "nasa_lp_daac",
         "resolution_m": 70,
-        "scale": LST_SCALE,
         "peak_local_hours": list(PEAK_LOCAL_HOURS),
-        "granules": win.granules,
-        "baseline_surface_c": round(win.baseline_k - 273.15, 2),
-        "baseline_reference": win.baseline_source,
+        "granules": used,
+        "baseline_reference": "road_network_median_per_granule",
         "measured_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "license": LICENSE,
         "note": (
             "Anomalies measured in the local afternoon, the window Landsat's ~10:00 overpass "
-            "never samples. Where present these supersede the Landsat anomaly in boost_f; "
-            "the morning value is retained as lst_anomaly_morning_f."
+            "never samples. Each granule is referenced to its own road-network median and the "
+            "ANOMALIES are averaged, not the temperatures -- so granules on different UTM "
+            "grids and different days all contribute. Where present these supersede the "
+            "Landsat anomaly in boost_f; the morning value is kept as lst_anomaly_morning_f."
         ),
     }
 
     path.write_text(json.dumps(data, separators=(",", ":")))
-    print(f"    {dict(sorted(stats.items()))}")
+    print(f"    {len(used)} granules contributed | {dict(sorted(stats.items()))}")
     print(f"    wrote {path.name} in {time.time() - started:.1f}s")
 
 

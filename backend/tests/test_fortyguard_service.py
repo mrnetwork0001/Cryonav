@@ -163,7 +163,13 @@ class TestHeatIntelligence:
         assert len(out["readings"]) == 2
         assert out["feed"]["status_code"] == 200
         assert out["sensing"]["elevation_m"] == 2.0
-        assert out["sensing"]["resolution_mi2"] == 10.0
+        # There is no single resolution: the ambient series is a point query with no spatial
+        # parameter, and each derived layer has its own. Asserting one invented number was how
+        # "10 mi2" survived in the API for weeks while being nobody's actual specification.
+        res = out["sensing"]["resolution"]
+        assert "no spatial parameter" in res["fortyguard_ambient"]
+        assert res["canopy_m"] == 1.19
+        assert res["surface_temp_m"] in (30, 70)
 
     def test_summary_identifies_the_hottest_probe(self, service):
         out = service.heat_intelligence(
@@ -243,24 +249,17 @@ class TestUpstreamFailureModes:
         assert feed["degraded"] is True
 
     def test_unrecognised_envelope_degrades_instead_of_erroring(self, monkeypatch):
-        """Regression: an unknown envelope yielded [], skipped the fallback, and 400'd."""
+        """Regression: an unknown envelope yielded [], skipped the fallback, and 400'd.
+
+        The submit step now names what it could not find, rather than reporting a generic
+        "envelope" complaint -- an operator reading the feed detail should be able to tell a
+        malformed response from an auth failure without opening a debugger.
+        """
         svc = self._svc_with(monkeypatch, _FakeResponse(200, payload={"unexpected": {"shape": 1}}))
         out = svc.heat_intelligence([(33.4498, -112.0715)], "phoenix", 15.0)
-        assert out["count"] == 1  # served from simulation rather than raising
+        assert out["count"] == 1  # served from the calibrated field rather than raising
         assert out["feed"]["degraded"] is True
-        assert "envelope" in out["feed"]["detail"]
-
-    def test_record_count_mismatch_is_refused(self, monkeypatch):
-        """Positional alignment means a short array would mislabel coordinates."""
-        svc = self._svc_with(
-            monkeypatch, _FakeResponse(200, payload={"results": [{"air_temperature_2m": 110.0}]})
-        )
-        out = svc.heat_intelligence(
-            [(33.4498, -112.0715), (33.4592, -112.0736)], "phoenix", 15.0
-        )
-        assert out["feed"]["degraded"] is True
-        assert "expected 2 records" in out["feed"]["detail"]
-        assert out["count"] == 2  # both points still answered, from simulation
+        assert "activity_id" in out["feed"]["detail"]
 
     def test_non_json_response_degrades(self, monkeypatch):
         svc = self._svc_with(
@@ -269,34 +268,6 @@ class TestUpstreamFailureModes:
         feed = svc.heat_intelligence([(33.4498, -112.0715)], "phoenix", 15.0)["feed"]
         assert feed["degraded"] is True
         assert "non-JSON" in feed["detail"]
-
-    def test_successful_live_call_reports_field_provenance(self, monkeypatch):
-        """A partially-populated response must not be presented as fully live."""
-        svc = self._svc_with(
-            monkeypatch,
-            _FakeResponse(200, payload={"results": [{"air_temperature_2m": 109.4, "relative_humidity": 14.0}]}),
-        )
-        out = svc.heat_intelligence([(33.4498, -112.0715)], "phoenix", 15.0)
-        feed = out["feed"]
-        assert feed["source"] == "fortyguard_live"
-        assert feed["ok"] is True
-        assert feed["degraded"] is False
-        assert feed["live_fields"] == ["air_temperature_2m", "relative_humidity"]
-        assert "2/5 metrics present" in feed["detail"]
-        # The upstream air temperature is actually used, not overwritten by the simulation.
-        assert out["readings"][0]["air_temp_2m_f"] == 109.4
-
-    def test_fully_populated_response_reports_no_caveat(self, monkeypatch):
-        svc = self._svc_with(
-            monkeypatch,
-            _FakeResponse(200, payload={"results": [{
-                "air_temperature_2m": 109.4, "surface_temperature": 168.0,
-                "relative_humidity": 14.0, "wind_speed": 6.0, "solar_irradiance": 950.0,
-            }]}),
-        )
-        feed = svc.heat_intelligence([(33.4498, -112.0715)], "phoenix", 15.0)["feed"]
-        assert len(feed["live_fields"]) == 5
-        assert "metrics present" not in feed["detail"]
 
     def test_fortyguard_error_envelope_is_honoured(self, monkeypatch):
         """FortyGuard signals failure in-body; an HTTP 200 carrying error:true is not success."""
@@ -312,9 +283,35 @@ class TestUpstreamFailureModes:
         assert feed["upstream_status_code"] == 401
         assert "Invalid or unknown API key." in feed["detail"]
 
-    def test_auth_uses_the_api_key_header_not_bearer(self, monkeypatch):
-        """Confirmed against the live API: an Authorization: Bearer token is ignored entirely,
-        and the request is rejected as if no credential were sent."""
+    # ------------------------------------------------------------------------------------
+    # The live path is ASYNCHRONOUS. Tests that mocked a synchronous {"results": [...]}
+    # envelope were deleted rather than repaired: they asserted a contract the API never had,
+    # which is precisely why a permanently-422 integration passed CI for weeks. These mock
+    # the real flow -- POST returns an activity_id, GET /v1/status/{id} returns the payload.
+    # ------------------------------------------------------------------------------------
+
+    @staticmethod
+    def _env_payload(air_c=44.0, rh=14.0, ghi=950.0):
+        """A well-formed /v1/env_params result: 24 hourly samples per parameter."""
+        import thermal as _t
+
+        wet_c = [_t.f_to_c(_t.wet_bulb_f(_t.c_to_f(air_c), rh))] * 24
+        return {
+            "metadata": {"timezone": "GMT-7", "time_range": {"start": "2026-08-25"}},
+            "locations": [{
+                "elevation": 332.0,
+                "parameters": {
+                    "relative_humidity_percent": [rh] * 24,
+                    "wet_bulb_temperature_celsius": wet_c,
+                    "apparent_temperature_celsius": [air_c] * 24,
+                    "cloud_cover_octas": [0.0] * 24,
+                },
+                "solar_irradiance": {"clear_sky": {"ghi": ghi, "dni": 1100.0}},
+            }],
+        }
+
+    def _async_svc(self, monkeypatch, result=None, submit=None, api_key="test-key-not-real"):
+        """Service whose upstream answers the real two-step flow."""
         import httpx
 
         captured = {}
@@ -322,15 +319,115 @@ class TestUpstreamFailureModes:
         def fake_post(url, **kwargs):
             captured["url"] = url
             captured["headers"] = kwargs.get("headers", {})
-            return _FakeResponse(200, payload={"results": [{"air_temperature_2m": 108.0}]})
+            captured["body"] = kwargs.get("json", {})
+            return submit if submit is not None else _FakeResponse(
+                200, payload={"data": {"activity_id": "act-123"}}
+            )
 
-        svc = FortyGuardService(api_key="secret-key")
+        def fake_get(url, **kwargs):
+            return _FakeResponse(200, payload={"data": {"status": "Completed", "result": result}})
+
+        svc = FortyGuardService(api_key=api_key)
         monkeypatch.setattr(httpx, "post", fake_post)
-        svc.heat_intelligence([(33.4498, -112.0715)], "phoenix", 15.0)
+        monkeypatch.setattr(httpx, "get", fake_get)
+        return svc, captured
 
+    def test_successful_live_call_reports_field_provenance(self, monkeypatch):
+        """A partially-populated response must not be presented as fully live."""
+        svc, _ = self._async_svc(monkeypatch, result=self._env_payload())
+        out = svc.heat_intelligence([(33.4498, -112.0715)], "phoenix", 15.0)
+        feed = out["feed"]
+        assert feed["source"] == "fortyguard_live"
+        assert feed["ok"] is True and feed["degraded"] is False
+        # env_params carries ambient and solar, never surface temperature or wind; the
+        # response must say which two were modelled rather than implying all five were live.
+        assert feed["live_fields"] == [
+            "air_temperature_2m", "relative_humidity", "solar_irradiance",
+        ]
+        assert "3/5 metrics present" in feed["detail"]
+        assert out["sensing"]["live_points"] == 1
+
+    def test_live_air_temperature_is_the_upstream_value(self, monkeypatch):
+        """The point of a live call is that upstream numbers survive into the reading."""
+        import thermal as _t
+
+        svc, _ = self._async_svc(monkeypatch, result=self._env_payload(air_c=44.0, rh=14.0))
+        out = svc.heat_intelligence([(33.4498, -112.0715)], "phoenix", 15.0)
+        # env_params publishes wet-bulb + RH, not dry-bulb, so the reading is the inversion
+        # of those two -- it must land back on the dry-bulb we constructed the fixture from.
+        assert out["readings"][0]["air_temp_2m_f"] == pytest.approx(_t.c_to_f(44.0), abs=0.5)
+
+    def test_short_series_is_refused_rather_than_padded(self, monkeypatch):
+        """A truncated series would silently mislabel hours; degrade instead."""
+        bad = self._env_payload()
+        bad["locations"][0]["parameters"]["relative_humidity_percent"] = [14.0] * 6
+        svc, _ = self._async_svc(monkeypatch, result=bad)
+        out = svc.heat_intelligence([(33.4498, -112.0715)], "phoenix", 15.0)
+        assert out["feed"]["degraded"] is True
+        assert "24 hourly samples" in out["feed"]["detail"]
+        assert out["count"] == 1  # still answered, from the calibrated field
+
+    def test_missing_activity_id_degrades(self, monkeypatch):
+        """The submit step returning no job handle is a failure, not an empty success."""
+        svc, _ = self._async_svc(
+            monkeypatch, result=self._env_payload(),
+            submit=_FakeResponse(200, payload={"data": {}}),
+        )
+        feed = svc.heat_intelligence([(33.4498, -112.0715)], "phoenix", 15.0)["feed"]
+        assert feed["degraded"] is True
+        assert "activity_id" in feed["detail"]
+
+    def test_auth_uses_the_api_key_header_not_bearer(self, monkeypatch):
+        """Confirmed against the live API: an Authorization: Bearer token is ignored entirely,
+        and the request is rejected as if no credential were sent."""
+        svc, captured = self._async_svc(
+            monkeypatch, result=self._env_payload(), api_key="secret-key"
+        )
+        svc.heat_intelligence([(33.4498, -112.0715)], "phoenix", 15.0)
         assert captured["headers"].get("api-key") == "secret-key"
         assert "Authorization" not in captured["headers"]
-        assert captured["url"].endswith("/v1/heat_intelligence")
+
+    def test_live_request_uses_the_shape_the_api_actually_accepts(self, monkeypatch):
+        """Regression, and the expensive one.
+
+        The live call used to POST {"locations": [...], "resolution_mi2": 10.0} to
+        /v1/heat_intelligence. That endpoint takes a flat latitude/longitude and has no
+        resolution parameter, so every call 422'd and the app served cached data behind a
+        green feed. Assert the shape, not just that a call happened.
+        """
+        svc, captured = self._async_svc(monkeypatch, result=self._env_payload())
+        svc.heat_intelligence([(33.4498, -112.0715)], "phoenix", 15.0)
+        body = captured["body"]
+        assert captured["url"].endswith("/v1/env_params")
+        assert body["latitude"] == 33.4498 and body["longitude"] == -112.0715
+        assert "locations" not in body
+        assert "resolution_mi2" not in body
+        assert isinstance(body["date_time"], dict) and "start_date" in body["date_time"]
+
+    def test_repeated_points_hit_the_cache_not_the_upstream(self, monkeypatch):
+        """env_params is an async poll; re-fetching one coordinate per sample is unusable."""
+        calls = {"n": 0}
+        svc, _ = self._async_svc(monkeypatch, result=self._env_payload())
+        real = svc.env_params
+
+        def counting(*a, **k):
+            calls["n"] += 1
+            return real(*a, **k)
+
+        monkeypatch.setattr(svc, "env_params", counting)
+        svc.heat_intelligence([(33.4498, -112.0715)], "phoenix", 15.0)
+        svc.heat_intelligence([(33.4498, -112.0715)], "phoenix", 16.0)
+        assert calls["n"] == 1, "second request for the same point must be served from cache"
+
+    def test_only_the_first_points_are_fetched_live(self, monkeypatch):
+        """A bounded live budget must be reported, never silently presented as fully live."""
+        from fortyguard_service import MAX_LIVE_POINTS
+
+        pts = [(33.4498 + i * 0.002, -112.0715) for i in range(MAX_LIVE_POINTS + 3)]
+        svc, _ = self._async_svc(monkeypatch, result=self._env_payload())
+        out = svc.heat_intelligence(pts, "phoenix", 15.0)
+        assert out["count"] == len(pts)
+        assert out["sensing"]["live_points"] == MAX_LIVE_POINTS
 
     def test_endpoint_path_uses_underscore(self):
         """A hyphenated path 404s, and the 404 hides behind an auth check that fires first."""
@@ -338,17 +435,6 @@ class TestUpstreamFailureModes:
 
         assert HEAT_INTELLIGENCE_PATH == "/v1/heat_intelligence"
         assert "-" not in HEAT_INTELLIGENCE_PATH.rsplit("/", 1)[-1]
-
-    def test_bare_list_and_nested_envelopes_are_accepted(self, monkeypatch):
-        for payload in (
-            [{"air_temperature_2m": 108.0}],
-            {"readings": [{"air_temperature_2m": 108.0}]},
-            {"data": {"results": [{"air_temperature_2m": 108.0}]}},
-        ):
-            svc = self._svc_with(monkeypatch, _FakeResponse(200, payload=payload))
-            out = svc.heat_intelligence([(33.4498, -112.0715)], "phoenix", 15.0)
-            assert out["feed"]["source"] == "fortyguard_live", payload
-            assert out["readings"][0]["air_temp_2m_f"] == 108.0
 
     def test_prefer_live_false_skips_upstream(self, monkeypatch):
         svc = FortyGuardService(api_key="test-key-not-real")

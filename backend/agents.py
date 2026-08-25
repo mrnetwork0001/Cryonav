@@ -166,7 +166,7 @@ class ThermalSensingAgent(Agent):
             ),
             {
                 "source": intel["feed"]["source"],
-                "resolution_mi2": intel["sensing"]["resolution_mi2"],
+                "resolution": intel["sensing"]["resolution"],
                 "elevation_m": intel["sensing"]["elevation_m"],
                 "probes": len(probes),
                 "asphalt_radiation_spike_f": round(spike, 1),
