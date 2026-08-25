@@ -1,8 +1,8 @@
 /**
  * Cryonav icon set.
  *
- * Replaces the stock glyphs the app had been leaning on - a snowflake for the brand, a
- * high-voltage emoji for "go", geometric dingbats for the three agents. Those render
+ * Replaces the stock glyphs the app had been leaning on - a high-voltage emoji for "go",
+ * geometric dingbats for the three agents, assorted arrows and squares. Those render
  * differently on every platform (Apple draws U+26A1 as a colour emoji, Windows as a
  * monochrome outline, Linux often as a missing box), so an interface built from them has no
  * controlled appearance at all. They also carry meanings nobody chose: a lightning bolt says
@@ -17,9 +17,14 @@
  *   caller owns the colour, which matters because several of these sit inside the risk
  *   palette where colour is semantic.
  *
- *   Geometry over metaphor. Icons here describe what the thing IS in the product - a route
- *   deflecting around heat, a sensor sweep, a dual solve - rather than borrowing an unrelated
+ *   Geometry over metaphor. Icons here describe what the thing IS in the product - a sensor
+ *   sweep, a dual solve, a watch over a threshold - rather than borrowing an unrelated
  *   real-world object.
+ *
+ * The BRAND mark is deliberately not in here. It is a supplied raster at
+ * public/brand/cryonav-wordmark.png, and an interim hand-drawn SVG version was removed
+ * rather than left beside it: two marks claiming to be the logo is how a product ends up
+ * shipping the wrong one.
  */
 
 type P = { className?: string; strokeWidth?: number };
@@ -33,24 +38,6 @@ const base = (className?: string) => ({
   strokeLinejoin: "round" as const,
   "aria-hidden": true,
 });
-
-/**
- * The brand mark: a path deflecting around a thermal source.
- *
- * Concentric arcs on the right are the heat; the line bending clear of them is the route.
- * That is the entire product in one figure, and unlike a snowflake it says what Cryonav does
- * rather than gesturing at "cold". It reads at 20 px because it is three strokes.
- */
-export function CryonavMark({ className, strokeWidth = 1.4 }: P) {
-  return (
-    <svg {...base(className)} strokeWidth={strokeWidth}>
-      <path d="M10.4 3.6a4.6 4.6 0 0 1 0 8.8" opacity="0.45" />
-      <path d="M9.6 5.6a2.6 2.6 0 0 1 0 4.8" opacity="0.75" />
-      <path d="M2 13.2c2.6 0 3.1-3.1 4.2-5.2C7 6.3 7.6 4.4 9.4 3.3" />
-      <circle cx="2" cy="13.2" r="1.15" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
 
 /** Instant / one-click. A route collapsing to a single decisive stroke, not a lightning bolt. */
 export function IconInstant({ className, strokeWidth = 1.4 }: P) {

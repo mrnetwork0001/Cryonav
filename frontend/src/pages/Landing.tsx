@@ -2,7 +2,6 @@ import type React from "react";
 import { useEffect, useState } from "react";
 import { api, type CitySummary, type NavigationResult } from "../lib/api";
 import {
-  CryonavMark,
   IconArrow,
   IconInstant,
   IconRoute,
@@ -141,14 +140,16 @@ export default function Landing() {
       {/* ---- nav ---------------------------------------------------------------------- */}
       <header className="sticky top-0 z-40 border-b border-slate-800/50 bg-[#05070b]/85 backdrop-blur-md">
         <div className="mx-auto flex max-w-[1400px] items-center justify-between px-6 py-3.5">
-          <a href="/" className="flex items-center gap-2.5">
-            <span
-              className="grid h-7 w-7 place-items-center rounded-md text-slate-950"
-              style={{ background: "linear-gradient(135deg,#22d3ee,#0891b2)" }}
-            >
-              <CryonavMark className="h-[18px] w-[18px]" strokeWidth={1.6} />
-            </span>
-            <span className="text-[13px] font-semibold tracking-[0.16em] text-slate-100">CRYONAV</span>
+          {/* The supplied wordmark already contains the mark AND the name, so the drawn
+              glyph and the text label both go - keeping either would duplicate it. */}
+          <a href="/" className="flex items-center" aria-label="Cryonav home">
+            <img
+              src="/brand/cryonav-wordmark.png"
+              alt="Cryonav - Thermal Navigation System"
+              className="h-8 w-auto sm:h-9"
+              width={506}
+              height={128}
+            />
           </a>
           <nav className="hidden items-center gap-1 text-[10px] font-medium tracking-[0.22em] text-slate-500 md:flex">
             {NAV_LINKS.map(([href, label]) => (
@@ -681,22 +682,13 @@ export default function Landing() {
       <footer>
         <div className="mx-auto grid max-w-[1400px] gap-12 px-6 py-16 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div className="min-w-0">
-            <div className="flex items-center gap-3">
-              <span
-                className="grid h-9 w-9 place-items-center rounded-md text-slate-950"
-                style={{ background: "linear-gradient(135deg,#22d3ee,#0891b2)" }}
-              >
-                <CryonavMark className="h-[22px] w-[22px]" strokeWidth={1.5} />
-              </span>
-              <span className="border-l border-slate-700/60 pl-3 leading-tight">
-                <span className="block text-[14px] font-semibold tracking-[0.14em] text-slate-100">
-                  CRYONAV
-                </span>
-                <span className="block text-[9px] uppercase tracking-[0.22em] text-slate-500">
-                  Thermal Navigation Engine
-                </span>
-              </span>
-            </div>
+            <img
+              src="/brand/cryonav-wordmark.png"
+              alt="Cryonav - Thermal Navigation System"
+              className="h-11 w-auto"
+              width={506}
+              height={128}
+            />
             <p className="mt-6 max-w-sm text-[13.5px] leading-relaxed text-slate-400">
               Agentic thermal navigation on the FortyGuard Temperature API&reg;. Live microclimate
               intelligence at 2&nbsp;m above ground, fused with measured urban canopy - returned as

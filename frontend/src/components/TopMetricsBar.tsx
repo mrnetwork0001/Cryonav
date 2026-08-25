@@ -1,5 +1,5 @@
 import type { NavigationResult, ThermalGrid } from "../lib/api";
-import { CryonavMark, IconDownload } from "./Icons";
+import { IconDownload } from "./Icons";
 
 interface Props {
   nav: NavigationResult | null;
@@ -33,19 +33,14 @@ export default function TopMetricsBar({ nav, grid, cityName, cityId, reportDate,
     <header className="glass z-20 flex flex-wrap items-stretch gap-px overflow-hidden rounded-2xl">
       {/* Brand - links back to the landing page; burger sits top-right (mobile only) */}
       <div className="flex min-w-[210px] flex-1 items-center gap-3 px-4 py-2.5 md:px-5 md:py-3">
-        <a href="/" className="flex items-center gap-3" title="Cryonav - home">
-          <div
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-lg font-bold text-slate-950"
-            style={{ background: "linear-gradient(135deg,#22d3ee,#0891b2)" }}
-          >
-            <CryonavMark className="h-[19px] w-[19px]" strokeWidth={1.6} />
-          </div>
-          <div className="leading-tight">
-            <div className="text-[15px] font-semibold tracking-tight text-slate-100">CRYONAV</div>
-            <div className="text-[10px] uppercase tracking-[0.14em] text-slate-500">
-              Thermal Navigation Engine
-            </div>
-          </div>
+        <a href="/" className="flex items-center" title="Cryonav - home">
+          <img
+            src="/brand/cryonav-wordmark.png"
+            alt="Cryonav - Thermal Navigation System"
+            className="h-9 w-auto"
+            width={506}
+            height={128}
+          />
         </a>
         <button
           onClick={onMenu}
