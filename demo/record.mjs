@@ -3,7 +3,7 @@
  *
  *   cd demo && npm install && npx playwright install chromium && npm run record
  *
- * Drives the running app (backend :8008 + frontend :5180 — start with ./scripts/dev.sh)
+ * Drives the running app (backend :8008 + frontend :5180 - start with ./scripts/dev.sh)
  * through the submission narrative and writes one .webm per segment into demo/footage/,
  * ready to narrate over using demo/SCRIPT.md. Segments are recorded at 1920x1080@2x.
  */
@@ -108,4 +108,4 @@ await segment("05-mobile", { width: 390, height: 844 }, async (p) => {
 });
 
 await browser.close();
-console.log("\nAll segments in demo/footage/ — narration in demo/SCRIPT.md");
+console.log("\nAll segments in demo/footage/ - narration in demo/SCRIPT.md");

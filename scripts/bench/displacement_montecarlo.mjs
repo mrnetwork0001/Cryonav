@@ -56,7 +56,7 @@ function walk(speed, acc) {
 const pct = (x) => ((100 * x) / TRIALS).toFixed(1).padStart(5) + "%";
 
 console.log(
-  `Motionless walker — a MISS is a collapse read as movement, so nobody is alerted.\n` +
+  `Motionless walker - a MISS is a collapse read as movement, so nobody is alerted.\n` +
     `${TRIALS} trials, 8-min window @1 Hz, ${RADIUS_M} m threshold.\n`,
 );
 console.log("accuracy   naive first-vs-last        median-of-thirds");
@@ -81,7 +81,7 @@ for (const acc of [5, 10, 20, 40, 60]) {
 }
 
 console.log(
-  `\nCONTROL — moving walker. A low miss-rate above is worthless if bought by never\n` +
+  `\nCONTROL - moving walker. A low miss-rate above is worthless if bought by never\n` +
     `reporting movement, so this must stay near zero.\n`,
 );
 console.log("speed         accuracy   false-immobility   mean estimate");

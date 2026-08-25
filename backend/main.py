@@ -352,7 +352,7 @@ def city_grid(
 def city_report(city_id: str):
     """FortyGuard's heat-intelligence analyst report for this tile (cached daily).
 
-    Generated upstream by POST /v1/heat_intelligence and downloaded server-side —
+    Generated upstream by POST /v1/heat_intelligence and downloaded server-side -
     the upstream link embeds the API key and is never exposed. 404 when no report
     has been cached (no key, or the tile's report fetch failed).
     """

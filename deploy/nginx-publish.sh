@@ -45,9 +45,9 @@ die()  { printf '\n\033[31mABORT: %s\033[0m\n' "$1" >&2; exit 1; }
 
 [ "$(id -u)" -eq 0 ] || die "run with sudo"
 command -v nginx >/dev/null || die "nginx not found"
-[ -f "$ROOT/frontend/dist/index.html" ] || die "$ROOT/frontend/dist/index.html missing — run install-on-vps.sh first"
+[ -f "$ROOT/frontend/dist/index.html" ] || die "$ROOT/frontend/dist/index.html missing - run install-on-vps.sh first"
 curl -fsS --max-time 5 http://127.0.0.1:8008/api/v1/health >/dev/null 2>&1 \
-  || die "the Cryonav API is not answering on 127.0.0.1:8008 — run install-on-vps.sh first"
+  || die "the Cryonav API is not answering on 127.0.0.1:8008 - run install-on-vps.sh first"
 
 # ---------------------------------------------------------------------------------------
 # Safety: capture the CURRENT state so we can always get back to it.
@@ -55,7 +55,7 @@ curl -fsS --max-time 5 http://127.0.0.1:8008/api/v1/health >/dev/null 2>&1 \
 say "Checking your existing nginx is healthy BEFORE we touch anything"
 if ! nginx -t >/dev/null 2>&1; then
   nginx -t || true
-  die "your nginx configuration is ALREADY invalid. Fix that first — this script will not
+  die "your nginx configuration is ALREADY invalid. Fix that first - this script will not
        add to a broken config, because it would then be blamed for the breakage."
 fi
 ok "nginx -t passes; your current config is valid"
@@ -72,7 +72,7 @@ fi
 
 # Roll back to exactly the configuration that was working when we started.
 rollback() {
-  warn "rolling back — your other sites must not be affected by a Cryonav failure"
+  warn "rolling back - your other sites must not be affected by a Cryonav failure"
   rm -f "$ENABLED"
   if [ "$HAD_VHOST" = "1" ] && [ -n "$BACKUP" ]; then
     cp -a "$BACKUP" "$AVAIL"
@@ -82,7 +82,7 @@ rollback() {
   if nginx -t >/dev/null 2>&1; then
     reload_nginx && warn "rolled back; nginx reloaded with your original config"
   else
-    warn "nginx -t STILL failing after rollback — this was not caused by Cryonav"
+    warn "nginx -t STILL failing after rollback - this was not caused by Cryonav"
     nginx -t || true
   fi
 }
@@ -103,7 +103,7 @@ apply() {
   local label="$1"
   if nginx -t >/dev/null 2>&1; then
     reload_nginx
-    ok "$label — nginx -t passed, reloaded gracefully"
+    ok "$label - nginx -t passed, reloaded gracefully"
   else
     printf '\n'; nginx -t || true
     rollback
@@ -126,14 +126,14 @@ cleanup() {
 trap cleanup EXIT
 
 # ---------------------------------------------------------------------------------------
-# STAGE 1 — HTTP only. Serves the app and the ACME challenge; no certificate referenced.
+# STAGE 1 - HTTP only. Serves the app and the ACME challenge; no certificate referenced.
 # ---------------------------------------------------------------------------------------
 say "Stage 1: publishing over HTTP so the ACME challenge can be answered"
 mkdir -p "$WEBROOT/.well-known/acme-challenge"
 chown -R www-data:www-data "$WEBROOT" 2>/dev/null || true
 
 cat > "$AVAIL" <<NGINX
-# Cryonav vhost — stage 1 (HTTP only, pre-certificate).
+# Cryonav vhost - stage 1 (HTTP only, pre-certificate).
 # Managed by /opt/cryonav/deploy/nginx-publish.sh. Additive: touches no other vhost.
 server {
     listen 80;
@@ -184,11 +184,11 @@ fi
 rm -f "$WEBROOT/.well-known/acme-challenge/cryonav-selftest"
 
 # ---------------------------------------------------------------------------------------
-# STAGE 2 — certificate, then HTTPS.
+# STAGE 2 - certificate, then HTTPS.
 # ---------------------------------------------------------------------------------------
 say "Stage 2: obtaining the certificate"
 if [ -d "/etc/letsencrypt/live/${DOMAIN}" ]; then
-  ok "certificate for ${DOMAIN} already exists — not requesting another"
+  ok "certificate for ${DOMAIN} already exists - not requesting another"
 else
   command -v certbot >/dev/null || die "certbot not installed.
        Install it (sudo apt-get install -y certbot) and re-run. Stage 1 is already live
@@ -222,7 +222,7 @@ fi
 ok "nginx ${NGX_VER} detected; using the matching http2 syntax"
 
 cat > "$AVAIL" <<NGINX
-# Cryonav vhost — stage 2 (HTTPS).
+# Cryonav vhost - stage 2 (HTTPS).
 # Managed by /opt/cryonav/deploy/nginx-publish.sh. Additive: touches no other vhost.
 server {
     listen 80;

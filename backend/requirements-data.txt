@@ -1,4 +1,4 @@
-# Data-preparation only — NOT installed on the deployed server.
+# Data-preparation only - NOT installed on the deployed server.
 # scripts/fetch_canopy.py and scripts/fetch_lst.py use these to read Cloud-Optimized
 # GeoTIFFs over HTTP range requests (windowed reads, so a 565 MB raster costs ~1 MB).
 rasterio>=1.3

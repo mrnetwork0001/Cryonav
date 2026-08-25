@@ -3,7 +3,7 @@ import { api, type CitySummary, type NavigationResult } from "../lib/api";
 
 /**
  * Marketing/landing page, styled after the dark "protocol landing" idiom: blueprint grid,
- * two-tone gradient headline, mono stat strip, and a live product card — followed by the
+ * two-tone gradient headline, mono stat strip, and a live product card - followed by the
  * full story: the physics problem, the three agents, the live FortyGuard integration, the
  * Jetson edge tier, and the verification posture.
  *
@@ -215,7 +215,7 @@ export default function Landing() {
             <p className="mt-9 max-w-xl text-[17px] leading-relaxed text-slate-400">
               Cryonav is an agentic thermal-navigation engine. It reads the FortyGuard Temperature
               API® at 2&nbsp;m above ground, fuses it with urban canopy structure, and routes
-              pedestrians by the heat their body actually absorbs — with an Emergency Sentinel that
+              pedestrians by the heat their body actually absorbs - with an Emergency Sentinel that
               breaks unsafe exposure at real cooling shelters. Deterministic, always.
             </p>
 
@@ -354,7 +354,7 @@ export default function Landing() {
               </div>
               {shelterApplied && (
                 <div className="mt-2 px-1 text-[11px] text-slate-500">
-                  Cooling stop inserted at <span className="text-cyan-300">{shelterName}</span> —
+                  Cooling stop inserted at <span className="text-cyan-300">{shelterName}</span> -
                   shade {shadeGain >= 0 ? "+" : "−"}
                   {Math.abs(shadeGain).toFixed(0)}%, {addedMin >= 0 ? "+" : "−"}
                   {Math.abs(addedMin).toFixed(1)} min
@@ -386,7 +386,7 @@ export default function Landing() {
       </div>
 
       {/* ================================================================================
-          THE PROBLEM — two streets, 500 m apart
+          THE PROBLEM - two streets, 500 m apart
       ================================================================================= */}
       <section id="problem" className="border-t border-slate-800/60">
         <div className="mx-auto max-w-7xl px-6 py-28">
@@ -397,7 +397,7 @@ export default function Landing() {
               <span className="text-slate-500">A body can.</span>
             </h2>
             <p className="mt-6 max-w-2xl text-[15px] leading-relaxed text-slate-400">
-              Two Phoenix streets, 500 metres apart, same moment — measured by this repo's own
+              Two Phoenix streets, 500 metres apart, same moment - measured by this repo's own
               thermal model over FortyGuard microclimate data. A weather API sees a 10° difference.
               A pedestrian's body absorbs a 46° difference in radiant load, and that is where heat
               illness actually comes from.
@@ -464,7 +464,7 @@ export default function Landing() {
                 glyph="⬡"
                 color="#22d3ee"
                 name="Cool-Route Optimizer"
-                role="Solves the same origin–destination twice: pure distance (what every navigator returns) and thermal dose — minutes in sun weighted by how punishing that sun is — under a per-profile detour budget. Rejected candidates are kept and shown."
+                role="Solves the same origin–destination twice: pure distance (what every navigator returns) and thermal dose - minutes in sun weighted by how punishing that sun is - under a per-profile detour budget. Rejected candidates are kept and shown."
                 trace="solve_dual_route · score_tradeoff"
               />
             </div>
@@ -472,14 +472,14 @@ export default function Landing() {
               glyph="◈"
               color="#facc15"
               name="Thermal Sensing"
-              role="Polls the FortyGuard feed for the corridor, classifies microclimate risk low → extreme, and flags asphalt radiation spikes — surface running 60 °F above the air a weather app reports."
+              role="Polls the FortyGuard feed for the corridor, classifies microclimate risk low → extreme, and flags asphalt radiation spikes - surface running 60 °F above the air a weather app reports."
               trace='poll_fortyguard · flag_asphalt_trap'
             />
             <AgentCard
               glyph="⬢"
               color="#fb7185"
               name="Emergency Sentinel"
-              role="Checks the longest unbroken high-risk leg against public-health exposure ceilings. When exceeded, it trials real cooling shelters as mandatory waypoints and re-invokes the optimizer — or says honestly that none helps."
+              role="Checks the longest unbroken high-risk leg against public-health exposure ceilings. When exceeded, it trials real cooling shelters as mandatory waypoints and re-invokes the optimizer - or says honestly that none helps."
               trace="assess_exposure · shelter_reroute"
             />
           </div>
@@ -491,7 +491,7 @@ export default function Landing() {
               <span className="text-cyan-300">optimizer</span>
               <Arrow />
               <span className="text-rose-300">sentinel</span>
-              <span className="text-slate-600">— exposure ceiling exceeded? —</span>
+              <span className="text-slate-600">- exposure ceiling exceeded? -</span>
               <span className="rounded bg-rose-400/10 px-2 py-0.5 text-rose-300">
                 re-solve with shelter waypoint
               </span>
@@ -500,7 +500,7 @@ export default function Landing() {
               <span className="text-slate-600">(Path A baseline stays pinned)</span>
             </div>
             <p className="mt-3 text-[13px] leading-relaxed text-slate-500">
-              That feedback edge is what makes this a loop rather than a pipeline — and every step
+              That feedback edge is what makes this a loop rather than a pipeline - and every step
               lands in a structured trace the dashboard renders live, so the reasoning is shown,
               not asserted.
             </p>
@@ -519,7 +519,7 @@ export default function Landing() {
               Live data, not a mock with a logo.
             </h2>
             <p className="mt-6 max-w-2xl text-[15px] leading-relaxed text-slate-400">
-              Cryonav's integration was verified against the production API — auth scheme, async
+              Cryonav's integration was verified against the production API - auth scheme, async
               activity flow, error envelope and all. FortyGuard supplies the ambient truth; Cryonav
               models the urban form on top. Neither is useful alone.
             </p>
@@ -533,7 +533,7 @@ export default function Landing() {
                 path="/v1/env_params"
                 badge="AMBIENT · GLOBAL"
                 badgeColor="#34d399"
-                desc="Real 24 h hourly series per tile: apparent temperature, wet-bulb, humidity, cloud cover, clear-sky irradiance. Settles in ~5 s. Dry-bulb is recovered by inverting wet-bulb + RH — apparent temp already contains the humidity term."
+                desc="Real 24 h hourly series per tile: apparent temperature, wet-bulb, humidity, cloud cover, clear-sky irradiance. Settles in ~5 s. Dry-bulb is recovered by inverting wet-bulb + RH - apparent temp already contains the humidity term."
               />
             </div>
             <div className="grid gap-4">
@@ -541,13 +541,13 @@ export default function Landing() {
                 path="/v1/heatmap"
                 badge="RASTER · US TILES"
                 badgeColor="#22d3ee"
-                desc="2,407 observed ~100 m tiles over the Phoenix AOI, rendered as a switchable map layer. Its ~0.4 °C spatial spread is the empirical proof of the thesis: air can't tell streets apart — radiant load can."
+                desc="2,407 observed ~100 m tiles over the Phoenix AOI, rendered as a switchable map layer. Its ~0.4 °C spatial spread is the empirical proof of the thesis: air can't tell streets apart - radiant load can."
               />
               <EndpointCard
                 path="/v1/status/{id}"
                 badge="ASYNC FLOW"
                 badgeColor="#a78bfa"
-                desc="Every enterprise endpoint returns an activity_id; results are collected on completion. Failures surface with their real upstream status — a 401 renders as a red DEGRADED pill, never as a green 200."
+                desc="Every enterprise endpoint returns an activity_id; results are collected on completion. Failures surface with their real upstream status - a 401 renders as a red DEGRADED pill, never as a green 200."
               />
             </div>
           </div>
@@ -583,9 +583,9 @@ export default function Landing() {
                           : "synthetic model"}
                       </td>
                       <td className="px-5 py-3.5 text-slate-400">
-                        {cal?.calibrated ? `${String(cal.peak_hour ?? 15).padStart(2, "0")}:00` : "—"}
+                        {cal?.calibrated ? `${String(cal.peak_hour ?? 15).padStart(2, "0")}:00` : "-"}
                       </td>
-                      <td className="px-5 py-3.5 text-slate-400">{cal?.timezone ?? "—"}</td>
+                      <td className="px-5 py-3.5 text-slate-400">{cal?.timezone ?? "-"}</td>
                       <td className="px-5 py-3.5">
                         {c.raster_tiles > 0 ? (
                           <span className="rounded bg-cyan-400/10 px-2 py-0.5 text-[11px] font-semibold text-cyan-300">
@@ -603,7 +603,7 @@ export default function Landing() {
           </div>
           <p className="reveal mt-3 text-[11px] text-slate-600">
             Ambient ranges above are today's, fetched from the live API at page load. Tiles without
-            raster coverage run the same physics on modelled spatial structure — and are labelled
+            raster coverage run the same physics on modelled spatial structure - and are labelled
             as such everywhere they appear.
           </p>
         </div>
@@ -615,7 +615,7 @@ export default function Landing() {
       <section id="edge" className="border-t border-slate-800/60">
         {/* minmax(0,1fr) + min-w-0: grid items default to min-width:auto, which lets the
             JSON <pre>'s min-content width propagate upward and force the whole page wider
-            than a phone — its own overflow-x-auto never engages. Measured: 530px page at a
+            than a phone - its own overflow-x-auto never engages. Measured: 530px page at a
             390px viewport without this. */}
         <div className="mx-auto grid max-w-7xl gap-10 px-6 py-28 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <div className="reveal min-w-0">
@@ -628,12 +628,12 @@ export default function Landing() {
               pedestrian kiosks and delivery-worker wearables: polylines decimated to the panel's
               resolution, telemetry stripped, one pre-rendered instruction string so firmware never
               does unit conversion. Once a kiosk has the response it needs no further network to
-              guide the walk — nothing in the payload is a reference to fetch later, so the
+              guide the walk - nothing in the payload is a reference to fetch later, so the
               endpoint reports <span className="text-slate-300">offline_capable</span> only after
               checking that, rather than asserting it. The Jetson hardware tier is simulated; the
               payload and compute figures are measured server-side (1681 B, 276–307 ms warm).
             </p>
-            {/* "OFFLINE ✓" used to sit here and was read as a connection status — the page
+            {/* "OFFLINE ✓" used to sit here and was read as a connection status - the page
                 also carries a genuine LIVE/OFFLINE feed pill, so one word meant two opposite
                 things. This is a property of the payload, not a state of the link. */}
             <div className="mt-10 grid grid-cols-3 gap-6">
@@ -687,13 +687,13 @@ export default function Landing() {
                 large
                 stat="130"
                 label="tests"
-                desc="Physics, routing, agents, API surface, upstream failure modes — including a no-regression sweep across all 27 corridor × profile combinations."
+                desc="Physics, routing, agents, API surface, upstream failure modes - including a no-regression sweep across all 27 corridor × profile combinations."
               />
             </div>
             <ProofCard
               stat="0"
               label="negative savings"
-              desc="If no admissible route beats the direct path on both dose and peak exposure, Cryonav returns the direct path and reports zero — it never manufactures a detour."
+              desc="If no admissible route beats the direct path on both dose and peak exposure, Cryonav returns the direct path and reports zero - it never manufactures a detour."
             />
             <ProofCard
               stat="401 ≠ 200"
@@ -705,7 +705,7 @@ export default function Landing() {
                 wide
                 stat="(city, t)"
                 label="deterministic"
-                desc="Every reading is a pure function of place, time and the day's FortyGuard calibration — runs reproduce byte-for-byte within a calibration day."
+                desc="Every reading is a pure function of place, time and the day's FortyGuard calibration - runs reproduce byte-for-byte within a calibration day."
               />
             </div>
           </div>
@@ -735,7 +735,7 @@ export default function Landing() {
             </div>
             <p className="mt-6 max-w-sm text-[14px] leading-relaxed text-slate-400">
               Agentic thermal navigation on the FortyGuard Temperature API®. Live microclimate
-              intelligence at 2&nbsp;m above ground, fused with urban canopy structure — returned
+              intelligence at 2&nbsp;m above ground, fused with urban canopy structure - returned
               as a walkable, survivable route on real city streets.
             </p>
             <div className="mt-6 flex items-center gap-4">

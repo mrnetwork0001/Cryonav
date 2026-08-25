@@ -1,17 +1,17 @@
-# Cryonav — Master Project Specification
+# Cryonav - Master Project Specification
 
 > Persisted verbatim from the original build brief so the plan survives context resets.
 > Companion skill: `.claude/skills/cryonav/SKILL.md` (build conventions + resume instructions).
 
 ---
 
-## TASK: Build "Cryonav" — Hyperlocal Thermal Navigation & Microclimate Cool-Routing Engine powered by FortyGuard Temperature API®
+## TASK: Build "Cryonav" - Hyperlocal Thermal Navigation & Microclimate Cool-Routing Engine powered by FortyGuard Temperature API®
 
 ### ABOUT THE PROJECT
 
 "Cryonav" is an open-source, Agentic AI-powered thermal navigation and urban climate safety platform built for the FortyGuard Hackathon '26 ("Building the World's Temperature AI").
 
-During extreme heat events (e.g., Phoenix at 112°F, Abu Dhabi/Dubai at 115°F), standard navigation applications (Google Maps, Apple Maps) only optimize for shortest distance or driving speed — completely ignoring asphalt thermal traps 2 meters above ground. Cryonav leverages FortyGuard's Temperature API® to stream 10 mi² hyperlocal heat intelligence, fused with urban canopy GIS data, to compute "Cool Routes" that reduce pedestrian heat exposure by 35–50% with minimal added transit time.
+During extreme heat events (e.g., Phoenix at 112°F, Abu Dhabi/Dubai at 115°F), standard navigation applications (Google Maps, Apple Maps) only optimize for shortest distance or driving speed - completely ignoring asphalt thermal traps 2 meters above ground. Cryonav leverages FortyGuard's Temperature API® to stream 10 mi² hyperlocal heat intelligence, fused with urban canopy GIS data, to compute "Cool Routes" that reduce pedestrian heat exposure by 35–50% with minimal added transit time.
 
 ---
 
@@ -46,10 +46,10 @@ Three specialized AI agents working in harmony:
 
 ### CORE API ENDPOINTS
 
-- `POST /api/v1/fortyguard/heat-intelligence` — FortyGuard API proxy & mock generator.
-- `POST /api/v1/navigate/cool-route` — origin/destination → Standard Route vs Cryonav Cool Route + thermal exposure score metrics.
-- `GET  /api/v1/shelters/nearby` — nearest municipal air-conditioned cooling centers & water stations.
-- `POST /api/v1/edge/jetson-kiosk` — optimized lightweight JSON endpoint for NVIDIA Jetson edge devices.
+- `POST /api/v1/fortyguard/heat-intelligence` - FortyGuard API proxy & mock generator.
+- `POST /api/v1/navigate/cool-route` - origin/destination → Standard Route vs Cryonav Cool Route + thermal exposure score metrics.
+- `GET  /api/v1/shelters/nearby` - nearest municipal air-conditioned cooling centers & water stations.
+- `POST /api/v1/edge/jetson-kiosk` - optimized lightweight JSON endpoint for NVIDIA Jetson edge devices.
 
 ---
 
@@ -57,12 +57,12 @@ Three specialized AI agents working in harmony:
 
 Sleek futuristic dark-mode UI (`#0B0F17` background, cyan/teal cool route paths, pulsing red heat hazard overlays):
 
-1. **Top Metrics Bar** — FortyGuard live feed status (`200 OK`, `10 mi² resolution`, `2m ground elevation`); current temperature & local risk level meter (`112°F - EXTREME HEAT RISK`).
+1. **Top Metrics Bar** - FortyGuard live feed status (`200 OK`, `10 mi² resolution`, `2m ground elevation`); current temperature & local risk level meter (`112°F - EXTREME HEAT RISK`).
 2. **Interactive Map Canvas**
    - Heatmap overlay layer: FortyGuard thermal grid rendered over urban blocks.
    - Route comparison visualizer: standard route (red/orange), Cryonav cool route (cyan/teal) with canopy shade coverage, cooling waypoints, °F savings.
-3. **Thermal Safety & Exposure Score Card** — body heat exposure reduction (`-8.4°F thermal load`, `-42% heat stress`).
-4. **1-Click Emergency Cooling Station Reroute** — instantly append nearest cooling shelter to the route.
+3. **Thermal Safety & Exposure Score Card** - body heat exposure reduction (`-8.4°F thermal load`, `-42% heat stress`).
+4. **1-Click Emergency Cooling Station Reroute** - instantly append nearest cooling shelter to the route.
 
 ---
 
@@ -71,7 +71,7 @@ Sleek futuristic dark-mode UI (`#0B0F17` background, cyan/teal cool route paths,
 | Phase | Scope |
 |-------|-------|
 | **1** | Monorepo structure (`/backend`, `/frontend`, `/data`, `/scripts`) + `fortyguard_service.py` (live + mock thermal grid for Phoenix / Abu Dhabi / Dubai). |
-| **2** | `routing_engine.py` — distance vs thermal weight matrix on road network nodes + 3-agent orchestration. |
+| **2** | `routing_engine.py` - distance vs thermal weight matrix on road network nodes + 3-agent orchestration. |
 | **3** | `main.py` REST endpoints + simulated NVIDIA Jetson hardware optimization layer. |
-| **4** | React frontend — dark glassmorphism UI, heatmap toggles, side-by-side route rendering, wired to FastAPI. |
+| **4** | React frontend - dark glassmorphism UI, heatmap toggles, side-by-side route rendering, wired to FastAPI. |
 | **5** | End-to-end verification tests + hackathon-ready `README.md` (ASCII logo, problem statement, FortyGuard integration explainer, Jetson edge architecture diagram, quickstart). |

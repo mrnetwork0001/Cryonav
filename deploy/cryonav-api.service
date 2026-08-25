@@ -1,4 +1,4 @@
-# Cryonav backend — FastAPI behind Caddy.
+# Cryonav backend - FastAPI behind Caddy.
 # Installed to /etc/systemd/system/cryonav-api.service by deploy/deploy.sh
 [Unit]
 Description=Cryonav thermal-navigation API

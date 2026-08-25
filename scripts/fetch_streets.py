@@ -8,7 +8,7 @@ degree-2 chains into single edges (keeping their true geometry, simplified to ~5
 and writes data/streets/<city>.json. The files are committed: routing must work at
 demo time with no network and reproduce byte-for-byte.
 
-No osmnx/geopandas — the routing engine only needs nodes, edges and lengths, and a
+No osmnx/geopandas - the routing engine only needs nodes, edges and lengths, and a
 direct Overpass query keeps the dependency footprint at 'httpx'.
 """
 
@@ -172,7 +172,7 @@ def build(city_id: str, svc: FortyGuardService) -> dict:
                     )
                 start = i
 
-    # Keep only the largest connected component — Overpass clips at the bbox, leaving
+    # Keep only the largest connected component - Overpass clips at the bbox, leaving
     # orphan fragments that would make nearest-node snapping route into a dead island.
     adj = {}
     for i, e in enumerate(edges):

@@ -3,9 +3,9 @@
 #
 #   ./deploy/deploy.sh user@host [domain]
 #
-# What it does (idempotent — safe to re-run for every update):
+# What it does (idempotent - safe to re-run for every update):
 #   1. builds the frontend locally and rsyncs the tree (incl. dist/) to /opt/cryonav
-#      — the VPS needs Python 3.9+ but NO Node and NO git credentials
+#      - the VPS needs Python 3.9+ but NO Node and NO git credentials
 #   2. bootstraps the VPS on first run: cryonav user, python venv, Caddy (official repo)
 #   3. installs /etc/cryonav/env from the local .env if the VPS copy doesn't exist yet,
 #      and otherwise ADDS ONLY KEYS THAT ARE MISSING from it -- an existing value is never
@@ -65,7 +65,7 @@ else
       added=$((added+1))
     fi
   done < /tmp/cryonav.env
-  [ "$added" -eq 0 ] && echo "    /etc/cryonav/env already has every key — unchanged"
+  [ "$added" -eq 0 ] && echo "    /etc/cryonav/env already has every key - unchanged"
   rm -f /tmp/cryonav.env
 fi
 sudo chown root:root /etc/cryonav/env
@@ -73,7 +73,7 @@ sudo chmod 600 /etc/cryonav/env
 ENVMERGE
 else
   ssh "$TARGET" 'sudo mkdir -p /etc/cryonav && sudo touch /etc/cryonav/env && sudo chmod 600 /etc/cryonav/env'
-  echo "    no local .env — created empty /etc/cryonav/env (simulation mode)"
+  echo "    no local .env - created empty /etc/cryonav/env (simulation mode)"
 fi
 
 echo "==> Remote bootstrap + service install"
@@ -163,7 +163,7 @@ case "$MANAGE_WEB" in
     # Caddy runs someone else's sites: stage our block and let the operator import it.
     sudo cp /opt/cryonav/deploy/Caddyfile /etc/caddy/cryonav.caddy
     echo "CRYONAV_SITE=${CRYONAV_SITE_VALUE}" | sudo tee /etc/caddy/cryonav.env >/dev/null
-    echo "STAGED: /etc/caddy/cryonav.caddy — your Caddyfile was NOT touched."
+    echo "STAGED: /etc/caddy/cryonav.caddy - your Caddyfile was NOT touched."
     echo "To publish Cryonav, add to /etc/caddy/Caddyfile:   import /etc/caddy/cryonav.caddy"
     echo "then set CRYONAV_SITE in caddy's environment (see /etc/caddy/cryonav.env) and reload caddy."
     ;;
@@ -195,5 +195,5 @@ else
   echo "    dashboard: http://$HOST_ONLY/app"
   echo "    api docs:  http://$HOST_ONLY/docs"
 fi
-echo "    calibration refresh: daily 05:30 UTC (systemd timer) — run now with:"
+echo "    calibration refresh: daily 05:30 UTC (systemd timer) - run now with:"
 echo "      ssh $TARGET sudo systemctl start cryonav-calibrate.service"

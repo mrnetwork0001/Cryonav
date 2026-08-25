@@ -2,7 +2,7 @@
  * Displacement estimation from noisy GPS fixes.
  *
  * The Sentinel escalates when someone has not moved 25 m in eight minutes. Consumer GPS
- * reports 5–10 m accuracy in the open and degrades badly between tall buildings — exactly
+ * reports 5–10 m accuracy in the open and degrades badly between tall buildings - exactly
  * where a heat casualty is most likely to be. So the naive estimate (distance from the
  * first fix to the last) is dangerous in a specific direction: two independent errors, each
  * up to the accuracy radius, land in the estimate at full weight. A motionless person can
@@ -22,7 +22,7 @@
  * A low miss-rate is worthless if bought by never reporting movement, so the control matters:
  * over the same trials with the walker actually moving, false-immobility is 0.0% at a normal
  * walk (1.3 m/s) and 0.0% at a slow shuffle (0.4 m/s), at both 10 m and 40 m accuracy. It only
- * degrades (13.1% at 40 m) for a walker covering 48 m in eight minutes — barely over the
+ * degrades (13.1% at 40 m) for a walker covering 48 m in eight minutes - barely over the
  * threshold, where the case is genuinely ambiguous.
  *
  * The estimate runs ~2/3 of true displacement, because the outer anchors sit at 1/6 and 5/6
@@ -33,7 +33,7 @@
  * three equal-time thirds and take the component-wise median of each; the median is robust
  * to the outliers that multipath produces, and averaging over a third of the window shrinks
  * the residual error by roughly sqrt(n). Displacement is then the largest separation among
- * the three anchors — largest, not first-to-last, so that walking away and back still reads
+ * the three anchors - largest, not first-to-last, so that walking away and back still reads
  * as movement rather than as immobility.
  *
  * The same estimator runs on both telemetry sources, so the scripted playback is measured
@@ -71,7 +71,7 @@ function anchor(fixes: Fix[]): [number, number] {
 /**
  * Robust displacement over the supplied window, in metres.
  *
- * Returns null when there is not enough data to make a claim — the caller must then decline
+ * Returns null when there is not enough data to make a claim - the caller must then decline
  * to assert immobility rather than assume it. Fewer than six fixes cannot fill three thirds
  * meaningfully, and asserting "has not moved" from two noisy points is how false dispatches
  * (and, worse, false reassurance) happen.
@@ -110,7 +110,7 @@ export function trimWindow(fixes: Fix[], nowMs: number, windowMs: number): Fix[]
   return i > 0 ? fixes.slice(i) : fixes;
 }
 
-/** Median reported accuracy over the window — what gets carried into the alert. */
+/** Median reported accuracy over the window - what gets carried into the alert. */
 export function medianAccuracyM(fixes: Fix[]): number | null {
   const acc = fixes.map((f) => f.accuracy).filter((a): a is number => typeof a === "number");
   return acc.length ? median(acc) : null;

@@ -3,12 +3,12 @@
 
     python scripts/fetch_shelters.py [city ...]
 
-Phoenix — the OFFICIAL Maricopa Association of Governments "Heat Relief Network"
+Phoenix - the OFFICIAL Maricopa Association of Governments "Heat Relief Network"
 ArcGIS feature service (public, anonymous): actual municipal cooling centers,
 hydration stations and respite sites for the 2026 season, with per-day hours.
 MAG disclaims accuracy; attribution + disclaimer are stored with the data.
 
-Dubai / Abu Dhabi — no official machine-readable network exists; real OSM POIs
+Dubai / Abu Dhabi - no official machine-readable network exists; real OSM POIs
 stand in: mosques (cooled, open through prayer times), malls, souks, cooled
 Dubai Metro stations, and public drinking water. Air-conditioning is assumed
 by category (the tag exists on ~1 POI region-wide) and flagged `assumed`.

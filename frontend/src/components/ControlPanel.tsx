@@ -1,3 +1,4 @@
+import PlaceSearch from "./PlaceSearch";
 import type { CitySummary, GridSource, Meta, Preset } from "../lib/api";
 
 interface Props {
@@ -8,6 +9,9 @@ interface Props {
   hour: number;
   presets: Preset[];
   activePreset: string | null;
+  /** Tile bounds, so place search can prefer results Cryonav actually has data for. */
+  bounds: { south: number; north: number; west: number; east: number };
+  cityName: string;
   pickMode: "origin" | "destination" | null;
   toggles: {
     showHeat: boolean;
@@ -23,6 +27,7 @@ interface Props {
   onProfile: (id: string) => void;
   onHour: (h: number) => void;
   onPreset: (p: Preset) => void;
+  onPickPoint: (which: "origin" | "destination", coords: [number, number]) => void;
   onPickMode: (m: "origin" | "destination" | null) => void;
   onToggle: (key: keyof Props["toggles"]) => void;
   onGridSource: (s: GridSource) => void;
@@ -101,6 +106,10 @@ export default function ControlPanel(p: Props) {
         </div>
       </div>
 
+      {/* Above the presets on purpose. A preset proves nothing to someone who suspects the
+          demo is rigged; typing your own street and watching it solve does. */}
+      <PlaceSearch bounds={p.bounds} cityName={p.cityName} onPick={p.onPickPoint} />
+
       <div>
         <Label>Demo corridors</Label>
         <div className="mt-1.5 space-y-1">
@@ -144,7 +153,7 @@ export default function ControlPanel(p: Props) {
                 ? "border-cyan-400/50 bg-cyan-400/12 text-cyan-300"
                 : "border-slate-700/50 bg-slate-900/40 text-slate-500 hover:text-slate-300"
             }`}
-            title="Cryonav's composite exposure index — the field the routes optimise on"
+            title="Cryonav's composite exposure index - the field the routes optimise on"
           >
             Exposure model
           </button>
@@ -160,7 +169,7 @@ export default function ControlPanel(p: Props) {
             }`}
             title={
               p.rasterAvailable
-                ? "Raw FortyGuard /v1/heatmap raster — observed ~100 m tiles, no Cryonav modelling"
+                ? "Raw FortyGuard /v1/heatmap raster - observed ~100 m tiles, no Cryonav modelling"
                 : "No FortyGuard raster coverage for this tile (raster product is US-only)"
             }
           >

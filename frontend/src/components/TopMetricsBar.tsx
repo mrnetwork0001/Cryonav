@@ -30,9 +30,9 @@ export default function TopMetricsBar({ nav, grid, cityName, cityId, reportDate,
 
   return (
     <header className="glass z-20 flex flex-wrap items-stretch gap-px overflow-hidden rounded-2xl">
-      {/* Brand — links back to the landing page; burger sits top-right (mobile only) */}
+      {/* Brand - links back to the landing page; burger sits top-right (mobile only) */}
       <div className="flex min-w-[210px] flex-1 items-center gap-3 px-4 py-2.5 md:px-5 md:py-3">
-        <a href="/" className="flex items-center gap-3" title="Cryonav — home">
+        <a href="/" className="flex items-center gap-3" title="Cryonav - home">
           <div
             className="grid h-9 w-9 shrink-0 place-items-center rounded-lg font-bold text-slate-950"
             style={{ background: "linear-gradient(135deg,#22d3ee,#0891b2)" }}
@@ -100,7 +100,7 @@ export default function TopMetricsBar({ nav, grid, cityName, cityId, reportDate,
                   : "CALIBRATED FIELD"
               : loading
                 ? "…"
-                : "—"}
+                : "-"}
           </span>
           <span>{nav ? `${nav.sensing.elevation_m} m AGL` : "2 m AGL"}</span>
           {nav?.sensing.resolution && (
@@ -128,7 +128,7 @@ export default function TopMetricsBar({ nav, grid, cityName, cityId, reportDate,
       <div className="flex min-w-[300px] flex-[1.4] flex-col justify-center px-4 py-2.5 md:px-5 md:py-3">
         <div className="flex items-baseline gap-2">
           <span className="tnum text-[26px] font-semibold leading-none text-slate-50">
-            {ambient ? `${ambient.air_temp_2m_f.toFixed(0)}°F` : "—"}
+            {ambient ? `${ambient.air_temp_2m_f.toFixed(0)}°F` : "-"}
           </span>
           <span
             className="rounded px-2 py-0.5 text-[10px] font-bold tracking-wide"
@@ -141,14 +141,14 @@ export default function TopMetricsBar({ nav, grid, cityName, cityId, reportDate,
           <span>
             surface{" "}
             <b className="text-orange-400">
-              {ambient ? `${ambient.surface_temp_f.toFixed(0)}°F` : "—"}
+              {ambient ? `${ambient.surface_temp_f.toFixed(0)}°F` : "-"}
             </b>
           </span>
           <span>
-            feels <b className="text-slate-300">{ambient ? `${ambient.heat_index_f.toFixed(0)}°F` : "—"}</b>
+            feels <b className="text-slate-300">{ambient ? `${ambient.heat_index_f.toFixed(0)}°F` : "-"}</b>
           </span>
-          <span>WBGT {ambient ? ambient.wbgt_f.toFixed(0) : "—"}</span>
-          <span>RH {ambient ? `${ambient.relative_humidity_pct.toFixed(0)}%` : "—"}</span>
+          <span>WBGT {ambient ? ambient.wbgt_f.toFixed(0) : "-"}</span>
+          <span>RH {ambient ? `${ambient.relative_humidity_pct.toFixed(0)}%` : "-"}</span>
         </div>
         <RiskMeter value={ambient?.exposure_index_f ?? 0} />
       </div>
@@ -160,7 +160,7 @@ export default function TopMetricsBar({ nav, grid, cityName, cityId, reportDate,
         <div className="text-[10px] uppercase tracking-[0.12em] text-slate-500">Coverage tile</div>
         <div className="mt-1 text-[13px] font-medium text-slate-200">{cityName}</div>
         <div className="tnum mt-0.5 text-[11px] text-slate-500">
-          {grid ? `${grid.tile_area_mi2} mi²` : "—"} ·{" "}
+          {grid ? `${grid.tile_area_mi2} mi²` : "-"} ·{" "}
           {String(Math.floor(hour)).padStart(2, "0")}:
           {String(Math.round((hour % 1) * 60)).padStart(2, "0")} local
         </div>
@@ -210,7 +210,7 @@ function RiskMeter({ value }: { value: number }) {
       </div>
       <div className="mt-1 flex justify-between text-[9px] uppercase tracking-wider text-slate-600">
         <span>comfort 88°F</span>
-        <span className="tnum text-slate-400">thermal load {value ? value.toFixed(1) : "—"}°F</span>
+        <span className="tnum text-slate-400">thermal load {value ? value.toFixed(1) : "-"}°F</span>
         <span>survival 140°F</span>
       </div>
     </div>

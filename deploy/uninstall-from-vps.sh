@@ -45,7 +45,7 @@ for f in /etc/nginx/sites-enabled/cryonav /etc/nginx/sites-available/cryonav; do
     if grep -q "Cryonav vhost" "$f" 2>/dev/null || [ -L "$f" ]; then
       sudo rm -f "$f"; did "$f"; removed_vhost=1
     else
-      skip "$f exists but is not ours — left alone"
+      skip "$f exists but is not ours - left alone"
     fi
   fi
 done

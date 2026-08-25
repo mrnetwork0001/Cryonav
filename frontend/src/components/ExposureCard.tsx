@@ -137,7 +137,7 @@ export default function ExposureCard({
 
         {nav.shelter_reroute.applied && nav.shelter_reroute.shelter && (
           <p className="mt-2 rounded bg-cyan-400/10 px-2 py-1.5 text-[11px] text-cyan-300">
-            Shelter break added at <b>{nav.shelter_reroute.shelter.name}</b> —{" "}
+            Shelter break added at <b>{nav.shelter_reroute.shelter.name}</b> -{" "}
             <span className="tnum">
               {nav.shelter_reroute.longest_leg_min_before?.toFixed(1)} →{" "}
               {nav.shelter_reroute.longest_leg_min_after?.toFixed(1)} min

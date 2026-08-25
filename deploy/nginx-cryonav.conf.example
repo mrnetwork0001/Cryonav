@@ -1,4 +1,4 @@
-# Cryonav vhost — for a host where nginx ALREADY owns ports 80/443 and serves other sites.
+# Cryonav vhost - for a host where nginx ALREADY owns ports 80/443 and serves other sites.
 #
 # This file is additive. It defines one server block for one server_name and touches no
 # other vhost, no shared snippet, and nothing in nginx.conf. Your existing sites keep their
@@ -12,7 +12,7 @@
 #
 # `nginx -t` before every reload is not optional: a reload with a broken config is refused,
 # but running the test first means you find out before you touch the running server at all.
-# Use `reload`, never `restart` — reload spawns new workers and lets existing connections
+# Use `reload`, never `restart` - reload spawns new workers and lets existing connections
 # finish, so other sites on this host never drop a request.
 #
 # TLS: get the certificate with `certbot certonly --webroot`, NOT `certbot --nginx`.

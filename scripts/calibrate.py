@@ -38,7 +38,7 @@ def main() -> int:
 
     svc = FortyGuardService()
     if not svc.live:
-        print("FORTYGUARD_API_KEY is not set — nothing to calibrate.", file=sys.stderr)
+        print("FORTYGUARD_API_KEY is not set - nothing to calibrate.", file=sys.stderr)
         return 1
 
     targets = args.cities or svc.city_ids()

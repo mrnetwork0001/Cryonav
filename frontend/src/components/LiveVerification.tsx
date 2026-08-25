@@ -6,11 +6,11 @@ import { verifyLive, type LiveProof } from "../lib/api";
  *
  * A dashboard full of temperatures is indistinguishable from a mock-up. Anyone can render
  * "112°F · FORTYGUARD · 200 OK" over a static JSON file, and a viewer has no way to tell the
- * difference — which means an honest build gets no more credit than a fabricated one.
+ * difference - which means an honest build gets no more credit than a fabricated one.
  *
  * So this makes the app prove itself instead of asking to be believed. Pressing the button
  * fires a real, uncached call to FortyGuard and reports what came back: which endpoint, the
- * round-trip measured in the browser, the upstream status, and — most importantly — WHICH
+ * round-trip measured in the browser, the upstream status, and - most importantly - WHICH
  * FIELDS actually came from upstream versus which Cryonav modelled locally.
  *
  * It is deliberately not on the render path. The upstream is an asynchronous job queue: the
@@ -82,7 +82,7 @@ export default function LiveVerification({ lat, lon, cityId, hour }: Props) {
         <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
           The figures on this page come from a field calibrated against FortyGuard this morning.
           Press below to call the API <em>now</em>, from this browser, and see exactly what comes
-          back — endpoint, round-trip, and which values are upstream measurements rather than
+          back - endpoint, round-trip, and which values are upstream measurements rather than
           Cryonav's model.
         </p>
       )}

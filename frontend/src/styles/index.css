@@ -380,7 +380,7 @@ body,
   opacity: 1;
 }
 
-/* Display headline scale — tighter tracking as size grows. */
+/* Display headline scale - tighter tracking as size grows. */
 .display {
   letter-spacing: -0.035em;
   line-height: 0.98;
@@ -400,7 +400,7 @@ body,
   transform: scaleX(1);
 }
 
-/* Ambient glow blobs behind the hero — pure decoration, pointer-events off. */
+/* Ambient glow blobs behind the hero - pure decoration, pointer-events off. */
 .aurora {
   position: absolute;
   border-radius: 9999px;

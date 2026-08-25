@@ -8,7 +8,7 @@ them with the actual published values, and keeps the citation next to the number
 provenance travels with the constant.
 
 Where a standard is defined on a specific quantity (heat index vs WBGT vs air temperature),
-that is stated explicitly — applying a WBGT limit to a heat-index number would be a category
+that is stated explicitly - applying a WBGT limit to a heat-index number would be a category
 error, and is the mistake this module exists to prevent.
 
 SOURCES
@@ -21,7 +21,7 @@ SOURCES
     Safety Tool app.
 [NWS-HI]    NOAA/NWS Heat Index classification, "Likelihood of Heat Disorders with Prolonged
     Exposure or Strenuous Activity" (weather.gov). US Government work, public domain.
-[GPS-SPS]   GPS.gov, "GPS Accuracy" — Standard Positioning Service performance.
+[GPS-SPS]   GPS.gov, "GPS Accuracy" - Standard Positioning Service performance.
 """
 
 from __future__ import annotations
@@ -30,20 +30,20 @@ import math
 from typing import Dict, Tuple
 
 # --------------------------------------------------------------------------------------
-# 1. Risk bands — [OSHA-HI] / [NIOSH-2016] Table C-1
+# 1. Risk bands - [OSHA-HI] / [NIOSH-2016] Table C-1
 # --------------------------------------------------------------------------------------
 #
 # Defined on the HEAT INDEX in degrees F. Verbatim band edges from Table C-1
 # ("Heat index-associated protective measures for worksites"):
 #
-#     < 91 F            Lower (caution)     — basic health and safety planning
-#     91 F to 103 F     Moderate            — implement precautions, heighten awareness
-#     103 F to 115 F    High                — additional precautions to protect workers
-#     > 115 F           Very high to extreme— even more aggressive protective measures
+#     < 91 F            Lower (caution)     - basic health and safety planning
+#     91 F to 103 F     Moderate            - implement precautions, heighten awareness
+#     103 F to 115 F    High                - additional precautions to protect workers
+#     > 115 F           Very high to extreme- even more aggressive protective measures
 #
 # Cryonav previously used 95 / 105 / 115, invented. These are the published edges.
 #
-# APPLICABILITY — these bands are retained for REFERENCE and cross-checking only; Cryonav
+# APPLICABILITY - these bands are retained for REFERENCE and cross-checking only; Cryonav
 # does NOT band on them. Table C-1 carries its own warning, verbatim: "The presence of a
 # radiant heat source may decrease the accuracy and usefulness of the above heat index."
 # Cryonav's whole subject is radiant load, so a shade-defined heat-index table is the wrong
@@ -74,7 +74,7 @@ NWS_HEAT_INDEX_CLASSES_F: Dict[str, float] = {
 
 
 # --------------------------------------------------------------------------------------
-# 1b. NIOSH adjusted temperature — [NIOSH-2016] Table 6-2, footnote †
+# 1b. NIOSH adjusted temperature - [NIOSH-2016] Table 6-2, footnote †
 # --------------------------------------------------------------------------------------
 #
 # THIS IS THE CORRECT INPUT TO TABLE 6-2, and the reason Cryonav can use that table
@@ -163,7 +163,7 @@ def niosh_adjusted_temp_f(
 
 
 # --------------------------------------------------------------------------------------
-# 2. Continuous-exposure ceilings — [NIOSH-2016] Table 6-2
+# 2. Continuous-exposure ceilings - [NIOSH-2016] Table 6-2
 # --------------------------------------------------------------------------------------
 #
 # Table 6-2, "Work/rest schedules for workers wearing normal work clothing", is indexed by
@@ -180,11 +180,11 @@ def niosh_adjusted_temp_f(
 #     105 F     25 / 35
 #     106 F     20 / 40
 #     107 F     15 / 45
-#     108-112 F Caution — high levels of heat stress
+#     108-112 F Caution - high levels of heat stress
 #
 # Cryonav needs one continuous-exposure ceiling per risk band. Each band's ceiling is the
 # work-minutes value at the band's own lower edge, which is the most permissive minute count
-# the table allows anywhere inside that band — i.e. the conservative reading.
+# the table allows anywhere inside that band - i.e. the conservative reading.
 NIOSH_WORK_MINUTES_PER_HOUR: Tuple[Tuple[float, float], ...] = (
     (99.0, 60.0),   # <=99 F: continuous work permitted
     (100.0, 45.0),
@@ -197,7 +197,7 @@ NIOSH_WORK_MINUTES_PER_HOUR: Tuple[Tuple[float, float], ...] = (
     (107.0, 15.0),
 )
 
-#: Above the last tabulated row NIOSH marks the range "Caution — high levels of heat
+#: Above the last tabulated row NIOSH marks the range "Caution - high levels of heat
 #: stress" rather than giving a minute count. Cryonav continues the table's own trend
 #: (5 min less per degree F) down to a floor, and labels the extrapolation as such.
 NIOSH_TABLE_CEILING_F = 107.0
@@ -268,7 +268,7 @@ SAFE_EXPOSURE_MINUTES: Dict[str, float] = {
 
 
 # --------------------------------------------------------------------------------------
-# 3. Fluid replacement — [NIOSH-2016] Executive Summary, and [OSHA-HI]
+# 3. Fluid replacement - [NIOSH-2016] Executive Summary, and [OSHA-HI]
 # --------------------------------------------------------------------------------------
 #
 # NIOSH: "Workers in heat <2 hours and involved in moderate work activities should drink
@@ -294,7 +294,7 @@ def hydration_ml_per_hour(heat_index_f: float, exertion_multiplier: float = 1.0)
 
     Interpolates across NIOSH's own stated interval (one cup every 20 min -> every 15 min)
     as heat index rises through the moderate band, then holds at the 15-minute rate. Hard
-    capped at NIOSH's 1.5 L/h hyponatraemia limit — a "drink more" formula without that
+    capped at NIOSH's 1.5 L/h hyponatraemia limit - a "drink more" formula without that
     ceiling would be unsafe advice, which is precisely why this is now a citation and not
     a curve someone chose.
     """
@@ -320,7 +320,7 @@ def hydration_ml_per_hour(heat_index_f: float, exertion_multiplier: float = 1.0)
 
 
 # --------------------------------------------------------------------------------------
-# 4. WBGT exposure limits — [NIOSH-2016] Section 8, p.93
+# 4. WBGT exposure limits - [NIOSH-2016] Section 8, p.93
 # --------------------------------------------------------------------------------------
 #
 # Closed-form, verbatim:
@@ -328,7 +328,7 @@ def hydration_ml_per_hour(heat_index_f: float, exertion_multiplier: float = 1.0)
 #     REL [C-WBGT] = 56.7 - 11.5 * log10(M)      (acclimatised:  Recommended Exposure Limit)
 # where M is metabolic rate in watts, for a standard 70 kg / 1.8 m^2 worker.
 #
-# These are defined on WBGT, which Cryonav already computes (thermal.wbgt_f) — so unlike
+# These are defined on WBGT, which Cryonav already computes (thermal.wbgt_f) - so unlike
 # the heat-index bands, no reinterpretation is required at all. This is the most rigorous
 # limit in the module.
 METABOLIC_WATTS_WALKING = 300.0  # NIOSH "moderate work"; continuous normal walking
@@ -353,7 +353,7 @@ def wbgt_exceedance_f(wbgt_f_value: float, acclimatised: bool = True) -> float:
 
 
 # --------------------------------------------------------------------------------------
-# 5. Positioning accuracy — [GPS-SPS]
+# 5. Positioning accuracy - [GPS-SPS]
 # --------------------------------------------------------------------------------------
 #
 # GPS.gov: "GPS-enabled smartphones are typically accurate to within a 4.9 m (16 ft.)

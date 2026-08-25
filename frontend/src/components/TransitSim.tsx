@@ -5,7 +5,7 @@ import { displacementM, medianAccuracyM, trimWindow, type Fix } from "../lib/geo
 /**
  * Emergency Sentinel live-transit playback.
  *
- * Two telemetry sources feed the SAME endpoint, `/api/v1/sentinel/monitor` — the one a
+ * Two telemetry sources feed the SAME endpoint, `/api/v1/sentinel/monitor` - the one a
  * Jetson wearable would call. Every verdict on screen is the backend's, never this file's.
  *
  *   LIVE    the device's own GPS via `watchPosition`. Real fixes, real accuracy, real
@@ -147,8 +147,8 @@ export default function TransitSim({ nav, cityId, hour, profileId, onFrame }: Pr
     // localhost the API is simply absent, so say why instead of failing silently.
     if (!window.isSecureContext) {
       setLiveErr(
-        "Live GPS needs HTTPS (or localhost). Open this page over a secure origin — e.g. a " +
-          "`cloudflared tunnel --url` address — and try again.",
+        "Live GPS needs HTTPS (or localhost). Open this page over a secure origin - e.g. a " +
+          "`cloudflared tunnel --url` address - and try again.",
       );
       return;
     }
@@ -169,7 +169,7 @@ export default function TransitSim({ nav, cityId, hour, profileId, onFrame }: Pr
       inFlight: false,
     };
     setLiveOn(true);
-    setLog([{ t: 0, status: "ok", text: "Live GPS watch started — acquiring fixes." }]);
+    setLog([{ t: 0, status: "ok", text: "Live GPS watch started - acquiring fixes." }]);
 
     live.current.watchId = navigator.geolocation.watchPosition(
       (p) => {
@@ -195,7 +195,7 @@ export default function TransitSim({ nav, cityId, hour, profileId, onFrame }: Pr
       (err) => {
         const why: Record<number, string> = {
           1: "Location permission denied. Grant it in the browser's site settings to run live.",
-          2: "Position unavailable — no GPS or network fix here.",
+          2: "Position unavailable - no GPS or network fix here.",
           3: "Timed out waiting for a fix.",
         };
         setLiveErr(why[err.code] ?? err.message);
@@ -210,7 +210,7 @@ export default function TransitSim({ nav, cityId, hour, profileId, onFrame }: Pr
       const now = Date.now();
       // Dwell accrues in REAL minutes, only while the backend's last reading was high or
       // extreme. Reaching the eight-minute immobility test therefore takes eight real
-      // minutes standing in real heat — which is the honest cost of a real alert.
+      // minutes standing in real heat - which is the honest cost of a real alert.
       const elapsedMin = (now - l.lastAccrualMs) / 60000;
       l.lastAccrualMs = now;
       if (l.lastRisk === "high" || l.lastRisk === "extreme") l.dwellHigh += elapsedMin;
@@ -355,11 +355,11 @@ export default function TransitSim({ nav, cityId, hour, profileId, onFrame }: Pr
     if (e.frozenAt !== null && !e.dispatched) {
       ph = "immobile";
       if (e.t - e.frozenAt > IMMOBILE_SIM_MIN + 6) {
-        // A Sentinel that fails to escalate is exactly what a reviewer must see — say so
+        // A Sentinel that fails to escalate is exactly what a reviewer must see - say so
         // loudly rather than ending as if the run completed normally.
         setLog((l) => [
           ...l,
-          { t: e.t, status: e.status, text: "⚠ Sentinel did NOT escalate within the immobility window — safety gap." },
+          { t: e.t, status: e.status, text: "⚠ Sentinel did NOT escalate within the immobility window - safety gap." },
         ]);
         finish("done");
         return;
@@ -374,7 +374,7 @@ export default function TransitSim({ nav, cityId, hour, profileId, onFrame }: Pr
     const nLat = (gaussian() * SIM_GPS_ACCURACY_M) / 110574;
     const nLon = (gaussian() * SIM_GPS_ACCURACY_M) / (111320 * Math.cos((pos[0] * Math.PI) / 180));
     // Fix timestamps are on the SIMULATED clock, so the 9-minute window means nine simulated
-    // minutes — the same span the backend's dwell test uses.
+    // minutes - the same span the backend's dwell test uses.
     e.fixes.push({
       t: e.t * 60000,
       lat: pos[0] + nLat,
@@ -520,7 +520,7 @@ export default function TransitSim({ nav, cityId, hour, profileId, onFrame }: Pr
       {source === "replay" && !running && phase !== "done" && (
         <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
           Replays a delivery walk along the computed cool route at ~50× speed, streaming
-          telemetry to the Sentinel — including a mid-route collapse. Positions are synthetic and
+          telemetry to the Sentinel - including a mid-route collapse. Positions are synthetic and
           carry ±{SIM_GPS_ACCURACY_M} m of GPS noise; displacement is measured from them by the
           same estimator live mode uses. Every escalation shown is the backend's own verdict.
         </p>
@@ -529,7 +529,7 @@ export default function TransitSim({ nav, cityId, hour, profileId, onFrame }: Pr
       {source === "live" && !liveOn && (
         <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
           Streams this device's real GPS to the Sentinel. Dwell accrues in real time, so the
-          eight-minute immobility test takes eight real minutes — and an escalation sends a
+          eight-minute immobility test takes eight real minutes - and an escalation sends a
           real push alert. Needs HTTPS and location permission.
         </p>
       )}
@@ -542,10 +542,10 @@ export default function TransitSim({ nav, cityId, hour, profileId, onFrame }: Pr
 
       {source === "live" && liveOn && (
         <div className="tnum mt-3 grid grid-cols-3 gap-2 text-center">
-          <Metric label="fixes" value={liveFix ? String(liveFix.n) : "—"} />
+          <Metric label="fixes" value={liveFix ? String(liveFix.n) : "-"} />
           <Metric
             label="accuracy"
-            value={liveFix?.acc != null ? `±${liveFix.acc.toFixed(0)} m` : "—"}
+            value={liveFix?.acc != null ? `±${liveFix.acc.toFixed(0)} m` : "-"}
             tone={liveFix?.acc != null && liveFix.acc > 40 ? "#facc15" : undefined}
           />
           <Metric
@@ -563,7 +563,7 @@ export default function TransitSim({ nav, cityId, hour, profileId, onFrame }: Pr
           />
           <Metric
             label="air here"
-            value={monitor ? `${monitor.reading.air_temp_2m_f.toFixed(0)}°F` : "—"}
+            value={monitor ? `${monitor.reading.air_temp_2m_f.toFixed(0)}°F` : "-"}
           />
         </div>
       )}
@@ -578,7 +578,7 @@ export default function TransitSim({ nav, cityId, hour, profileId, onFrame }: Pr
           />
           <Metric
             label="air here"
-            value={monitor ? `${monitor.reading.air_temp_2m_f.toFixed(0)}°F` : "—"}
+            value={monitor ? `${monitor.reading.air_temp_2m_f.toFixed(0)}°F` : "-"}
           />
         </div>
       )}
@@ -616,7 +616,7 @@ export default function TransitSim({ nav, cityId, hour, profileId, onFrame }: Pr
             </>
           ) : (
             <>
-              No alert was sent — <b>{monitor.notification?.reason ?? "notification disabled"}</b>.
+              No alert was sent - <b>{monitor.notification?.reason ?? "notification disabled"}</b>.
             </>
           )}{" "}
           Cryonav alerts a contact the user nominates; it does not and cannot file a 911 call.

@@ -4,12 +4,12 @@
     python scripts/fetch_urban.py [city ...]
 
 Replaces the hand-authored canopy/heat fixtures with observed geometry:
-  cool  — park/garden/green polygons, individual street trees, tree rows,
+  cool  - park/garden/green polygons, individual street trees, tree rows,
           covered pedestrian ways, water polygons
-  hot   — surface parking lots, industrial/commercial/retail land, major-road
+  hot   - surface parking lots, industrial/commercial/retail land, major-road
           ribbons (with real lane counts), railway land
 
-Writes data/urban/<city>.json (committed — offline & deterministic at demo time).
+Writes data/urban/<city>.json (committed - offline & deterministic at demo time).
 Uses the maps.mail.ru Overpass mirror first: recon measured overpass-api.de
 rate-limiting this IP, and the mirror served identical same-day data.
 """
@@ -34,7 +34,7 @@ MIRRORS = [
     "https://overpass-api.de/api/interpreter",
 ]
 
-#: Canopy fraction assumed per green-feature class (OSM carries no density data — recon
+#: Canopy fraction assumed per green-feature class (OSM carries no density data - recon
 #: verified zero height/diameter_crown tags in all three tiles). Estimates, labelled as such.
 GREEN_CANOPY = {
     "park": 0.60, "garden": 0.65, "forest": 0.85, "wood": 0.85, "orchard": 0.70,
@@ -127,7 +127,7 @@ out tags geom;""")
 
     time.sleep(8)
     print("  trees / tree rows / covered ways / water …", flush=True)
-    # Trees need `out body` — `out tags` omits node coordinates entirely.
+    # Trees need `out body` - `out tags` omits node coordinates entirely.
     misc_raw = q(f"""[out:json][timeout:120];
 node["natural"="tree"]{bbox};
 out body;

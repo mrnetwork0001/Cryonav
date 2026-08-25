@@ -8,14 +8,14 @@ One command from a machine that has the repo, your `.env`, and SSH access:
 ```
 
 Requirements on the VPS: Debian/Ubuntu, `sudo`, ports 80/443 open. **No Node, no git
-credentials** — the frontend is built locally and shipped as static files.
+credentials** - the frontend is built locally and shipped as static files.
 
 What lands where:
 
 | Path | Contents |
 |---|---|
 | `/opt/cryonav` | the app tree (rsynced; `cryonav` system user) |
-| `/etc/cryonav/env` | `FORTYGUARD_API_KEY` — root-owned, 0600, copied from your local `.env` **only if absent**; never overwritten, never in the repo |
+| `/etc/cryonav/env` | `FORTYGUARD_API_KEY` - root-owned, 0600, copied from your local `.env` **only if absent**; never overwritten, never in the repo |
 | `/etc/systemd/system/cryonav-api.service` | uvicorn on `127.0.0.1:8008`, 2 workers |
 | `/etc/systemd/system/cryonav-calibrate.{service,timer}` | daily 05:30 UTC FortyGuard pull (`env_params` + `heatmap`), then API restart to load it |
 | `/etc/caddy/Caddyfile` | serves `frontend/dist`, proxies `/api/*`, `/docs*`, `/openapi.json` |

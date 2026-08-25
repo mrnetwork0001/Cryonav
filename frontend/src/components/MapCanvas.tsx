@@ -61,11 +61,32 @@ export default function MapCanvas(props: Props) {
     });
     mapRef.current = map;
 
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-      attribution: '&copy; OpenStreetMap &copy; CARTO &middot; FortyGuard Temperature API',
-      subdomains: "abcd",
-      maxZoom: 19,
-    }).addTo(map);
+    // Three basemaps, and satellite is not decoration. Cryonav's central claim is that it
+    // measured the canopy on each street from the Meta/WRI raster; on imagery a viewer can
+    // SEE whether the trees the router routed toward are actually there. A dark cartographic
+    // basemap renders every street identically and cannot corroborate anything.
+    const bases: Record<string, L.TileLayer> = {
+      Dark: L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+        attribution: "&copy; OpenStreetMap &copy; CARTO &middot; FortyGuard Temperature API",
+        subdomains: "abcd",
+        maxZoom: 19,
+      }),
+      Satellite: L.tileLayer(
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        {
+          attribution:
+            "Imagery &copy; Esri, Maxar, Earthstar Geographics &middot; FortyGuard Temperature API",
+          maxZoom: 19,
+        },
+      ),
+      Streets: L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+        attribution: "&copy; OpenStreetMap &copy; CARTO &middot; FortyGuard Temperature API",
+        subdomains: "abcd",
+        maxZoom: 19,
+      }),
+    };
+    bases.Dark.addTo(map);
+    L.control.layers(bases, undefined, { position: "topright", collapsed: true }).addTo(map);
 
     corridorLayerRef.current = L.layerGroup().addTo(map);
     routeLayerRef.current = L.layerGroup().addTo(map);

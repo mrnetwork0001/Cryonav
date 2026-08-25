@@ -162,7 +162,7 @@ export default function App() {
   }
 
   return (
-    // Mobile (<lg): a normal flowing page — the document scrolls, the map gets an explicit
+    // Mobile (<lg): a normal flowing page - the document scrolls, the map gets an explicit
     // viewport-relative height, and the map comes FIRST so a phone user isn't forced through
     // ~800px of controls to reach it. Desktop (lg+): the original locked three-column shell
     // with per-column scrolling. Without this split the columns collapse to 8px slivers on a
@@ -189,6 +189,8 @@ export default function App() {
             hour={hour}
             presets={city.presets}
             activePreset={activePreset}
+            bounds={city.bounds}
+            cityName={city.name}
             pickMode={pickMode}
             toggles={toggles}
             gridSource={gridSource}
@@ -198,6 +200,7 @@ export default function App() {
             onProfile={setProfileId}
             onHour={setHour}
             onPreset={applyPreset}
+            onPickPoint={pickPoint}
             onPickMode={setPickMode}
             onToggle={(k) => setToggles((t) => ({ ...t, [k]: !t[k] }))}
             onGridSource={setGridSource}
@@ -261,8 +264,8 @@ export default function App() {
 
       {/* ---- mobile control drawer -------------------------------------------------------
           The control panel lives here below lg (the inline column is desktop-only). Kept
-          mounted so the slide transition runs; actions that hand focus back to the map —
-          picking a preset, arming a map pick, solving — close it automatically. */}
+          mounted so the slide transition runs; actions that hand focus back to the map -
+          picking a preset, arming a map pick, solving - close it automatically. */}
       <div
         onClick={() => setDrawerOpen(false)}
         className={`fixed inset-0 z-[1190] bg-black/60 backdrop-blur-sm transition-opacity duration-300 lg:hidden ${
@@ -296,6 +299,8 @@ export default function App() {
           hour={hour}
           presets={city.presets}
           activePreset={activePreset}
+            bounds={city.bounds}
+            cityName={city.name}
           pickMode={pickMode}
           toggles={toggles}
           gridSource={gridSource}
@@ -304,7 +309,8 @@ export default function App() {
           onCity={setCityId}
           onProfile={setProfileId}
           onHour={setHour}
-          onPreset={(pr) => {
+          onPickPoint={pickPoint}
+            onPreset={(pr) => {
             applyPreset(pr);
             setDrawerOpen(false);
           }}

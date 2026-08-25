@@ -2,7 +2,7 @@
 Real outbound notification for Sentinel escalations.
 
 Until now the Sentinel's `dispatch` verdict returned the string "911 / Municipal Heat
-Response" and sent nothing. This module actually delivers a push notification — to a
+Response" and sent nothing. This module actually delivers a push notification - to a
 user-nominated contact, never to emergency services.
 
 WHY NOT 911: there is no public API by which a civilian application can file an emergency
@@ -14,7 +14,7 @@ and it is what this does.
 
 TRANSPORT: ntfy (https://ntfy.sh), an open-source pub/sub notifier. A POST to a
 topic URL delivers to every subscribed phone. No account, no key, no per-message cost, and
-the server is self-hostable — so a municipality could run its own rather than depend on a
+the server is self-hostable - so a municipality could run its own rather than depend on a
 third party. The topic name is the secret; treat it like a credential.
 
 CONFIGURATION
@@ -69,7 +69,7 @@ def send_dispatch(
         return {
             "sent": False,
             "channel": "ntfy",
-            "reason": "CRYONAV_NTFY_TOPIC not configured — no notification was sent",
+            "reason": "CRYONAV_NTFY_TOPIC not configured - no notification was sent",
         }
 
     lat, lon = position
@@ -131,7 +131,7 @@ def send_dispatch(
             "latency_ms": elapsed,
             "recipient": "user-nominated contact subscribed to the alert topic",
         }
-    except Exception as exc:  # noqa: BLE001 — never break the safety path
+    except Exception as exc:  # noqa: BLE001 - never break the safety path
         return {
             "sent": False,
             "channel": "ntfy",

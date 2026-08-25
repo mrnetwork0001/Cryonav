@@ -1098,7 +1098,7 @@ class FortyGuardService:
             raise FortyGuardUpstreamError("completed report carried no download_link")
 
         # Download immediately: the link is a short-lived presigned URL AND contains the
-        # API key in its object path — it must not be stored or forwarded.
+        # API key in its object path - it must not be stored or forwarded.
         try:
             pdf = httpx.get(link, timeout=60.0)
             pdf.raise_for_status()

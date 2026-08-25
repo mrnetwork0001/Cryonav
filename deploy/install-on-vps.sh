@@ -81,7 +81,7 @@ This installer is about to change the following, and NOTHING else:
   CREATE  /etc/cryonav/env                 (root-only, 0600)
   CREATE  /etc/systemd/system/cryonav-api.service
   CREATE  /etc/systemd/system/cryonav-calibrate.{service,timer}
-  START   cryonav-api on 127.0.0.1:8008    (loopback only — not exposed directly)
+  START   cryonav-api on 127.0.0.1:8008    (loopback only - not exposed directly)
   APT     only packages genuinely missing, with needrestart suppressed so that
           apt cannot restart any running daemon
 
@@ -136,12 +136,12 @@ command -v curl >/dev/null 2>&1 || missing="$missing curl"
 
 if [ -n "$missing" ]; then
   echo "==> Installing missing system packages:$missing"
-  echo "    (needrestart suppressed — no running service will be restarted by apt)"
+  echo "    (needrestart suppressed - no running service will be restarted by apt)"
   sudo apt-get update -qq
   # shellcheck disable=SC2086
   sudo apt-get install -y -qq $missing >/dev/null
 else
-  echo "==> All required system packages already present — apt not touched"
+  echo "==> All required system packages already present - apt not touched"
 fi
 
 # --- caddy, only when this deploy owns the edge -------------------------------------------
