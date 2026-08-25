@@ -333,3 +333,93 @@ body,
     font-size: 20px !important;
   }
 }
+
+/* ---- landing redesign: bento + scroll reveal -------------------------------------------- */
+
+/* Elements start offset and fade in when scrolled into view (JS adds .is-in).
+   Reduced-motion users get them immediately visible, no transform. */
+.reveal {
+  opacity: 0;
+  transform: translateY(22px);
+  transition:
+    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* Bento cell: soft border-lift on hover, plus a faint radial sheen following the top edge. */
+.bento {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid #1e293b;
+  background: rgb(10 14 21 / 0.9);
+  transition:
+    border-color 0.35s ease,
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.35s ease;
+}
+.bento::before {
+  content: "";
+  position: absolute;
+  inset: -1px -1px auto -1px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(34 211 238 / 0.5), transparent);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+.bento:hover {
+  border-color: color-mix(in srgb, #22d3ee 26%, #1e293b);
+  transform: translateY(-2px);
+  box-shadow: 0 18px 50px -28px rgb(34 211 238 / 0.4);
+}
+.bento:hover::before {
+  opacity: 1;
+}
+
+/* Display headline scale — tighter tracking as size grows. */
+.display {
+  letter-spacing: -0.035em;
+  line-height: 0.98;
+}
+.display-sm {
+  letter-spacing: -0.028em;
+  line-height: 1.03;
+}
+
+/* Section eyebrow rule that draws itself in on reveal. */
+.kicker-rule {
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.1s;
+}
+.is-in .kicker-rule {
+  transform: scaleX(1);
+}
+
+/* Ambient glow blobs behind the hero — pure decoration, pointer-events off. */
+.aurora {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(90px);
+  pointer-events: none;
+  opacity: 0.4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .kicker-rule {
+    transform: scaleX(1);
+    transition: none;
+  }
+  .bento:hover {
+    transform: none;
+  }
+}
