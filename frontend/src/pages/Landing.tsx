@@ -1,5 +1,14 @@
+import type React from "react";
 import { useEffect, useState } from "react";
 import { api, type CitySummary, type NavigationResult } from "../lib/api";
+import {
+  CryonavMark,
+  IconArrow,
+  IconInstant,
+  IconRoute,
+  IconSensing,
+  IconSentinel,
+} from "../components/Icons";
 
 /**
  * Landing page, "operations console" idiom.
@@ -134,10 +143,10 @@ export default function Landing() {
         <div className="mx-auto flex max-w-[1400px] items-center justify-between px-6 py-3.5">
           <a href="/" className="flex items-center gap-2.5">
             <span
-              className="grid h-7 w-7 place-items-center rounded-md text-[13px] font-bold text-slate-950"
+              className="grid h-7 w-7 place-items-center rounded-md text-slate-950"
               style={{ background: "linear-gradient(135deg,#22d3ee,#0891b2)" }}
             >
-              &#10052;
+              <CryonavMark className="h-[18px] w-[18px]" strokeWidth={1.6} />
             </span>
             <span className="text-[13px] font-semibold tracking-[0.16em] text-slate-100">CRYONAV</span>
           </a>
@@ -399,7 +408,7 @@ export default function Landing() {
           <div className="cell-grid reveal mt-14 grid lg:grid-cols-3">
             <AgentCell
               step="01"
-              glyph="&#9672;"
+              Glyph={IconSensing}
               color="#facc15"
               name="Thermal Sensing"
               role="Polls the FortyGuard feed for the corridor, classifies microclimate risk low to extreme, and flags asphalt radiation spikes - surface running 60 &deg;F above the air a weather app reports."
@@ -407,7 +416,7 @@ export default function Landing() {
             />
             <AgentCell
               step="02"
-              glyph="&#11041;"
+              Glyph={IconRoute}
               color="#22d3ee"
               name="Cool-Route Optimizer"
               role="Solves the same origin-destination twice: pure distance (what every navigator returns) and thermal dose - minutes in sun weighted by how punishing that sun is - under a per-profile detour budget. Rejected candidates are kept and shown."
@@ -415,7 +424,7 @@ export default function Landing() {
             />
             <AgentCell
               step="03"
-              glyph="&#11042;"
+              Glyph={IconSentinel}
               color="#fb7185"
               name="Emergency Sentinel"
               role="Checks the longest unbroken high-risk leg against public-health exposure ceilings. When exceeded, it trials real cooling shelters as mandatory waypoints and re-invokes the optimizer - or says honestly that none helps."
@@ -674,10 +683,10 @@ export default function Landing() {
           <div className="min-w-0">
             <div className="flex items-center gap-3">
               <span
-                className="grid h-9 w-9 place-items-center rounded-md text-[15px] font-bold text-slate-950"
+                className="grid h-9 w-9 place-items-center rounded-md text-slate-950"
                 style={{ background: "linear-gradient(135deg,#22d3ee,#0891b2)" }}
               >
-                &#10052;
+                <CryonavMark className="h-[22px] w-[22px]" strokeWidth={1.5} />
               </span>
               <span className="border-l border-slate-700/60 pl-3 leading-tight">
                 <span className="block text-[14px] font-semibold tracking-[0.14em] text-slate-100">
@@ -780,7 +789,7 @@ function BigStat({ value, label }: { value: string; label: string }) {
 
 function AgentCell(props: {
   step: string;
-  glyph: string;
+  Glyph: (p: { className?: string; strokeWidth?: number }) => React.ReactElement;
   color: string;
   name: string;
   role: string;
@@ -790,10 +799,11 @@ function AgentCell(props: {
     <div className="cell flex flex-col p-7">
       <div className="flex items-center justify-between">
         <span
-          className="grid h-10 w-10 place-items-center rounded-md text-[17px]"
+          className="grid h-10 w-10 place-items-center rounded-md"
           style={{ background: `${props.color}14`, color: props.color }}
-          dangerouslySetInnerHTML={{ __html: props.glyph }}
-        />
+        >
+          <props.Glyph className="h-[19px] w-[19px]" />
+        </span>
         <span className="tnum font-mono text-[11px] text-slate-700">{props.step}</span>
       </div>
       <div className="mt-5 text-[16px] font-medium text-slate-100">{props.name}</div>
@@ -916,7 +926,7 @@ function FooterCol({ title, links }: { title: string; links: [string, string][] 
 }
 
 function Arrow() {
-  return <span className="text-slate-600">&rarr;</span>;
+  return <IconArrow className="h-3 w-3 text-slate-600" strokeWidth={1.3} />;
 }
 
 /* ------------------------------------------------------------------------------------------
@@ -1029,7 +1039,9 @@ function LiveCard(props: {
 
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-indigo-400/25 bg-indigo-500/10 p-3.5 pl-4">
         <div className="flex items-center gap-3">
-          <span className="bolt-flicker text-indigo-300">&#9889;</span>
+          <span className="bolt-flicker text-indigo-300">
+            <IconInstant className="h-4 w-4" />
+          </span>
           <div>
             <div className="text-[11.5px] font-semibold tracking-[0.12em] text-slate-100">
               1-CLICK COOL ROUTE READY

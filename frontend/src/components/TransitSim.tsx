@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { NavigationResult, RiskLevel, Shelter } from "../lib/api";
 import { displacementM, medianAccuracyM, trimWindow, type Fix } from "../lib/geo";
+import { IconPlay, IconRecord, IconRefresh, IconStop } from "./Icons";
 
 /**
  * Emergency Sentinel live-transit playback.
@@ -359,7 +360,7 @@ export default function TransitSim({ nav, cityId, hour, profileId, onFrame }: Pr
         // loudly rather than ending as if the run completed normally.
         setLog((l) => [
           ...l,
-          { t: e.t, status: e.status, text: "⚠ Sentinel did NOT escalate within the immobility window - safety gap." },
+          { t: e.t, status: e.status, text: "Sentinel did NOT escalate within the immobility window - safety gap." },
         ]);
         finish("done");
         return;
@@ -640,15 +641,26 @@ export default function TransitSim({ nav, cityId, hour, profileId, onFrame }: Pr
             : "border-rose-400/50 bg-rose-500/15 text-rose-300 hover:bg-rose-500/25"
         }`}
       >
-        {source === "live"
-          ? liveOn
-            ? "■ Stop live monitoring"
-            : "◉ Start live GPS monitoring"
-          : running
-            ? "■ Stop replay"
-            : phase === "done"
-              ? "↺ Reset"
-              : "▶ Replay transit emergency"}
+        {/* Icon and label are chosen from the same condition, so a state can never render a
+            play glyph on a stop action. */}
+        {(() => {
+          const [Icon, label] =
+            source === "live"
+              ? liveOn
+                ? ([IconStop, "Stop live monitoring"] as const)
+                : ([IconRecord, "Start live GPS monitoring"] as const)
+              : running
+                ? ([IconStop, "Stop replay"] as const)
+                : phase === "done"
+                  ? ([IconRefresh, "Reset"] as const)
+                  : ([IconPlay, "Replay transit emergency"] as const);
+          return (
+            <span className="inline-flex items-center justify-center gap-2">
+              <Icon className="h-3.5 w-3.5" />
+              {label}
+            </span>
+          );
+        })()}
       </button>
     </section>
   );

@@ -1,4 +1,5 @@
 import type { NavigationResult, ThermalGrid } from "../lib/api";
+import { CryonavMark, IconDownload } from "./Icons";
 
 interface Props {
   nav: NavigationResult | null;
@@ -37,7 +38,7 @@ export default function TopMetricsBar({ nav, grid, cityName, cityId, reportDate,
             className="grid h-9 w-9 shrink-0 place-items-center rounded-lg font-bold text-slate-950"
             style={{ background: "linear-gradient(135deg,#22d3ee,#0891b2)" }}
           >
-            ❄
+            <CryonavMark className="h-[19px] w-[19px]" strokeWidth={1.6} />
           </div>
           <div className="leading-tight">
             <div className="text-[15px] font-semibold tracking-tight text-slate-100">CRYONAV</div>
@@ -177,7 +178,8 @@ export default function TopMetricsBar({ nav, grid, cityName, cityId, reportDate,
             className="tnum mt-1 inline-flex w-fit items-center gap-1 rounded border border-cyan-400/30 bg-cyan-400/8 px-1.5 py-0.5 text-[9px] font-semibold tracking-wider text-cyan-300 transition hover:bg-cyan-400/15"
             title="FortyGuard heat-intelligence analyst report, generated upstream and cached daily"
           >
-            ⬇ FG ANALYST REPORT · {reportDate.slice(5)}
+            <IconDownload className="h-3.5 w-3.5" />
+            FG ANALYST REPORT · {reportDate.slice(5)}
           </a>
         )}
       </div>

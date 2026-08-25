@@ -1,14 +1,17 @@
 import type { NavigationResult, ThermalGrid } from "../lib/api";
+import { IconDot, IconRoute, IconSensing, IconSentinel } from "./Icons";
 
 interface Props {
   nav: NavigationResult | null;
   grid: ThermalGrid | null;
 }
 
-const AGENT_META: Record<string, { label: string; color: string; glyph: string }> = {
-  thermal_sensing: { label: "Thermal Sensing", color: "#facc15", glyph: "◈" },
-  cool_route_optimizer: { label: "Cool-Route Optimizer", color: "#22d3ee", glyph: "⬡" },
-  emergency_sentinel: { label: "Emergency Sentinel", color: "#fb7185", glyph: "⬢" },
+type GlyphFn = (p: { className?: string; strokeWidth?: number }) => React.ReactElement;
+
+const AGENT_META: Record<string, { label: string; color: string; Glyph: GlyphFn }> = {
+  thermal_sensing: { label: "Thermal Sensing", color: "#facc15", Glyph: IconSensing },
+  cool_route_optimizer: { label: "Cool-Route Optimizer", color: "#22d3ee", Glyph: IconRoute },
+  emergency_sentinel: { label: "Emergency Sentinel", color: "#fb7185", Glyph: IconSentinel },
 };
 
 /** Renders the agents' actual working trace, so the reasoning is shown rather than claimed. */
@@ -52,7 +55,7 @@ export default function AgentTrace({ nav, grid }: Props) {
           const meta = AGENT_META[step.agent] ?? {
             label: step.agent,
             color: "#94a3b8",
-            glyph: "•",
+            Glyph: IconDot,
           };
           return (
             <div
@@ -62,7 +65,7 @@ export default function AgentTrace({ nav, grid }: Props) {
             >
               <div className="flex items-center gap-1.5">
                 <span style={{ color: meta.color }} className="text-[11px]">
-                  {meta.glyph}
+                  <meta.Glyph className="h-[15px] w-[15px]" />
                 </span>
                 <span className="text-[10px] font-semibold" style={{ color: meta.color }}>
                   {meta.label}

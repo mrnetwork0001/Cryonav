@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { IconCheck, IconHollow, IconRefresh, IconTarget } from "./Icons";
 import { verifyLive, type LiveProof } from "../lib/api";
 
 /**
@@ -120,7 +121,7 @@ export default function LiveVerification({ lat, lon, cityId, hour }: Props) {
               <ul className="mt-1 space-y-0.5">
                 {proof.live_fields.map((f) => (
                   <li key={f} className="flex items-center gap-1.5 text-[11px] text-emerald-300">
-                    <span className="text-emerald-400">✓</span>
+                    <IconCheck className="h-3 w-3 shrink-0 text-emerald-400" />
                     {FIELD_LABEL[f] ?? f}
                   </li>
                 ))}
@@ -141,7 +142,7 @@ export default function LiveVerification({ lat, lon, cityId, hour }: Props) {
                 <ul className="mt-1 space-y-0.5">
                   {modelled.map((f) => (
                     <li key={f} className="flex items-center gap-1.5 text-[11px] text-slate-500">
-                      <span className="text-slate-600">○</span>
+                      <IconHollow className="h-3 w-3 shrink-0 text-slate-600" />
                       {FIELD_LABEL[f] ?? f}
                     </li>
                   ))}
@@ -174,7 +175,14 @@ export default function LiveVerification({ lat, lon, cityId, hour }: Props) {
         disabled={busy}
         className="mt-3 w-full rounded-lg border border-sky-400/50 bg-sky-500/15 px-3 py-2.5 text-[12px] font-semibold text-sky-300 transition hover:bg-sky-500/25 disabled:cursor-not-allowed disabled:opacity-40"
       >
-        {busy ? "Calling FortyGuard…" : proof ? "↻ Verify again" : "◎ Verify against FortyGuard now"}
+        {busy ? (
+          "Calling FortyGuard..."
+        ) : (
+          <span className="inline-flex items-center justify-center gap-2">
+            {proof ? <IconRefresh className="h-3.5 w-3.5" /> : <IconTarget className="h-3.5 w-3.5" />}
+            {proof ? "Verify again" : "Verify against FortyGuard now"}
+          </span>
+        )}
       </button>
     </section>
   );

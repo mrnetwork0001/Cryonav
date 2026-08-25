@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { IconClose } from "./components/Icons";
 import {
   api,
   type CityLayers,
@@ -288,7 +289,7 @@ export default function App() {
             aria-label="Close controls"
             className="grid h-9 w-9 place-items-center rounded-lg border border-slate-700/60 text-slate-400 transition hover:text-slate-200"
           >
-            ✕
+            <IconClose className="h-4 w-4" />
           </button>
         </div>
         <ControlPanel

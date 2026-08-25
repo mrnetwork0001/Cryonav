@@ -1,4 +1,5 @@
 import type { NavigationResult } from "../lib/api";
+import { IconInstant, IconRefresh } from "./Icons";
 
 interface Props {
   nav: NavigationResult | null;
@@ -161,11 +162,18 @@ export default function ExposureCard({
             : "border border-rose-400/50 bg-rose-500/15 text-rose-300 hover:bg-rose-500/25"
         } disabled:cursor-not-allowed disabled:opacity-50`}
       >
-        {rerouteBusy
-          ? "Re-solving…"
-          : rerouteActive
-            ? "↺ Remove cooling-shelter stop"
-            : "⚡ 1-click cooling station reroute"}
+        {rerouteBusy ? (
+          "Re-solving..."
+        ) : (
+          <span className="inline-flex items-center justify-center gap-2">
+            {rerouteActive ? (
+              <IconRefresh className="h-3.5 w-3.5" />
+            ) : (
+              <IconInstant className="h-3.5 w-3.5" />
+            )}
+            {rerouteActive ? "Remove cooling-shelter stop" : "1-click cooling station reroute"}
+          </span>
+        )}
       </button>
     </section>
   );
