@@ -87,13 +87,28 @@ SEARCH_WINDOW = ("2024-05-01T00:00:00Z", "2026-12-31T00:00:00Z")
 SUMMER_MONTHS = (5, 6, 7, 8, 9)
 GRANULE_LIMIT = 8
 
+#: Granules whose timestamps fall in the same bucket belong to one overpass. The swath
+#: advances across neighbouring tiles over a couple of minutes, so exact-time matching splits
+#: a single pass into several.
+PASS_GROUP_MINUTES = 10
+
+#: Tiles downloaded per pass. A bbox this size never touches more than four.
+MAX_TILES_PER_PASS = 6
+
 MIN_K, MAX_K = 260.0, 380.0
 MIN_PIXELS = 1  # 70 m pixels: a city block is one or two, so one is honest here
 MIN_VALID_FRACTION = 0.4
 
-#: Local standard time offsets. ECOSTRESS granule times are UTC; the peak-hour filter has to
-#: happen in local time or it selects the wrong side of the planet.
-CITY_UTC_OFFSET_H = {"phoenix": -7, "dubai": 4, "abu_dhabi": 4}
+#: Local time offsets. ECOSTRESS granule times are UTC and the peak-hour filter has to run in
+#: local time, or it selects the wrong side of the planet.
+#:
+#: These are the offsets in force during SUMMER_MONTHS, which is the only window searched.
+#: Arizona does not observe daylight saving, so Phoenix is -7 year round; the UAE has none
+#: either. San Jose is the only entry that shifts - it is -8 PST in winter but -7 PDT from
+#: March to November, and every granule this script looks at falls in the PDT half of the
+#: year. Using -8 would slide the whole peak-hour window an hour early and quietly select
+#: the wrong overpasses.
+CITY_UTC_OFFSET_H = {"phoenix": -7, "dubai": 4, "abu_dhabi": 4, "san_jose": -7}
 
 LICENSE = (
     "Peak-hour surface temperature: NASA/JPL ECOSTRESS ECO_L2T_LSTE v003 via LP DAAC "
@@ -305,6 +320,31 @@ class GranuleSampler:
         self.baseline_pixels = len(vals)
         return True
 
+    def ring_mean_k(self, ring: Sequence[Sequence[float]]) -> Optional[Tuple[float, int]]:
+        """Mean kelvin and pixel count inside a ring, or None if this tile does not hold it.
+
+        Separate from ring_anomaly_f because a group combines tiles by pixel-weighted mean,
+        which needs the count - averaging the per-tile ANOMALIES would weight a two-pixel
+        sliver the same as the tile holding the whole polygon.
+        """
+        if len(ring) < 3:
+            return None
+        lats = [p[0] for p in ring]
+        lons = [p[1] for p in ring]
+        xs, ys = warp_transform("EPSG:4326", self.crs, lons, lats)
+        geom = {"type": "Polygon", "coordinates": [list(zip(xs, ys))]}
+        try:
+            mask = geometry_mask(
+                [geom], out_shape=self.k.shape, transform=self.transform, invert=True
+            )
+        except Exception:
+            return None
+        mask &= np.isfinite(self.k)
+        n = int(mask.sum())
+        if n == 0:
+            return None
+        return float(self.k[mask].mean()), n
+
     def ring_anomaly_f(self, ring: Sequence[Sequence[float]]) -> Optional[Tuple[float, float, int]]:
         if len(ring) < 3:
             return None
@@ -332,6 +372,67 @@ class GranuleSampler:
         return (float(np.mean(vals)) - self.baseline_k) * 1.8, len(vals)
 
 
+class AcquisitionSampler:
+    """Every tile of ONE overpass, sampled as a single surface.
+
+    ECOSTRESS L2T tiles are ~110 km squares on a fixed grid, and a city bbox routinely
+    straddles several. One pass is therefore delivered as multiple granules, each holding a
+    different piece of the city, each on its own UTM grid.
+
+    An earlier version deduplicated by acquisition time and kept ONE granule per pass. That
+    silently discarded the complementary tiles, so most passes appeared to cover 12% of
+    Phoenix and were rejected - 23 of 24 of them - as if the desert had been cloudy. Grouping
+    the tiles back together is what makes the data usable.
+
+    No reprojection is involved: each member is queried in its own CRS and the values are
+    pooled, which works because what we compute from them - a median baseline and per-feature
+    means - are order-independent statistics over pixel VALUES, not over a raster.
+    """
+
+    def __init__(self, members: List["GranuleSampler"]) -> None:
+        self.members = members
+        self.baseline_k = float("nan")
+        self.baseline_pixels = 0
+
+    def path_values(self, path: Sequence[Sequence[float]]) -> List[float]:
+        vals: List[float] = []
+        for gs in self.members:
+            vals.extend(gs.path_values(path))
+        return vals
+
+    def set_road_baseline(self, roads: Sequence[Dict[str, Any]]) -> bool:
+        vals: List[float] = []
+        for r in roads:
+            vals.extend(self.path_values(r.get("path", [])))
+        if len(vals) < 50:
+            return False
+        self.baseline_k = float(np.median(vals))
+        self.baseline_pixels = len(vals)
+        return True
+
+    def ring_anomaly_f(self, ring: Sequence[Sequence[float]]) -> Optional[Tuple[float, float, int]]:
+        """Pixel-count-weighted mean across whichever tiles hold this polygon."""
+        total = 0.0
+        n = 0
+        for gs in self.members:
+            got = gs.ring_mean_k(ring)
+            if got is None:
+                continue
+            mean_k, count = got
+            total += mean_k * count
+            n += count
+        if n < MIN_PIXELS:
+            return None
+        mean_k = total / n
+        return (mean_k - self.baseline_k) * 1.8, mean_k, n
+
+    def path_anomaly_f(self, path: Sequence[Sequence[float]]) -> Optional[Tuple[float, int]]:
+        vals = self.path_values(path)
+        if not vals:
+            return None
+        return (float(np.mean(vals)) - self.baseline_k) * 1.8, len(vals)
+
+
 def load_granule(g: Dict[str, Any], bbox: Dict[str, float]) -> Optional[Tuple[GranuleSampler, float]]:
     """Download, validate and window one granule. Returns (sampler, valid_fraction) or None."""
     local = pathlib.Path(tempfile.gettempdir()) / f"cryonav_eco_{g['id'].replace('/', '_')}.tif"
@@ -339,10 +440,10 @@ def load_granule(g: Dict[str, Any], bbox: Dict[str, float]) -> Optional[Tuple[Gr
         if not local.exists() or local.stat().st_size == 0:
             download_granule(g["lst_href"], local)
         with rasterio.open(local) as src:
+            # No per-tile coverage gate. A tile holding 12% of the city is a legitimate
+            # piece of the mosaic; whether the PASS covers enough is judged afterwards, from
+            # how many road pixels the assembled group can actually sample.
             cov = covers_bbox(src, bbox)
-            if cov < 0.98:
-                print(f"      skip {g['local_time']}: covers only {cov:.0%} of the city")
-                return None
             b = transform_bounds(
                 "EPSG:4326", src.crs, bbox["west"], bbox["south"], bbox["east"], bbox["north"]
             )
@@ -350,10 +451,11 @@ def load_granule(g: Dict[str, Any], bbox: Dict[str, float]) -> Optional[Tuple[Gr
             raw = src.read(1, window=win)
             k = to_kelvin(raw, src)
             frac = float(np.isfinite(k).mean())
-            if frac < MIN_VALID_FRACTION:
-                print(f"      skip {g['local_time']}: {frac:.0%} valid (cloud)")
+            # Only a tile with NOTHING in the window is useless. The old 40% floor was applied
+            # per tile, which rejected exactly the partial tiles a mosaic is made of.
+            if frac <= 0.0:
                 return None
-            return GranuleSampler(k, src.window_transform(win), src.crs), frac
+            return GranuleSampler(k, src.window_transform(win), src.crs), frac * max(cov, 0.01)
     except SystemExit:
         raise
     except Exception as exc:
@@ -361,6 +463,26 @@ def load_granule(g: Dict[str, Any], bbox: Dict[str, float]) -> Optional[Tuple[Gr
         return None
     finally:
         local.unlink(missing_ok=True)
+
+
+def thermal_floor_c(city_id: str) -> float:
+    """Coldest a sunlit road can plausibly be in this city's afternoon, in Celsius.
+
+    Anchored to the city's own calibrated minimum air temperature where one exists - the
+    coldest moment of the night - because a road under afternoon sun cannot be colder than
+    that. Falls back to the catalogue climate, then to a conservative constant.
+    """
+    try:
+        cal_path = ROOT / "data" / "calibration" / f"{city_id}.json"
+        if cal_path.exists():
+            cal = json.loads(cal_path.read_text())
+            if cal.get("air_temp_min_f") is not None:
+                return (float(cal["air_temp_min_f"]) - 32.0) * 5.0 / 9.0
+        cities = json.loads((ROOT / "data" / "cities.json").read_text())["cities"]
+        clim = next(c for c in cities if c["id"] == city_id)["climate"]
+        return (float(clim["air_temp_min_f"]) - 32.0) * 5.0 / 9.0
+    except Exception:
+        return 15.0
 
 
 def process(city_id: str) -> None:
@@ -372,18 +494,21 @@ def process(city_id: str) -> None:
     granules = search_granules(data["bbox"], city_id)
     if not granules:
         raise SystemExit(f"no ECOSTRESS granules for {city_id} in the peak-hour window")
-    # One acquisition can be delivered as several granules covering neighbouring tiles. They
-    # are the same observation, so keeping more than one would weight that moment repeatedly.
-    seen_times = set()
-    unique = []
+    # Group tiles into PASSES. One overpass is delivered as several granules on neighbouring
+    # tiles, each holding a different piece of the city and each timestamped a minute or two
+    # apart as the swath advances. They must be sampled together to cover the bbox, and must
+    # count as ONE observation so a single moment is not averaged in repeatedly.
+    import datetime as _dt
+
+    groups: Dict[str, List[Dict[str, Any]]] = {}
     for g in granules:
-        if g["utc"] in seen_times:
-            continue
-        seen_times.add(g["utc"])
-        unique.append(g)
+        t = _dt.datetime.fromisoformat(g["utc"].replace("Z", "+00:00"))
+        key = t.strftime("%Y-%m-%dT%H:") + f"{(t.minute // PASS_GROUP_MINUTES) * PASS_GROUP_MINUTES:02d}"
+        groups.setdefault(key, []).append(g)
+    passes = sorted(groups.values(), key=lambda gs: (abs(gs[0]["local_hour"] - 15), gs[0]["utc"]))
     print(
         f"    {len(granules)} candidate granules in {PEAK_LOCAL_HOURS[0]}:00-{PEAK_LOCAL_HOURS[1]}:00"
-        f" local ({len(unique)} distinct acquisitions)"
+        f" local -> {len(passes)} distinct passes"
     )
 
     roads = data.get("roads", [])
@@ -393,15 +518,41 @@ def process(city_id: str) -> None:
     pix: Dict[Tuple[str, int], int] = {}
     used: List[Dict[str, Any]] = []
 
-    for g in unique:
+    for tiles in passes:
         if len(used) >= GRANULE_LIMIT:
             break
-        loaded = load_granule(g, data["bbox"])
-        if loaded is None:
+        g = tiles[0]
+        members = []
+        for t in tiles[:MAX_TILES_PER_PASS]:
+            loaded = load_granule(t, data["bbox"])
+            if loaded is not None:
+                members.append(loaded[0])
+        if not members:
+            print(f"      skip {g['local_time']}: no tile of this pass holds data over the city")
             continue
-        sampler, frac = loaded
+        sampler = AcquisitionSampler(members)
+        frac = 0.0
+        # The adequacy test is the assembled pass, not any single tile: can it sample enough
+        # of the road network to produce a median baseline?
         if not sampler.set_road_baseline(roads):
-            print(f"      skip {g['local_time']}: too few road pixels for a baseline")
+            print(
+                f"      skip {g['local_time']}: {len(members)} tile(s) reached only"
+                f" {sampler.baseline_pixels} road px - too few for a baseline"
+            )
+            continue
+
+        # PHYSICAL PLAUSIBILITY. Thin cirrus is not always caught by the fill mask, and cloud
+        # TOPS are very cold - one Phoenix pass returned a -2.2 C road surface in June, which
+        # is not a road. Sunlit pavement in the local afternoon cannot be colder than the
+        # day's minimum AIR temperature, so that is used as the floor: it is a property of the
+        # city's own observed calibration rather than a number chosen to make data pass.
+        baseline_c = sampler.baseline_k - 273.15
+        floor_c = thermal_floor_c(city_id)
+        if baseline_c < floor_c:
+            print(
+                f"      skip {g['local_time']}: road baseline {baseline_c:.1f} C is below the"
+                f" {floor_c:.1f} C floor - measuring cloud, not ground"
+            )
             continue
 
         n_feat = 0
@@ -427,15 +578,16 @@ def process(city_id: str) -> None:
         used.append(
             dict(
                 g,
-                valid_pixel_fraction=round(frac, 3),
+                tiles_in_pass=len(members),
                 baseline_surface_c=round(sampler.baseline_k - 273.15, 2),
                 baseline_pixels=sampler.baseline_pixels,
                 features_measured=n_feat,
             )
         )
         print(
-            f"      {g['local_time']} local  road baseline {sampler.baseline_k - 273.15:5.1f} C"
-            f"  valid {frac:3.0%}  features {n_feat}"
+            f"      {g['local_time']} local  {len(members)} tile(s)"
+            f"  road baseline {sampler.baseline_k - 273.15:5.1f} C"
+            f"  {sampler.baseline_pixels:>5} road px  features {n_feat}"
         )
 
     if not used:
