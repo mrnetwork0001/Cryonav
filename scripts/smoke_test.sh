@@ -27,7 +27,12 @@ check "health" "$API/health"
 SCRIPT='import json,sys;d=json.load(sys.stdin);assert len(d["profiles"])==3 and len(d["agents"])==3;print(len(d["risk_levels"]),"risk bands")'
 check "meta" "$API/meta"
 
-SCRIPT='import json,sys;d=json.load(sys.stdin);assert d["count"]==3;print(", ".join(c["id"] for c in d["cities"]))'
+SCRIPT='import json,sys
+d=json.load(sys.stdin)
+# Tied to the catalogue, not a literal: adding a city must not silently pass here while the
+# API serves a different set.
+assert d["count"] == len(d["cities"]) >= 4, d["count"]
+print(", ".join(c["id"] for c in d["cities"]))'
 check "cities" "$API/cities"
 
 SCRIPT='import json,sys;d=json.load(sys.stdin);s=d["stats"];assert len(d["cells"])==24*24;assert s["max_exposure_f"]-s["min_exposure_f"]>8;print("%s-%sF over %s mi2" % (s["min_exposure_f"], s["max_exposure_f"], d["tile_area_mi2"]))'

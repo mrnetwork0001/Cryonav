@@ -211,9 +211,17 @@ export interface NavigationResult {
   };
   sensing: {
     elevation_m: number;
-    resolution_mi2: number;
     tile_area_mi2: number;
     endpoint: string;
+    /** How many points of this response were genuinely fetched live from FortyGuard. */
+    live_points?: number;
+    /** There is no single resolution: each source delivers its own, so each is named. */
+    resolution?: {
+      fortyguard_ambient: string;
+      fortyguard_raster_m: number | null;
+      canopy_m: number;
+      surface_temp_m: number;
+    };
   };
   ambient: {
     air_temp_2m_f: number;
@@ -318,4 +326,72 @@ export function exposureColor(t: number): [number, number, number] {
     }
   }
   return stops[stops.length - 1][1];
+}
+
+
+/** One point, fetched LIVE from FortyGuard rather than from the calibrated field.
+ *
+ * This exists so the dashboard can prove its own provenance on demand instead of asking to
+ * be believed. It is deliberately not on the render path: the upstream is an asynchronous
+ * job queue measured at 22 s once and over 120 s minutes later, so it runs only when a
+ * person asks for it.
+ */
+export interface LiveProof {
+  ok: boolean;
+  source: string;
+  degraded: boolean;
+  upstream_status_code: number | null;
+  live_fields: string[];
+  live_points: number;
+  endpoint: string;
+  detail: string;
+  round_trip_ms: number;
+  reading: {
+    air_temp_2m_f: number;
+    relative_humidity_pct: number;
+    surface_temp_f: number;
+    exposure_index_f: number;
+    risk_level: string;
+  } | null;
+}
+
+export async function verifyLive(
+  lat: number,
+  lon: number,
+  cityId: string,
+  hour: number,
+): Promise<LiveProof> {
+  const started = performance.now();
+  const res = await fetch("/api/v1/fortyguard/heat-intelligence", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      locations: [{ lat, lon }],
+      city_id: cityId,
+      hour,
+      prefer_live: true,
+    }),
+  });
+  const d = await res.json();
+  const r = d.readings?.[0];
+  return {
+    ok: res.ok && d.feed?.source === "fortyguard_live",
+    source: d.feed?.source ?? "unknown",
+    degraded: Boolean(d.feed?.degraded),
+    upstream_status_code: d.feed?.upstream_status_code ?? null,
+    live_fields: d.feed?.live_fields ?? [],
+    live_points: d.sensing?.live_points ?? 0,
+    endpoint: d.sensing?.endpoint ?? "",
+    detail: d.feed?.detail ?? "",
+    round_trip_ms: Math.round(performance.now() - started),
+    reading: r
+      ? {
+          air_temp_2m_f: r.air_temp_2m_f,
+          relative_humidity_pct: r.relative_humidity_pct,
+          surface_temp_f: r.surface_temp_f,
+          exposure_index_f: r.exposure_index_f,
+          risk_level: r.risk_level,
+        }
+      : null,
+  };
 }

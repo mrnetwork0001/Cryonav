@@ -1,0 +1,979 @@
+{
+ "city_id": "san_jose",
+ "source": "openstreetmap_overpass",
+ "fetched_at": "2026-08-25T13:03:10Z",
+ "attribution": "Map data (c) OpenStreetMap contributors, ODbL",
+ "disclaimer": "Air-conditioning and hours are category-level assumptions where OSM carries no tags (measured coverage: opening_hours 2-6%, air_conditioning ~0%).",
+ "count": 57,
+ "shelters": [
+  {
+   "id": "osm-n401243545",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    37.340675,
+    -121.90291
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n407817431",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    37.335206,
+    -121.898911
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n534474061",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    37.340029,
+    -121.902184
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n3336982283",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    37.327313,
+    -121.892027
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n3336995405",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    37.327777,
+    -121.891592
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n3622806326",
+   "name": "Downtown San Jose Farmers\u2019 Market",
+   "type": "mall_refuge",
+   "category": "marketplace",
+   "center": [
+    37.335651,
+    -121.893231
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "Fr 10:00-14:00",
+   "hours_assumed": false,
+   "indoor_temp_f": 75,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n3634866139",
+   "name": "Urban Kiosk",
+   "type": "mall_refuge",
+   "category": "marketplace",
+   "center": [
+    37.339288,
+    -121.88351
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "09:00-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 75,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n4641748422",
+   "name": "Inez Jackson Library",
+   "type": "cooling_center",
+   "category": "library",
+   "center": [
+    37.34345,
+    -121.888461
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "09:00-18:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 72,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n5148311938",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    37.32856,
+    -121.896124
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n6431674978",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    37.334752,
+    -121.865553
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n6452644729",
+   "name": "San Jos\u00e9 Bike Clinic",
+   "type": "cooling_center",
+   "category": "community_centre",
+   "center": [
+    37.339124,
+    -121.888221
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "We-Th 17:00-20:00; Fr \"TBA\"; Mo-Tu,Sa-Su off",
+   "hours_assumed": false,
+   "indoor_temp_f": 73,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n6521383065",
+   "name": "Taylor Street Night Market",
+   "type": "mall_refuge",
+   "category": "marketplace",
+   "center": [
+    37.353931,
+    -121.892725
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "May-Aug: Th 17:00-21:00",
+   "hours_assumed": false,
+   "indoor_temp_f": 75,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n6521383066",
+   "name": "Japantown Certified Farmer\u2019s Market",
+   "type": "mall_refuge",
+   "category": "marketplace",
+   "center": [
+    37.353837,
+    -121.892972
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "May-Oct Su 08:00-12:00",
+   "hours_assumed": false,
+   "indoor_temp_f": 75,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n6780075274",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    37.352982,
+    -121.8843
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n6923612569",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    37.35529,
+    -121.892965
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n6965118492",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    37.354493,
+    -121.895398
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n7121789354",
+   "name": "Software & Computer Engineering Society SJSU",
+   "type": "cooling_center",
+   "category": "community_centre",
+   "center": [
+    37.336868,
+    -121.881451
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "08:00-20:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 73,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n7121789356",
+   "name": "Computer Science Club SJSU",
+   "type": "cooling_center",
+   "category": "community_centre",
+   "center": [
+    37.333675,
+    -121.881802
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "08:00-20:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 73,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n7121798609",
+   "name": "Paseo Market",
+   "type": "mall_refuge",
+   "category": "marketplace",
+   "center": [
+    37.336319,
+    -121.881477
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "Mo-Sa 08:00-18:00",
+   "hours_assumed": false,
+   "indoor_temp_f": 75,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n7799580698",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    37.320967,
+    -121.903981
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n7799580735",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    37.320426,
+    -121.904072
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n9815992639",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    37.329455,
+    -121.889218
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n9939771870",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    37.321724,
+    -121.867826
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n10048451532",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    37.342488,
+    -121.896725
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n10048475856",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    37.342808,
+    -121.895957
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n10265996187",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    37.329784,
+    -121.902497
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n11256177348",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    37.350476,
+    -121.893702
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n11537866666",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    37.329685,
+    -121.888276
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n12216237901",
+   "name": "W6YL - San Jose State Amateur Radio Club",
+   "type": "cooling_center",
+   "category": "community_centre",
+   "center": [
+    37.336896,
+    -121.882045
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "08:00-20:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 73,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n12530023760",
+   "name": "Mi Rancho Market",
+   "type": "mall_refuge",
+   "category": "marketplace",
+   "center": [
+    37.324497,
+    -121.896974
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "09:00-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 75,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n12556901787",
+   "name": "Don Mateo Foods",
+   "type": "mall_refuge",
+   "category": "marketplace",
+   "center": [
+    37.346092,
+    -121.869404
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "09:00-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 75,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-n13014216604",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    37.332355,
+    -121.913321
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-n13293548981",
+   "name": "Public drinking water",
+   "type": "hydration_station",
+   "category": "drinking_water",
+   "center": [
+    37.338797,
+    -121.890271
+   ],
+   "air_conditioned": false,
+   "ac_assumed": true,
+   "water": true,
+   "hours": "24/7",
+   "hours_assumed": true,
+   "indoor_temp_f": null,
+   "indoor_temp_assumed": false
+  },
+  {
+   "id": "osm-w25774796",
+   "name": "Doctor Martin Luther King Junior Library",
+   "type": "cooling_center",
+   "category": "library",
+   "center": [
+    37.335512,
+    -121.885007
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "Mo-Th 08:00-21:00; Fr 08:00-18:00; Sa 09:00-18:00; Su 13:00-19:00",
+   "hours_assumed": false,
+   "indoor_temp_f": 72,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w39018501",
+   "name": "San Pedro Square Market Hall",
+   "type": "mall_refuge",
+   "category": "marketplace",
+   "center": [
+    37.336376,
+    -121.894967
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "09:00-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 75,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w39018591",
+   "name": "Trinity Episcopal Cathedral Parish Hall",
+   "type": "cooling_center",
+   "category": "community_centre",
+   "center": [
+    37.337748,
+    -121.891018
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "08:00-20:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 73,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w157782284",
+   "name": "Santa Clara County Law Library",
+   "type": "cooling_center",
+   "category": "library",
+   "center": [
+    37.341515,
+    -121.894128
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "09:00-18:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 72,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w181367463",
+   "name": "Joyce Ellington Branch Library",
+   "type": "cooling_center",
+   "category": "library",
+   "center": [
+    37.349798,
+    -121.887062
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "Mo 13:00-19:00; Tu-Th 10:00-19:00; Fr 12:00-18:00; Sa 10:00-18:00",
+   "hours_assumed": false,
+   "indoor_temp_f": 72,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w231523058",
+   "name": "Billy DeFrank LGBT Community Center",
+   "type": "cooling_center",
+   "category": "community_centre",
+   "center": [
+    37.331311,
+    -121.908003
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "08:00-20:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 73,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w338746231",
+   "name": "San Pedro Square Market",
+   "type": "mall_refuge",
+   "category": "marketplace",
+   "center": [
+    37.336457,
+    -121.894643
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "09:00-22:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 75,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w345802573",
+   "name": "Italian American Heritage Foundation Cultural Center",
+   "type": "cooling_center",
+   "category": "community_centre",
+   "center": [
+    37.344484,
+    -121.892875
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "08:00-20:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 73,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w347741527",
+   "name": "Scalabrini Hall",
+   "type": "cooling_center",
+   "category": "community_centre",
+   "center": [
+    37.352245,
+    -121.886482
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "08:00-20:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 73,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w350497010",
+   "name": "Filipino Community Center",
+   "type": "cooling_center",
+   "category": "community_centre",
+   "center": [
+    37.349947,
+    -121.894069
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "08:00-20:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 73,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w350497030",
+   "name": "San Jose Betsuin Annex",
+   "type": "cooling_center",
+   "category": "community_centre",
+   "center": [
+    37.349677,
+    -121.894399
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "Mo-Th 08:30-17:00; Fr 08:30-18:00; Sa,Su 08:30-16:30",
+   "hours_assumed": false,
+   "indoor_temp_f": 73,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w353773317",
+   "name": "Jacinto \u201cTony\u201d Siquig Northside Community Center",
+   "type": "cooling_center",
+   "category": "community_centre",
+   "center": [
+    37.347204,
+    -121.891126
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "08:00-20:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 73,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w355393173",
+   "name": "Silicon Valley De-Bug",
+   "type": "cooling_center",
+   "category": "community_centre",
+   "center": [
+    37.336826,
+    -121.909589
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "08:00-20:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 73,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w357009895",
+   "name": "Roosevelt Community Center",
+   "type": "cooling_center",
+   "category": "community_centre",
+   "center": [
+    37.345426,
+    -121.871874
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "Mo-Th 06:00-20:00; Fr 06:00-18:00; Sa 09:00-13:00",
+   "hours_assumed": false,
+   "indoor_temp_f": 73,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w357150395",
+   "name": "Portuguese Community Center",
+   "type": "cooling_center",
+   "category": "community_centre",
+   "center": [
+    37.346874,
+    -121.86882
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "08:00-20:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 73,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w357150400",
+   "name": "East San Jos\u00e9 Carnegie Branch Library",
+   "type": "cooling_center",
+   "category": "library",
+   "center": [
+    37.346443,
+    -121.868219
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "Mo 13:00-19:00; Tu-Th 10:00-19:00; Fr 12:00-18:00; Sa 10:00-18:00",
+   "hours_assumed": false,
+   "indoor_temp_f": 72,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w371622352",
+   "name": "Washington United Youth Center",
+   "type": "cooling_center",
+   "category": "community_centre",
+   "center": [
+    37.321927,
+    -121.880912
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "08:00-20:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 73,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w371622629",
+   "name": "Biblioteca Latinoamericana Branch Library",
+   "type": "cooling_center",
+   "category": "library",
+   "center": [
+    37.322304,
+    -121.880343
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "Mo 13:00-19:00; Tu-Th 10:00-19:00; Fr 12:00-18:00; Sa 10:00-18:00",
+   "hours_assumed": false,
+   "indoor_temp_f": 72,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w451698775",
+   "name": "Fellowship Hall",
+   "type": "cooling_center",
+   "category": "community_centre",
+   "center": [
+    37.348527,
+    -121.893419
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "08:00-20:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 73,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w834503182",
+   "name": "Gardner Community Center",
+   "type": "cooling_center",
+   "category": "community_centre",
+   "center": [
+    37.319692,
+    -121.895513
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "08:00-20:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 73,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w841565269",
+   "name": "Alma Community Center",
+   "type": "cooling_center",
+   "category": "community_centre",
+   "center": [
+    37.314386,
+    -121.875922
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "Mo-Fr 09:00-17:00",
+   "hours_assumed": false,
+   "indoor_temp_f": 73,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w1274565505",
+   "name": "Community Building",
+   "type": "cooling_center",
+   "category": "community_centre",
+   "center": [
+    37.347846,
+    -121.904057
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "08:00-20:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 73,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w1291976253",
+   "name": "Morgridge Literacy Center",
+   "type": "cooling_center",
+   "category": "library",
+   "center": [
+    37.335237,
+    -121.885146
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "09:00-18:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 72,
+   "indoor_temp_assumed": true
+  },
+  {
+   "id": "osm-w1291976263",
+   "name": "Children's Room",
+   "type": "cooling_center",
+   "category": "library",
+   "center": [
+    37.335766,
+    -121.885125
+   ],
+   "air_conditioned": true,
+   "ac_assumed": true,
+   "water": false,
+   "hours": "09:00-18:00",
+   "hours_assumed": true,
+   "indoor_temp_f": 72,
+   "indoor_temp_assumed": true
+  }
+ ]
+}

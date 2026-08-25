@@ -783,9 +783,9 @@ class FortyGuardService:
         )
 
         parsed = self._parse_env_series(result, clim)
-        loc, air_f, rh, wb_c, clearness, solar = (
-            parsed["loc"], parsed["air_f"], parsed["rh"], parsed["wb_c"],
-            parsed["clearness"], parsed["solar"],
+        loc, params, air_f, rh, wb_c, clearness, solar = (
+            parsed["loc"], parsed["params"], parsed["air_f"], parsed["rh"],
+            parsed["wb_c"], parsed["clearness"], parsed["solar"],
         )
 
         calibration = {
@@ -844,7 +844,7 @@ class FortyGuardService:
         ]
         solar = (loc.get("solar_irradiance") or {}).get("clear_sky") or {}
         return {
-            "loc": loc, "air_f": air_f, "rh": rh, "wb_c": wb_c,
+            "loc": loc, "params": params, "air_f": air_f, "rh": rh, "wb_c": wb_c,
             "clearness": clearness, "solar": solar,
         }
 

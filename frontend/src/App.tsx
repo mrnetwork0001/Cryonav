@@ -14,6 +14,7 @@ import TopMetricsBar from "./components/TopMetricsBar";
 import ExposureCard from "./components/ExposureCard";
 import ControlPanel from "./components/ControlPanel";
 import AgentTrace from "./components/AgentTrace";
+import LiveVerification from "./components/LiveVerification";
 import TransitSim, { type SimFrame } from "./components/TransitSim";
 
 export default function App() {
@@ -241,6 +242,19 @@ export default function App() {
             profileId={profileId}
             onFrame={setSimFrame}
           />
+          {/* Sits directly under the readings it vouches for: a viewer questioning a
+              number should not have to hunt for the thing that proves it. */}
+          {/* Only verifiable once there is a point to verify. Before a route is solved
+              there is no coordinate to ask FortyGuard about, and inventing the city centre
+              would prove something other than what the page is showing. */}
+          {(nav?.origin ?? origin) && (
+            <LiveVerification
+              lat={(nav?.origin ?? origin)![0]}
+              lon={(nav?.origin ?? origin)![1]}
+              cityId={cityId}
+              hour={hour}
+            />
+          )}
           <AgentTrace nav={nav} grid={grid} />
         </div>
       </main>

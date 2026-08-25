@@ -86,18 +86,30 @@ export default function TopMetricsBar({ nav, grid, cityName, cityId, reportDate,
         <div className="tnum mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-[11px] text-slate-500">
           {/* Never render an upstream error status as a green "OK" -- a hidden broken
               integration is worse than a visible outage. */}
-          <span className={`font-semibold ${degraded ? "text-rose-400" : "text-emerald-400"}`}>
+          {/* "200 OK · 3.3 ms" used to sit here on every render. No network call had
+              happened: that was OUR status and OUR local timing, and it read as though
+              FortyGuard had answered in 3.3 ms. A status code is only shown when an
+              upstream call was actually attempted; otherwise the strip names the real
+              source, and the latency is labelled as local. */}
+          <span className={`font-semibold ${degraded ? "text-rose-400" : live ? "text-emerald-400" : "text-sky-400"}`}>
             {nav
               ? degraded
                 ? `${nav.feed.upstream_status_code ?? "ERR"} UPSTREAM FAIL`
-                : `${nav.feed.status_code} OK`
+                : live
+                  ? `${nav.feed.upstream_status_code ?? 200} LIVE`
+                  : "CALIBRATED FIELD"
               : loading
                 ? "…"
                 : "—"}
           </span>
-          <span>{nav ? `${nav.sensing.resolution_mi2} mi² resolution` : "10 mi² resolution"}</span>
           <span>{nav ? `${nav.sensing.elevation_m} m AGL` : "2 m AGL"}</span>
-          {nav && <span>{nav.feed.latency_ms.toFixed(1)} ms</span>}
+          {nav?.sensing.resolution && (
+            <span>
+              canopy {nav.sensing.resolution.canopy_m} m · surface{" "}
+              {nav.sensing.resolution.surface_temp_m} m
+            </span>
+          )}
+          {nav && <span>{nav.feed.latency_ms.toFixed(1)} ms local</span>}
         </div>
         <div className={`mt-0.5 text-[10px] ${degraded ? "text-rose-400/80" : "text-slate-600"}`}>
           {degraded

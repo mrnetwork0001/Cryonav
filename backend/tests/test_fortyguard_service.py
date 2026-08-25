@@ -10,16 +10,25 @@ from fortyguard_service import FortyGuardService
 
 class TestCatalogue:
     def test_three_cities_loaded(self, service):
-        assert set(service.city_ids()) == {"phoenix", "dubai", "abu_dhabi"}
+        assert set(service.city_ids()) == {"phoenix", "dubai", "abu_dhabi", "san_jose"}
 
     def test_unknown_city_raises(self, service):
         with pytest.raises(KeyError):
             service.city("atlantis")
 
-    def test_tile_is_about_ten_square_miles(self, service):
-        """The product claim is a 10 mi^2 microclimate tile; the fixtures must actually be one."""
-        for city_id in service.city_ids():
-            assert 8.5 <= service.tile_area_mi2(city_id) <= 11.5
+    def test_tiles_are_comparable_in_size(self, service):
+        """Cities must cover comparable ground, or their statistics are not comparable.
+
+        This used to assert 8.5-11.5 mi^2 against "the product claim is a 10 mi^2 tile". That
+        claim came from resolution_mi2: 10.0, which was Cryonav's own invention rather than
+        anything FortyGuard specifies, and it has been removed. What still matters is that no
+        city is quietly modelling twice the area of another -- a tile twice the size would make
+        its canopy fraction and exposure spread incomparable. San Jose sits at 8.5 mi^2 because
+        a degree of longitude is shorter at 37 deg N than at 33 deg N for the same extent.
+        """
+        areas = [service.tile_area_mi2(c) for c in service.city_ids()]
+        assert min(areas) >= 8.0, dict(zip(service.city_ids(), areas))
+        assert max(areas) / min(areas) <= 1.4, dict(zip(service.city_ids(), areas))
 
     def test_presets_fall_inside_their_tile(self, service):
         for city_id in service.city_ids():

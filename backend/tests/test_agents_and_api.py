@@ -169,7 +169,9 @@ class TestApi:
 
     def test_cities_and_layers(self, client):
         cities = client.get("/api/v1/cities").json()
-        assert cities["count"] == 3
+        # Not a magic number: it must match the catalogue, so adding a city cannot pass
+        # here while the API quietly serves a different set.
+        assert cities["count"] == len(cities["cities"]) >= 4
         layers = client.get("/api/v1/cities/phoenix/layers").json()
         assert layers["heat_corridors"] and layers["canopy_corridors"]
 

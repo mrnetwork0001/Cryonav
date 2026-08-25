@@ -37,6 +37,12 @@ WALKABLE = (
 )
 
 MIRRORS = [
+    # maps.mail.ru first, for the same reason fetch_urban.py uses it: measured as the most
+    # reliable of the public mirrors, and it was the only one still answering when the other
+    # three simultaneously returned 504, 500 and an SSL hostname mismatch. Keeping this list
+    # in sync with fetch_urban.py matters -- the two scripts fetch the same city and a mirror
+    # good enough for one is good enough for the other.
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
     "https://overpass-api.de/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter",
     "https://overpass.osm.jp/api/interpreter",
