@@ -627,13 +627,19 @@ export default function Landing() {
               The same routing core serves a bandwidth-optimised endpoint for NVIDIA Jetson
               pedestrian kiosks and delivery-worker wearables: polylines decimated to the panel's
               resolution, telemetry stripped, one pre-rendered instruction string so firmware never
-              does unit conversion. The Jetson hardware tier is simulated; the payload and compute
-              figures are real and measured.
+              does unit conversion. Once a kiosk has the response it needs no further network to
+              guide the walk — nothing in the payload is a reference to fetch later, so the
+              endpoint reports <span className="text-slate-300">offline_capable</span> only after
+              checking that, rather than asserting it. The Jetson hardware tier is simulated; the
+              payload and compute figures are measured server-side (1681 B, 276–307 ms warm).
             </p>
+            {/* "OFFLINE ✓" used to sit here and was read as a connection status — the page
+                also carries a genuine LIVE/OFFLINE feed pill, so one word meant two opposite
+                things. This is a property of the payload, not a state of the link. */}
             <div className="mt-10 grid grid-cols-3 gap-6">
-              <Stat label="PAYLOAD" value="~2 KB" />
-              <Stat label="SOLVE" value="~270 ms" />
-              <Stat label="OFFLINE" value="✓" />
+              <Stat label="PAYLOAD" value="~1.7 KB" />
+              <Stat label="SOLVE" value="~280 ms" />
+              <Stat label="UPLINK" value="OPTIONAL" />
             </div>
           </div>
           <div className="bento reveal min-w-0 p-5 font-mono text-[12px] leading-relaxed text-slate-400">
@@ -650,7 +656,8 @@ export default function Landing() {
   "edge": {
     "runtime": "NVIDIA Jetson Orin Nano (simulated)",
     "inference_ms": 271.4, "payload_bytes": 2070,
-    "offline_capable": true
+    "offline_capable": true,
+    "no_external_references": true
   }
 }`}</pre>
           </div>

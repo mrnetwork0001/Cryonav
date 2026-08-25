@@ -12,6 +12,7 @@ Docs: http://localhost:8000/docs
 from __future__ import annotations
 
 import os
+import json
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -596,6 +597,11 @@ def jetson_kiosk(req: JetsonKioskRequest) -> Dict[str, Any]:
     # Jetson-style telemetry. The routing core is pure Python over a pre-built graph, so the
     # figure quoted here is the real server-side compute for this request, not a benchmark.
     compute_ms = (time.perf_counter() - started) * 1000.0
+    _blob = json.dumps(payload, separators=(",", ":"))
+    _self_contained = "http://" not in _blob and "https://" not in _blob
+    _renders_without_lookup = bool(payload.get("instruction")) and bool(
+        payload.get("route", {}).get("polyline")
+    )
     payload["edge"] = {
         "runtime": "NVIDIA Jetson Orin Nano (simulated)",
         # No TOPS figure quoted: the hardware is not present, and the number previously
@@ -604,7 +610,15 @@ def jetson_kiosk(req: JetsonKioskRequest) -> Dict[str, Any]:
         "accelerator": "Ampere-class embedded GPU (device not present; payload shaped for it)",
         "inference_ms": round(compute_ms, 2),
         "payload_bytes": len(str(payload).encode("utf-8")),
-        "offline_capable": True,
+        # Checked, not asserted. "Offline capable" can only mean one thing here: once this
+        # response lands, the kiosk needs no further network to guide the walk. That holds
+        # only if nothing inside is a reference to dereference later, the instruction is
+        # already rendered as a string (so firmware never does unit conversion), and the
+        # geometry to draw is present. This used to be a hardcoded True, which would have
+        # kept claiming offline capability even if a future change embedded a tile URL.
+        "offline_capable": _self_contained and _renders_without_lookup,
+        "no_external_references": _self_contained,
+        "instruction_prerendered": _renders_without_lookup,
         "cached_tile_mi2": result["sensing"]["tile_area_mi2"],
     }
     return payload
