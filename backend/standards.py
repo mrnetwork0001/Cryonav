@@ -43,14 +43,12 @@ from typing import Dict, Tuple
 #
 # Cryonav previously used 95 / 105 / 115, invented. These are the published edges.
 #
-# APPLICABILITY NOTE — why these bands may be applied to Cryonav's exposure index:
-# the NWS heat index is defined for SHADED conditions, and NWS states plainly that
-# "exposure to full sunshine can increase heat index values by up to 15 F". Cryonav's
-# exposure index is exactly that correction made explicit: heat index plus a computed
-# radiant surplus (see thermal.exposure_index_f), which on the hottest measured Phoenix
-# asphalt evaluates to ~13 F — inside the NWS-stated full-sun envelope. The index is
-# therefore a full-sun-corrected heat index in the same units, and the heat-index bands
-# apply to it directly.
+# APPLICABILITY — these bands are retained for REFERENCE and cross-checking only; Cryonav
+# does NOT band on them. Table C-1 carries its own warning, verbatim: "The presence of a
+# radiant heat source may decrease the accuracy and usefulness of the above heat index."
+# Cryonav's whole subject is radiant load, so a shade-defined heat-index table is the wrong
+# instrument for it. Banding is done on NIOSH adjusted temperature instead (section 1b),
+# which has a published sun term and is therefore radiant-aware by construction.
 NIOSH_HEAT_INDEX_BANDS_F: Dict[str, float] = {
     "low": 0.0,        # Table C-1 "Lower (caution)"
     "moderate": 91.0,  # Table C-1 "Moderate"
@@ -58,9 +56,11 @@ NIOSH_HEAT_INDEX_BANDS_F: Dict[str, float] = {
     "extreme": 115.0,  # Table C-1 "Very high to extreme"
 }
 
-#: Upper bound NWS places on the full-sun correction to the (shade-defined) heat index.
-#: Used as a sanity ceiling on Cryonav's radiant adjustment so the composite index can
-#: never drift outside the envelope the citation supports.
+#: Upper bound NWS places on the full-sun correction to the (shade-defined) heat index:
+#: "exposure to full sunshine can increase heat index values by up to 15 F". Cryonav uses
+#: it only as a sanity ceiling on the radiant term of its routing index -- an independent
+#: check that the composite stays inside a published envelope. It is NOT a licence to band
+#: on heat-index tiers; see the applicability note above.
 NWS_FULL_SUN_ADJUSTMENT_MAX_F = 15.0
 
 #: [NWS-HI] public-facing classification, for reference/display alongside the worksite
@@ -71,6 +71,95 @@ NWS_HEAT_INDEX_CLASSES_F: Dict[str, float] = {
     "danger": 103.0,
     "extreme_danger": 125.0,
 }
+
+
+# --------------------------------------------------------------------------------------
+# 1b. NIOSH adjusted temperature — [NIOSH-2016] Table 6-2, footnote †
+# --------------------------------------------------------------------------------------
+#
+# THIS IS THE CORRECT INPUT TO TABLE 6-2, and the reason Cryonav can use that table
+# rigorously rather than by analogy.
+#
+# Table 6-2 is indexed by ADJUSTED TEMPERATURE, not by heat index. Its footnote gives the
+# recipe verbatim:
+#
+#     Full sun (no clouds):            Add 13 deg F
+#     Partly cloudy/overcast:          Add  7 deg F
+#     No shadows visible / in shade / at night:   no adjustment
+#
+#     Per relative humidity:  10% -8 | 20% -4 | 30% 0 | 40% +3 | 50% +6 | 60% +9
+#
+# Two things follow, and they matter:
+#
+#   1. The sun adjustment is exactly the quantity Cryonav already resolves per pixel. Sky
+#      view factor IS "how much sun reaches this spot": SVF 1.0 in an open parking lot is
+#      NIOSH's "full sun", SVF ~0 under closed canopy is NIOSH's "in the shade". So Cryonav
+#      can compute a genuine NIOSH adjusted temperature per point, not an approximation.
+#
+#   2. The humidity adjustment is applied to AIR TEMPERATURE. Feeding a heat index (which
+#      already contains a humidity term via Rothfusz) into this table would double-count
+#      humidity. Cryonav therefore feeds air temperature, as the table requires.
+#
+# This is why the exposure ceilings below are read from adjusted temperature rather than
+# from Cryonav's composite exposure index: NIOSH Table C-1 itself warns that "the presence
+# of a radiant heat source may decrease the accuracy and usefulness of the above heat
+# index", so a radiant-augmented index is the wrong instrument for a heat-index table.
+NIOSH_FULL_SUN_ADJUSTMENT_F = 13.0
+NIOSH_PARTLY_CLOUDY_ADJUSTMENT_F = 7.0
+
+#: (relative humidity %, adjustment deg F) from the footnote, interpolated between rows.
+NIOSH_RH_ADJUSTMENT_F: Tuple[Tuple[float, float], ...] = (
+    (10.0, -8.0),
+    (20.0, -4.0),
+    (30.0, 0.0),
+    (40.0, 3.0),
+    (50.0, 6.0),
+    (60.0, 9.0),
+)
+
+#: Table 6-2 assumes, verbatim: "workers are physically fit, well-rested, fully hydrated,
+#: under age 40 ... 30% RH and natural ventilation with perceptible air movement".
+NIOSH_TABLE_6_2_ASSUMPTIONS = (
+    "physically fit, well-rested, fully hydrated, under age 40, normal work clothing, "
+    "natural ventilation with perceptible air movement"
+)
+
+
+def niosh_rh_adjustment_f(humidity_pct: float) -> float:
+    """Humidity term of the NIOSH adjusted temperature, interpolated across the footnote rows."""
+    rows = NIOSH_RH_ADJUSTMENT_F
+    if humidity_pct <= rows[0][0]:
+        return rows[0][1]
+    if humidity_pct >= rows[-1][0]:
+        return rows[-1][1]
+    for (r0, a0), (r1, a1) in zip(rows, rows[1:]):
+        if r0 <= humidity_pct <= r1:
+            f = (humidity_pct - r0) / (r1 - r0)
+            return a0 + f * (a1 - a0)
+    return 0.0
+
+
+def niosh_adjusted_temp_f(
+    air_temp_f: float,
+    humidity_pct: float,
+    sky_view_factor: float,
+    solar_factor: float = 1.0,
+    sky_clearness: float = 1.0,
+) -> float:
+    """Adjusted temperature for [NIOSH-2016] Table 6-2, per its own footnote recipe.
+
+    ``sky_view_factor`` (0 shaded .. 1 open sky) and ``solar_factor`` (0 at night .. 1 at
+    solar peak) together decide how much of NIOSH's sun adjustment applies -- shade and
+    night both correctly yield zero. ``sky_clearness`` scales between the full-sun (+13)
+    and overcast (+7) rows.
+    """
+    sun_exposure = max(0.0, min(1.0, sky_view_factor)) * max(0.0, min(1.0, solar_factor))
+    clear = max(0.0, min(1.0, sky_clearness))
+    per_sun = (
+        NIOSH_PARTLY_CLOUDY_ADJUSTMENT_F
+        + (NIOSH_FULL_SUN_ADJUSTMENT_F - NIOSH_PARTLY_CLOUDY_ADJUSTMENT_F) * clear
+    )
+    return air_temp_f + per_sun * sun_exposure + niosh_rh_adjustment_f(humidity_pct)
 
 
 # --------------------------------------------------------------------------------------
@@ -142,8 +231,36 @@ def is_extrapolated(heat_index_f: float) -> bool:
     return heat_index_f > NIOSH_TABLE_CEILING_F
 
 
-#: Continuous-exposure ceiling per risk band, derived from Table 6-2 at each band's lower
-#: edge. Computed rather than hand-written so the numbers cannot drift from the citation.
+def band_from_adjusted_temp(adjusted_temp_f: float) -> str:
+    """Risk band for a NIOSH adjusted temperature, using the published Table C-1 tiers.
+
+    The tier EDGES (91 / 103 / 115 F) come from OSHA's heat-index employer guide
+    (= NIOSH Table C-1). The QUANTITY they are applied to is NIOSH's adjusted temperature
+    rather than the raw heat index -- and that pairing is what Table C-1's own caveat
+    points to: it warns that "the presence of a radiant heat source may decrease the
+    accuracy and usefulness of the above heat index". Adjusted temperature is the same
+    kind of feels-like degrees F but carries an explicit, published sun term (+13 F full
+    sun, 0 in shade) as well as humidity, so it is the radiant-aware member of the pair.
+    Both halves are published; neither is tuned.
+
+    Cannot simply tier on Table 6-2's work minutes instead: that column stops at 107 F and
+    a Phoenix afternoon is routinely past it, so every street would collapse to one band
+    and the differences the product exists to expose would vanish -- even though the
+    underlying adjusted temperatures differ by ~10 F between asphalt and canopy.
+    """
+    if adjusted_temp_f >= NIOSH_HEAT_INDEX_BANDS_F["extreme"]:
+        return "extreme"
+    if adjusted_temp_f >= NIOSH_HEAT_INDEX_BANDS_F["high"]:
+        return "high"
+    if adjusted_temp_f >= NIOSH_HEAT_INDEX_BANDS_F["moderate"]:
+        return "moderate"
+    return "low"
+
+
+#: Continuous-exposure ceiling per risk band, read from Table 6-2 at the adjusted
+#: temperature where each band begins. Computed from the table so it cannot drift.
+#: Continuous-exposure ceiling per band, read from Table 6-2 at the adjusted temperature
+#: where each band begins (91 / 103 / 115 F), so the ceilings follow the citation exactly.
 SAFE_EXPOSURE_MINUTES: Dict[str, float] = {
     band: work_minutes_per_hour(max(edge, 90.0))
     for band, edge in NIOSH_HEAT_INDEX_BANDS_F.items()
@@ -163,7 +280,10 @@ SAFE_EXPOSURE_MINUTES: Dict[str, float] = {
 NIOSH_CUP_ML = 236.6
 NIOSH_MODERATE_WORK_ML_PER_HOUR_LOW = 710.0   # 1 cup / 20 min
 NIOSH_MODERATE_WORK_ML_PER_HOUR_HIGH = 946.0  # 1 cup / 15 min
-NIOSH_MAX_ML_PER_HOUR = 1500.0                # hyponatraemia ceiling
+#: NIOSH Table 8-1 and OSHA agree exactly: "Fluid intake should not exceed 1.5 qt/h"
+#: = 6 cups/h = 1,419.5 mL/h. (An earlier draft used a rounded 1500, which is not the
+#: published number.)
+NIOSH_MAX_ML_PER_HOUR = 1419.5
 #: Below this heat index NIOSH's "workers in heat" guidance does not yet apply; Cryonav
 #: uses the low end of general hydration advice rather than inventing a curve.
 HYDRATION_BASELINE_ML_PER_HOUR = 470.0        # 1 cup / 30 min
@@ -191,7 +311,12 @@ def hydration_ml_per_hour(heat_index_f: float, exertion_multiplier: float = 1.0)
             + frac
             * (NIOSH_MODERATE_WORK_ML_PER_HOUR_HIGH - NIOSH_MODERATE_WORK_ML_PER_HOUR_LOW)
         )
-    return int(round(min(base * exertion_multiplier, NIOSH_MAX_ML_PER_HOUR) / 10.0) * 10)
+    # Round the recommendation to the 10 mL display grid (understating a fluid
+    # recommendation is the unsafe direction), but clamp to the grid point BELOW the
+    # hyponatraemia ceiling -- a safety cap that rounding can push past is not a cap.
+    value = round(base * exertion_multiplier / 10.0) * 10
+    ceiling = math.floor(NIOSH_MAX_ML_PER_HOUR / 10.0) * 10
+    return int(min(value, ceiling))
 
 
 # --------------------------------------------------------------------------------------
@@ -239,9 +364,20 @@ SMARTPHONE_OPEN_SKY_ACCURACY_M = 4.9
 #: Machine-readable provenance for the API/UI, so a reader can check the numbers themselves.
 CITATIONS: Dict[str, Dict[str, str]] = {
     "risk_bands": {
-        "value": "91 / 103 / 115 °F heat index",
-        "source": "OSHA 'Using the Heat Index: A Guide for Employers' (2012); NIOSH 2016-106 Table C-1",
-        "applies_to": "heat index (full-sun corrected, per NWS ≤15 °F sun adjustment)",
+        "value": "NIOSH Table 6-2 work/rest tiers on adjusted temperature",
+        "source": "NIOSH 2016-106 Table 6-2 (+ footnote †); band edges cross-checked against OSHA/NIOSH Table C-1 heat-index tiers",
+        "applies_to": (
+            "NIOSH adjusted temperature = air temp + sun adjustment (sky view factor) "
+            "+ RH adjustment. NOT the heat index: NIOSH Table C-1 warns that a radiant "
+            "heat source reduces the heat index's accuracy, so Cryonav bands on the "
+            "radiant-aware adjusted temperature instead."
+        ),
+        "url": "https://www.cdc.gov/niosh/docs/2016-106/",
+    },
+    "adjusted_temperature": {
+        "value": "sun +13 °F full / +7 °F overcast / 0 shaded; RH 10%→−8 … 60%→+9 °F",
+        "source": "NIOSH 2016-106 Table 6-2, footnote †",
+        "applies_to": "air temperature (humidity applied here, so never feed a heat index in)",
         "url": "https://www.cdc.gov/niosh/docs/2016-106/",
     },
     "exposure_ceilings": {
@@ -251,7 +387,7 @@ CITATIONS: Dict[str, Dict[str, str]] = {
         "url": "https://www.cdc.gov/niosh/docs/2016-106/",
     },
     "hydration": {
-        "value": "710–946 mL/h (1 cup per 20→15 min), capped 1.5 L/h",
+        "value": "710–946 mL/h (1 cup per 20→15 min), capped 1,419.5 mL/h (1.5 qt/h)",
         "source": "NIOSH 2016-106 Executive Summary; OSHA heat-index employer guide",
         "applies_to": "moderate work in heat, <2 hours",
         "url": "https://www.cdc.gov/niosh/docs/2016-106/",

@@ -29,6 +29,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
+import standards
 import thermal
 from thermal import clamp, haversine_m
 
@@ -146,6 +147,9 @@ class ThermalReading:
     heat_index_f: float
     wbgt_f: float
     exposure_index_f: float
+    #: NIOSH 2016-106 Table 6-2 adjusted temperature (air + sun + RH terms). This, not the
+    #: composite exposure index, is what `risk_level` and the exposure ceilings read.
+    niosh_adjusted_temp_f: float
     thermal_stress_score: float
     risk_level: str
     relative_humidity_pct: float
@@ -547,6 +551,16 @@ class FortyGuardService:
         mrt = thermal.mean_radiant_temp_f(air, surface, terr["sky_view_factor"])
         wbgt = thermal.wbgt_f(air, humidity, mrt, wind)
         exposure = thermal.exposure_index_f(air, hi, mrt)
+        # Risk banding runs on NIOSH's own adjusted temperature -- its published sun term
+        # takes our sky view factor, so shade and asphalt separate exactly as the table
+        # intends, without misapplying a shade-defined heat-index tier to a radiant index.
+        adjusted = standards.niosh_adjusted_temp_f(
+            air_temp_f=air,
+            humidity_pct=humidity,
+            sky_view_factor=terr["sky_view_factor"],
+            solar_factor=solar,
+            sky_clearness=clearness,
+        )
 
         return ThermalReading(
             lat=round(lat, 6),
@@ -557,8 +571,9 @@ class FortyGuardService:
             heat_index_f=round(hi, 1),
             wbgt_f=round(wbgt, 1),
             exposure_index_f=round(exposure, 1),
+            niosh_adjusted_temp_f=round(adjusted, 1),
             thermal_stress_score=thermal.thermal_stress_score(exposure),
-            risk_level=thermal.classify_risk(exposure),
+            risk_level=standards.band_from_adjusted_temp(adjusted),
             relative_humidity_pct=round(humidity, 1),
             wind_speed_mph=round(wind, 1),
             solar_irradiance_wm2=round(irradiance, 0),
@@ -1373,6 +1388,20 @@ class FortyGuardService:
         mrt = thermal.mean_radiant_temp_f(air, surface, terr["sky_view_factor"])
         wbgt = thermal.wbgt_f(air, humidity, mrt, wind)
         exposure = thermal.exposure_index_f(air, hi, mrt)
+        # Risk banding runs on NIOSH's own adjusted temperature -- its published sun term
+        # takes our sky view factor, so shade and asphalt separate exactly as the table
+        # intends, without misapplying a shade-defined heat-index tier to a radiant index.
+        # No hour is in scope here, but the upstream record carries irradiance -- so the
+        # sun term is driven by the OBSERVED solar load rather than a modelled curve.
+        # ~1000 W/m2 is clear-sky noon; the ratio is the fraction of full sun.
+        observed_solar = clamp(irradiance / 1000.0, 0.0, 1.0)
+        adjusted = standards.niosh_adjusted_temp_f(
+            air_temp_f=air,
+            humidity_pct=humidity,
+            sky_view_factor=terr["sky_view_factor"],
+            solar_factor=observed_solar,
+            sky_clearness=clim.get("sky_clearness", 1.0),
+        )
 
         return ThermalReading(
             lat=round(lat, 6),
@@ -1383,8 +1412,9 @@ class FortyGuardService:
             heat_index_f=round(hi, 1),
             wbgt_f=round(wbgt, 1),
             exposure_index_f=round(exposure, 1),
+            niosh_adjusted_temp_f=round(adjusted, 1),
             thermal_stress_score=thermal.thermal_stress_score(exposure),
-            risk_level=thermal.classify_risk(exposure),
+            risk_level=standards.band_from_adjusted_temp(adjusted),
             relative_humidity_pct=round(humidity, 1),
             wind_speed_mph=round(wind, 1),
             solar_irradiance_wm2=round(irradiance, 0),
