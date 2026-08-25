@@ -7,19 +7,29 @@
 #   1. builds the frontend locally and rsyncs the tree (incl. dist/) to /opt/cryonav
 #      — the VPS needs Python 3.9+ but NO Node and NO git credentials
 #   2. bootstraps the VPS on first run: cryonav user, python venv, Caddy (official repo)
-#   3. installs /etc/cryonav/env from the local .env if the VPS copy doesn't exist yet
-#      (FORTYGUARD_API_KEY only; the file is root:root 0600)
+#   3. installs /etc/cryonav/env from the local .env if the VPS copy doesn't exist yet,
+#      and otherwise ADDS ONLY KEYS THAT ARE MISSING from it -- an existing value is never
+#      rewritten, so a key rotated on the server survives a deploy from a stale checkout
+#      (root:root 0600)
 #   4. installs systemd units + Caddyfile, enables the daily calibration timer
 #   5. restarts services and smoke-checks /api/v1/health through Caddy
 #
 # With a domain argument Caddy obtains TLS automatically (point the A record first).
-# Without one it serves plain HTTP on the VPS IP.
+# Without one it serves plain HTTP on the VPS IP -- and note that the Sentinel's live-GPS
+# mode will then be dead on arrival, because browsers gate the Geolocation API on a secure
+# context. Everything else works over HTTP; that one feature does not.
 set -euo pipefail
 
 TARGET="${1:?usage: deploy.sh user@host [domain]}"
 DOMAIN="${2:-}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SITE="${DOMAIN:-:80}"
+
+if [ -z "$DOMAIN" ]; then
+  echo "NOTE: no domain given, so Caddy will serve plain HTTP."
+  echo "      The Sentinel's live-GPS mode needs a secure context and will not run."
+  echo "      Re-run as: ./deploy/deploy.sh $TARGET your.domain to get automatic TLS."
+fi
 
 echo "==> Building frontend locally"
 ( cd "$ROOT/frontend" && npm run build >/dev/null && rm -f tsconfig.tsbuildinfo )
@@ -31,13 +41,36 @@ rsync -az --delete \
   --exclude '.env' --exclude '__pycache__' --exclude '.pytest_cache' \
   "$ROOT/" "$TARGET:/opt/cryonav/"
 
-echo "==> Shipping API key (only if /etc/cryonav/env is absent on the VPS)"
+echo "==> Shipping secrets to /etc/cryonav/env (existing values are never overwritten)"
 if [[ -f "$ROOT/.env" ]]; then
-  # shellcheck disable=SC2029
-  ssh "$TARGET" '[ -f /etc/cryonav/env ]' 2>/dev/null \
-    && echo "    /etc/cryonav/env exists — leaving it alone" \
-    || scp -q "$ROOT/.env" "$TARGET:/tmp/cryonav.env" \
-       && ssh "$TARGET" '[ -f /etc/cryonav/env ] || { sudo mkdir -p /etc/cryonav && sudo mv /tmp/cryonav.env /etc/cryonav/env && sudo chown root:root /etc/cryonav/env && sudo chmod 600 /etc/cryonav/env && echo "    installed /etc/cryonav/env"; }'
+  scp -q "$ROOT/.env" "$TARGET:/tmp/cryonav.env"
+  ssh "$TARGET" 'bash -s' <<'ENVMERGE'
+set -euo pipefail
+sudo mkdir -p /etc/cryonav
+if [ ! -f /etc/cryonav/env ]; then
+  sudo mv /tmp/cryonav.env /etc/cryonav/env
+  echo "    installed /etc/cryonav/env"
+else
+  # Add only keys the server does not already have. A value already on the VPS is
+  # authoritative -- it may have been rotated there, and clobbering it from a stale local
+  # checkout is exactly the kind of silent breakage this deploy must never cause.
+  added=0
+  while IFS= read -r line; do
+    case "$line" in ''|'#'*) continue ;; esac
+    key="${line%%=*}"
+    case "$key" in *[!A-Za-z0-9_]*|'') continue ;; esac
+    if ! sudo grep -q "^${key}=" /etc/cryonav/env; then
+      printf '%s\n' "$line" | sudo tee -a /etc/cryonav/env >/dev/null
+      echo "    added missing key: ${key}"
+      added=$((added+1))
+    fi
+  done < /tmp/cryonav.env
+  [ "$added" -eq 0 ] && echo "    /etc/cryonav/env already has every key — unchanged"
+  rm -f /tmp/cryonav.env
+fi
+sudo chown root:root /etc/cryonav/env
+sudo chmod 600 /etc/cryonav/env
+ENVMERGE
 else
   ssh "$TARGET" 'sudo mkdir -p /etc/cryonav && sudo touch /etc/cryonav/env && sudo chmod 600 /etc/cryonav/env'
   echo "    no local .env — created empty /etc/cryonav/env (simulation mode)"
