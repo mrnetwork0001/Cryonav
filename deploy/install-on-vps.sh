@@ -71,6 +71,33 @@ elif [ "$WEB_OWNER" = "caddy" ] && [ -f /etc/caddy/Caddyfile ] && ! grep -q "Cry
 fi
 echo "==> web-edge strategy: ${MANAGE_WEB} (current owner: ${WEB_OWNER:-none})"
 
+# --- state the blast radius, then ask ------------------------------------------------------
+cat <<PLAN
+
+This installer is about to change the following, and NOTHING else:
+
+  CREATE  /opt/cryonav                     (already extracted; ownership set to cryonav)
+  CREATE  system user 'cryonav'            (no login shell, no password)
+  CREATE  /etc/cryonav/env                 (root-only, 0600)
+  CREATE  /etc/systemd/system/cryonav-api.service
+  CREATE  /etc/systemd/system/cryonav-calibrate.{service,timer}
+  START   cryonav-api on 127.0.0.1:8008    (loopback only — not exposed directly)
+  APT     only packages genuinely missing, with needrestart suppressed so that
+          apt cannot restart any running daemon
+
+  Web edge strategy for THIS host: ${MANAGE_WEB}$([ "$MANAGE_WEB" = "no" ] && echo "  <- nothing web-related will be touched")
+
+It does NOT modify nginx, apache, docker, existing systemd units, existing
+certificates, firewall rules, or any file outside the paths listed above.
+To undo everything: sudo bash $ROOT/deploy/uninstall-from-vps.sh
+
+PLAN
+if [ -t 0 ]; then
+  printf "Proceed? [y/N] "
+  read -r reply
+  case "$reply" in [yY]*) ;; *) echo "Aborted. Nothing was changed."; exit 0 ;; esac
+fi
+
 # --- secrets -----------------------------------------------------------------------------
 sudo mkdir -p /etc/cryonav
 sudo touch /etc/cryonav/env
@@ -84,9 +111,31 @@ if ! sudo grep -q '^FORTYGUARD_API_KEY=' /etc/cryonav/env 2>/dev/null; then
 fi
 
 # --- system deps -------------------------------------------------------------------------
-echo "==> Installing system packages (python venv toolchain)"
-command -v python3 >/dev/null || sudo apt-get update -qq
-sudo apt-get install -y -qq python3-venv python3-pip curl >/dev/null
+# Two dangers here, on a box running other people's services.
+#
+# 1. needrestart. Ubuntu 22.04+ ships it hooked into apt, and in non-interactive mode it
+#    RESTARTS running daemons whose libraries changed. Installing a Python package could
+#    therefore bounce nginx, a database, or anything else mid-request. NEEDRESTART_MODE=l
+#    makes it list what it would restart and restart nothing.
+# 2. Touching apt at all. Every apt run takes the dpkg lock and can pull dependency updates.
+#    So: work out what is actually missing first, and if nothing is, never invoke apt.
+export NEEDRESTART_MODE=l
+export NEEDRESTART_SUSPEND=1
+
+missing=""
+python3 -c 'import venv' 2>/dev/null || missing="$missing python3-venv"
+python3 -c 'import ensurepip' 2>/dev/null || missing="$missing python3-pip"
+command -v curl >/dev/null 2>&1 || missing="$missing curl"
+
+if [ -n "$missing" ]; then
+  echo "==> Installing missing system packages:$missing"
+  echo "    (needrestart suppressed — no running service will be restarted by apt)"
+  sudo apt-get update -qq
+  # shellcheck disable=SC2086
+  sudo apt-get install -y -qq $missing >/dev/null
+else
+  echo "==> All required system packages already present — apt not touched"
+fi
 
 # --- caddy, only when this deploy owns the edge -------------------------------------------
 if [ "$MANAGE_WEB" = "yes" ] && ! command -v caddy >/dev/null; then

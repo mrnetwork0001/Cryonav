@@ -138,6 +138,30 @@ for rt in podman containerd nerdctl; do
   command -v "$rt" >/dev/null 2>&1 && warn "$rt is installed — it may be publishing ports; check the listener list above"
 done
 
+say "Process managers (pm2, supervisor, and friends)"
+# Node apps under pm2 are invisible to systemctl, so a systemd-only scan would report a
+# quiet box while several services are running. They matter for two reasons: a port
+# collision, and the risk that apt pulls a nodejs upgrade underneath them. Cryonav installs
+# no Node packages and suppresses needrestart, but we should still see what is there.
+found_pm=0
+if command -v pm2 >/dev/null 2>&1; then
+  found_pm=1
+  warn "pm2 is installed  ** DO NOT DISTURB **"
+  pm2 jlist 2>/dev/null \
+    | tr ',' '\n' | grep -E '"name"|"pm_id"|"status"' | head -30 | sed 's/^/        /' \
+    || info "        (pm2 processes belong to another user; run 'pm2 list' as that user)"
+fi
+for u in $(ps -eo user= 2>/dev/null | sort -u); do
+  n=$(pgrep -u "$u" -f "PM2 v" 2>/dev/null | wc -l | tr -d ' ')
+  [ "${n:-0}" -gt 0 ] && { warn "pm2 daemon running as user '$u'"; found_pm=1; }
+done
+for svc in supervisor supervisord forever; do
+  command -v "$svc" >/dev/null 2>&1 && { warn "$svc is installed  ** DO NOT DISTURB **"; found_pm=1; }
+done
+node_procs=$(pgrep -c -f "node " 2>/dev/null || echo 0)
+[ "${node_procs:-0}" -gt 0 ] && { info "$node_procs node process(es) running"; found_pm=1; }
+[ "$found_pm" = "0" ] && ok "no pm2/supervisor/node processes detected"
+
 say "Other listening services (anything Cryonav might disturb)"
 if [ -z "$PORTCHECK_TOOL" ]; then
   info "(could not enumerate)"

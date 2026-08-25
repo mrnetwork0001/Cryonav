@@ -1,25 +1,101 @@
-# Cryonav behind an EXISTING nginx (when nginx already owns ports 80/443).
-# Drop into /etc/nginx/sites-available/cryonav, adjust server_name, symlink to
-# sites-enabled, `nginx -t`, then reload. Does not conflict with other vhosts.
+# Cryonav vhost — for a host where nginx ALREADY owns ports 80/443 and serves other sites.
+#
+# This file is additive. It defines one server block for one server_name and touches no
+# other vhost, no shared snippet, and nothing in nginx.conf. Your existing sites keep their
+# own blocks, their own certificates and their own behaviour.
+#
+# INSTALL
+#   sudo cp /opt/cryonav/deploy/nginx-cryonav.conf.example /etc/nginx/sites-available/cryonav
+#   sudo sed -i 's/cryonav.example.com/YOUR.DOMAIN/g' /etc/nginx/sites-available/cryonav
+#   sudo ln -sfn /etc/nginx/sites-available/cryonav /etc/nginx/sites-enabled/cryonav
+#   sudo nginx -t && sudo systemctl reload nginx
+#
+# `nginx -t` before every reload is not optional: a reload with a broken config is refused,
+# but running the test first means you find out before you touch the running server at all.
+# Use `reload`, never `restart` — reload spawns new workers and lets existing connections
+# finish, so other sites on this host never drop a request.
+#
+# TLS: get the certificate with `certbot certonly --webroot`, NOT `certbot --nginx`.
+# The --nginx plugin rewrites nginx configuration to complete its challenge, and on a host
+# with other people's vhosts that is an unnecessary risk. --webroot writes a challenge file
+# into a directory this block already serves and never edits a config file. See the README.
+
+# ---------------------------------------------------------------------------------------
+# Port 80: serves the ACME challenge, redirects everything else to HTTPS.
+# ---------------------------------------------------------------------------------------
 server {
     listen 80;
-    # listen 443 ssl;  # + your certificate directives, or use certbot --nginx
-    server_name cryonav.example.com;
+    listen [::]:80;
+    server_name cryonav.example.com www.cryonav.example.com;
+
+    # Certbot --webroot drops its challenge here. Must stay reachable over plain HTTP,
+    # including at renewal time, so it is matched before the redirect below.
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+        default_type "text/plain";
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# ---------------------------------------------------------------------------------------
+# Port 443: the application.
+# ---------------------------------------------------------------------------------------
+server {
+    # `http2 on;` is nginx 1.25.1+. On 1.24 and earlier the directive does not exist and
+    # `nginx -t` fails outright, so the HTTP/2 flag goes on the listen line instead. That form
+    # is deprecated (not removed) in 1.25+, so this works on both. Verified against 1.24.
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name cryonav.example.com www.cryonav.example.com;
+
+    ssl_certificate     /etc/letsencrypt/live/cryonav.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/cryonav.example.com/privkey.pem;
+
+    # HTTPS is not cosmetic here: the Sentinel's live-GPS mode calls navigator.geolocation,
+    # which browsers refuse to expose outside a secure context. Without TLS that feature is
+    # silently dead.
 
     root /opt/cryonav/frontend/dist;
     index index.html;
 
+    # Uploads are tiny; responses are not. Keep the proxy honest about timeouts, because the
+    # FIRST route request after a restart builds the street graph and takes ~10 s.
+    proxy_read_timeout 120s;
+    proxy_connect_timeout 10s;
+
     location /api/ {
         proxy_pass http://127.0.0.1:8008;
-        proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_http_version 1.1;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        # The app trusts this to know it is behind TLS; without it, generated links downgrade.
         proxy_set_header X-Forwarded-Proto $scheme;
     }
+
     location = /openapi.json { proxy_pass http://127.0.0.1:8008; }
     location /docs           { proxy_pass http://127.0.0.1:8008; }
 
-    # SPA fallback so /app deep-links resolve
+    # Hashed asset filenames are content-addressed, so they can be cached hard.
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # index.html must NOT be cached, or a deploy leaves browsers pointing at asset hashes
+    # that no longer exist.
+    location = /index.html {
+        add_header Cache-Control "no-cache";
+    }
+
+    # SPA fallback, so /app deep-links resolve to the client router.
     location / {
         try_files $uri $uri/ /index.html;
     }
+
+    access_log /var/log/nginx/cryonav.access.log;
+    error_log  /var/log/nginx/cryonav.error.log;
 }
