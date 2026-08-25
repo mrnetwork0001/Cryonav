@@ -423,3 +423,108 @@ body,
     transform: none;
   }
 }
+
+/* ==========================================================================================
+   LANDING v2 - "operations console" idiom
+   ------------------------------------------------------------------------------------------
+   The previous landing used floating rounded cards on a blueprint field. This replaces that
+   with a hairline-ruled grid on near-black: content sits INSIDE ruled cells rather than on
+   raised panels, which reads as instrumentation rather than marketing.
+
+   Two constraints shaped the palette. The risk scale (cyan -> yellow -> orange -> red) is
+   SEMANTIC - it is the map legend - so it cannot double as brand chrome without making the
+   legend ambiguous. Amber is therefore used only for non-semantic warmth (horizons, glows,
+   the CTA band) and never to label a value. And the ground stays near-black because the
+   thermal gradient this whole product renders needs a dark substrate to read against.
+   ========================================================================================== */
+
+.rule {
+  border-color: rgba(148, 163, 184, 0.14);
+}
+
+/* Ruled cell: the basic content container. No radius, no fill - the line IS the container. */
+.cell {
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
+  border-left: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+/* A grid whose children are ruled cells; the outer ring is closed by the wrapper. */
+.cell-grid {
+  border-right: 1px solid rgba(148, 163, 184, 0.14);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+/* Section eyebrow: tiny, wide, quiet. */
+.eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgb(100 116 139);
+}
+
+/* Large statement type. Lighter than the old bold display - weight carries less of the
+   emphasis, size and space carry more. */
+.statement {
+  font-weight: 300;
+  letter-spacing: -0.022em;
+  line-height: 1.08;
+}
+
+/* Warm horizon: the transition device between dark sections. Purely decorative, and the one
+   place amber appears at scale. */
+.horizon {
+  position: relative;
+  height: 22rem;
+  overflow: hidden;
+  pointer-events: none;
+}
+.horizon::before {
+  content: "";
+  position: absolute;
+  inset: auto -20% -60% -20%;
+  height: 34rem;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(251, 146, 60, 0.5) 0%,
+    rgba(249, 115, 22, 0.22) 34%,
+    rgba(30, 41, 59, 0.05) 62%,
+    transparent 76%
+  );
+  filter: blur(46px);
+}
+.horizon::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, #05070b 0%, transparent 42%, transparent 62%, #05070b 100%);
+}
+
+/* Warm wash behind a product still, so the screenshot sits on light rather than floating. */
+.warm-bed {
+  background: radial-gradient(
+    ellipse 120% 100% at 50% 120%,
+    rgba(251, 146, 60, 0.32) 0%,
+    rgba(249, 115, 22, 0.12) 38%,
+    transparent 70%
+  );
+}
+
+/* Closing band. */
+.cta-band {
+  background:
+    radial-gradient(ellipse 80% 140% at 88% 50%, rgba(251, 146, 60, 0.28) 0%, transparent 62%),
+    radial-gradient(ellipse 60% 120% at 96% 40%, rgba(234, 88, 12, 0.34) 0%, transparent 58%),
+    #07090e;
+}
+
+/* Hairline ticker under the nav - a console affordance, not a progress bar. */
+.ticker {
+  background: linear-gradient(
+    90deg,
+    rgba(34, 211, 238, 0.55) 0%,
+    rgba(251, 146, 60, 0.5) 42%,
+    rgba(239, 68, 68, 0.42) 68%,
+    transparent 100%
+  );
+}
