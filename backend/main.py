@@ -97,6 +97,13 @@ def _warm_graphs() -> None:
 
 
 app = FastAPI(
+    # Swagger moves under /api so that /docs can serve the human documentation site.
+    # An API reference and a product manual are different documents for different
+    # readers, and the reader who types /docs is almost never looking for OpenAPI.
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json",
+
     title="Cryonav",
     version=VERSION,
     description=(

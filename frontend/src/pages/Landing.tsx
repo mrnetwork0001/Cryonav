@@ -82,6 +82,7 @@ const NAV_LINKS: [string, string][] = [
   ["#agents", "AGENTS"],
   ["#api", "LIVE API"],
   ["#edge", "EDGE"],
+  ["/docs", "DOCS"],
 ];
 
 export default function Landing() {
@@ -151,6 +152,9 @@ export default function Landing() {
               height={128}
             />
           </a>
+          {/* Section links sit hard right now that the CTA has gone. The hero and the closing
+              band both still carry LAUNCH DASHBOARD, so the route into the app is not lost -
+              it is just no longer competing with the wordmark for the corner. */}
           <nav className="hidden items-center gap-1 text-[10px] font-medium tracking-[0.22em] text-slate-500 md:flex">
             {NAV_LINKS.map(([href, label]) => (
               <a key={label} href={href} className="px-3 py-2 transition hover:text-slate-200">
@@ -158,14 +162,8 @@ export default function Landing() {
               </a>
             ))}
           </nav>
-          <div className="flex items-center gap-2">
-            <a
-              href="/app"
-              className="hidden rounded-md border border-slate-700 px-4 py-2 text-[10px] font-semibold tracking-[0.18em] text-slate-200 transition hover:border-slate-500 hover:bg-white/5 sm:block"
-            >
-              LAUNCH DASHBOARD
-            </a>
-            <div className="relative md:hidden">
+          <div className="flex items-center gap-2 md:hidden">
+            <div className="relative">
               <button
                 onClick={() => setMenuOpen((v) => !v)}
                 aria-label="Menu"
@@ -729,7 +727,8 @@ export default function Landing() {
             title="RESOURCES"
             links={[
               ["https://github.com/mrnetwork0001/Cryonav", "GitHub"],
-              ["/docs", "API Reference"],
+              ["/docs", "Documentation"],
+              ["/api/docs", "API Reference"],
               ["/api/v1/health", "Live Status"],
               ["https://www.openstreetmap.org/copyright", "OpenStreetMap"],
             ]}

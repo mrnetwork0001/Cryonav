@@ -159,8 +159,9 @@ server {
         proxy_set_header X-Forwarded-For   \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
     }
-    location = /openapi.json { proxy_pass http://127.0.0.1:8008; }
-    location /docs           { proxy_pass http://127.0.0.1:8008; }
+    # /docs is now the SPA documentation site and must fall through to index.html.
+    # Swagger and the schema live under /api/, which the block above already proxies.
+    location = /openapi.json { return 301 /api/openapi.json; }
 
     location / { try_files \$uri \$uri/ /index.html; }
 
@@ -263,8 +264,9 @@ $(printf "$LISTEN_443")
         proxy_set_header X-Forwarded-For   \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
     }
-    location = /openapi.json { proxy_pass http://127.0.0.1:8008; }
-    location /docs           { proxy_pass http://127.0.0.1:8008; }
+    # /docs is now the SPA documentation site and must fall through to index.html.
+    # Swagger and the schema live under /api/, which the block above already proxies.
+    location = /openapi.json { return 301 /api/openapi.json; }
 
     location /assets/ {
         expires 1y;
