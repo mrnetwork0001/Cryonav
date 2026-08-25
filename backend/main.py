@@ -186,6 +186,12 @@ class SentinelMonitorRequest(BaseModel):
     moved_m: Optional[float] = Field(
         None, ge=0, description="Distance moved during the dwell window; drives immobility detection."
     )
+    accuracy_m: Optional[float] = Field(
+        None, ge=0, description="Reported GPS horizontal accuracy, carried into the alert."
+    )
+    notify: bool = Field(
+        True, description="Set false to evaluate the escalation without sending a push alert."
+    )
 
 
 # --------------------------------------------------------------------------------------
@@ -299,6 +305,9 @@ def meta() -> Dict[str, Any]:
             "unacclimatised": round(standards.niosh_wbgt_limit_f(acclimatised=False), 1),
             "metabolic_watts": standards.METABOLIC_WATTS_WALKING,
         },
+        # Where the terrain numbers physically come from, per city, straight out of the data
+        # files rather than a hand-written list that could drift from them.
+        "observed_data": service.data_provenance(),
     }
 
 
@@ -479,6 +488,8 @@ def sentinel_monitor(req: SentinelMonitorRequest) -> Dict[str, Any]:
         dwell_minutes=req.dwell_minutes,
         profile_id=req.profile,
         moved_m=req.moved_m,
+        accuracy_m=req.accuracy_m,
+        notify=req.notify,
     )
 
 
@@ -587,7 +598,10 @@ def jetson_kiosk(req: JetsonKioskRequest) -> Dict[str, Any]:
     compute_ms = (time.perf_counter() - started) * 1000.0
     payload["edge"] = {
         "runtime": "NVIDIA Jetson Orin Nano (simulated)",
-        "accelerator": "Ampere 1024-core GPU / 32 TOPS INT8",
+        # No TOPS figure quoted: the hardware is not present, and the number previously
+        # here (32 TOPS) was the pre-Super devkit spec anyway. Naming the class of device
+        # the payload is shaped for is honest; quoting its benchmark is not.
+        "accelerator": "Ampere-class embedded GPU (device not present; payload shaped for it)",
         "inference_ms": round(compute_ms, 2),
         "payload_bytes": len(str(payload).encode("utf-8")),
         "offline_capable": True,

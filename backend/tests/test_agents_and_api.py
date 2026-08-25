@@ -96,11 +96,16 @@ class TestSentinelMonitor:
     def test_immobility_in_extreme_heat_dispatches(self, orchestrator):
         out = orchestrator.sentinel.monitor_transit(
             "phoenix", (33.4520, -112.0825), 15.0, dwell_minutes=25.0,
-            profile_id="delivery_worker", moved_m=4.0,
+            profile_id="delivery_worker", moved_m=4.0, notify=False,
         )
         assert out["status"] == "dispatch"
         assert out["immobility_suspected"] is True
-        assert out["escalation_contact"]
+        # The escalation now reports what was actually delivered rather than naming a
+        # contact it never called. With notify disabled it must say so plainly -- a dispatch
+        # that silently claims an alert went out is the failure this guards.
+        assert out["notification"] is not None
+        assert out["notification"]["sent"] is False
+        assert out["notification"]["reason"]
 
     def test_long_dwell_while_moving_reroutes_rather_than_dispatches(self, orchestrator):
         out = orchestrator.sentinel.monitor_transit(

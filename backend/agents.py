@@ -23,6 +23,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
+import notify as notify_module
 import thermal
 from fortyguard_service import FortyGuardService
 from routing_engine import Coord, Route, RoutingEngine, profile_or_default
@@ -468,6 +469,8 @@ class EmergencyThermalSentinelAgent(Agent):
         dwell_minutes: float,
         profile_id: str = "pedestrian",
         moved_m: Optional[float] = None,
+        accuracy_m: Optional[float] = None,
+        notify: bool = True,
     ) -> Dict[str, Any]:
         """Evaluate a live position report from a wearable, kiosk or Jetson device.
 
@@ -490,8 +493,8 @@ class EmergencyThermalSentinelAgent(Agent):
 
         if immobile and acute:
             status, action = "dispatch", (
-                "Immobility detected in an extreme-heat zone. Notifying emergency contact and "
-                "dispatching the nearest municipal cooling response."
+                "Immobility detected in an extreme-heat zone. Alerting the nominated "
+                "emergency contact with position and nearest air-conditioned refuge."
             )
         elif dwell_minutes >= ceiling and acute:
             status, action = "reroute", (
@@ -510,12 +513,13 @@ class EmergencyThermalSentinelAgent(Agent):
             city_id, position[0], position[1], radius_m=2000.0, limit=3, hour=hour, require_ac=True
         )
 
-        return {
+        result: Dict[str, Any] = {
             "status": status,
             "action": action,
             "position": [position[0], position[1]],
             "dwell_minutes": round(dwell_minutes, 1),
             "moved_m": moved_m,
+            "position_accuracy_m": accuracy_m,
             "immobility_suspected": immobile,
             "acute_danger_zone": acute,
             "continuous_exposure_ceiling_min": round(ceiling, 1),
@@ -524,10 +528,27 @@ class EmergencyThermalSentinelAgent(Agent):
                 reading.exposure_index_f, profile["hydration_multiplier"]
             ),
             "nearest_shelters": shelters,
-            "escalation_contact": (
-                "911 / Municipal Heat Response" if status == "dispatch" else None
-            ),
         }
+
+        # Escalation is the one place this system acts on the world rather than describing
+        # it, so the response reports what was actually delivered -- never a claim that a
+        # message went out when it did not.
+        if status == "dispatch":
+            result["notification"] = (
+                notify_module.send_dispatch(
+                    position=position,
+                    reading=result["reading"],
+                    dwell_minutes=dwell_minutes,
+                    accuracy_m=accuracy_m,
+                    shelter=shelters[0] if shelters else None,
+                    city_id=city_id,
+                )
+                if notify
+                else {"sent": False, "channel": "ntfy", "reason": "notification suppressed by caller"}
+            )
+        else:
+            result["notification"] = None
+        return result
 
 
 # --------------------------------------------------------------------------------------

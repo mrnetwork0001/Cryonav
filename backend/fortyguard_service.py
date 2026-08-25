@@ -328,6 +328,59 @@ class FortyGuardService:
                 best_id, best_d = cid, d
         return best_id or "phoenix"
 
+    def data_provenance(self) -> Dict[str, Any]:
+        """Per-city provenance for the measured terrain inputs.
+
+        Read from the urban files themselves, so it cannot drift away from the data it
+        describes: if a city has not been through scripts/fetch_canopy.py or fetch_lst.py, it
+        reports that honestly instead of inheriting another city's citation.
+        """
+        out: Dict[str, Any] = {}
+        for city_id in self.city_ids():
+            idx = self._urban.get(city_id)
+            data = getattr(idx, "data", None) if idx is not None else None
+            if not data:
+                out[city_id] = {"status": "no urban file; modelled fixtures in use"}
+                continue
+            entry: Dict[str, Any] = {
+                "geometry": {
+                    "source": data.get("source"),
+                    "fetched_at": data.get("fetched_at"),
+                    "license": data.get("license"),
+                },
+            }
+            for key, label in (
+                ("canopy", "canopy"),
+                ("surface_temperature", "surface_temperature"),
+                ("surface_temperature_peak", "surface_temperature_peak"),
+            ):
+                block = data.get(key)
+                if block:
+                    entry[label] = {
+                        k: block[k]
+                        for k in (
+                            "source",
+                            "resolution_m",
+                            "measured_at",
+                            "license",
+                            "baseline_reference",
+                            "canopy_height_threshold_m",
+                            "city_canopy_fraction",
+                            "note",
+                        )
+                        if k in block
+                    }
+                    scenes = block.get("scenes") or block.get("granules")
+                    if scenes:
+                        entry[label]["observations"] = len(scenes)
+            # Anything still estimated must say so; silence would read as "all measured".
+            remaining = {
+                k: v for k, v in (data.get("assumptions") or {}).items() if k != "note"
+            }
+            entry["still_estimated"] = remaining or None
+            out[city_id] = entry
+        return out
+
     # -- terrain -----------------------------------------------------------------------
 
     def terrain(self, city_id: str, lat: float, lon: float) -> Dict[str, Any]:
@@ -352,7 +405,10 @@ class FortyGuardService:
                 surface_type = "waterfront"
             elif canopy > 0.28:
                 surface_type = "canopy_shade"
-            elif raw["arterial"] > 0.4 or surface_boost > 6.0:
+            elif raw["arterial"] > 0.4 or raw.get("near_road", 0.0) > 0.5:
+                # surface_boost_f is now a measured anomaly centred on zero, so it can no
+                # longer stand in for "is this asphalt" -- road proximity, which is what the
+                # old `> 6.0` test was really proxying for, says it directly.
                 surface_type = "asphalt"
             else:
                 surface_type = "concrete"

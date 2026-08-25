@@ -48,6 +48,10 @@ class UrbanIndex:
 
     def __init__(self, data: Dict[str, Any]) -> None:
         self.city_id = data["city_id"]
+        # Whether this city's tree points carry measured crown cover (from
+        # scripts/fetch_canopy.py) or the old placeholder weight. It decides how nearby trees
+        # are combined -- max for measurements, saturating sum for counts.
+        self._trees_measured = bool(data.get("canopy", {}).get("source"))
         self.fetched_at = data.get("fetched_at")
         self.data = data
         self._k = math.cos(math.radians(data["bbox"]["south"]))
@@ -152,6 +156,13 @@ class UrbanIndex:
 
         canopy = 0.0
         canopy_cool = 0.0
+        near_road = 0.0
+        # Measured surface anomalies are AVERAGED, never summed. An anomaly says "this place
+        # runs N degrees hotter than a typical road"; five overlapping roads each at -3.5 F
+        # describe one location that is 3.5 F cool, not one that is 17.5 F cool. The unmeasured
+        # fallbacks below are additive contributions and still accumulate into surface_boost.
+        anom_num = 0.0
+        anom_den = 0.0
         covered = 0.0
         uhi = 0.0
         surface_boost = 0.0
@@ -190,7 +201,11 @@ class UrbanIndex:
                             d = self._dist_to_segments(px, py, xy + xy[:1])
                             w = math.exp(-((d / HOT_EDGE_DECAY_M) ** 2))
                         if w > 0.02:
-                            surface_boost += f["boost_f"] * w
+                            if f.get("lst_measured") or f.get("lst_source"):
+                                anom_num += f["boost_f"] * w
+                                anom_den += w
+                            else:
+                                surface_boost += f["boost_f"] * w
                             uhi += min(1.5 + f["area_m2"] / 25000.0, 4.0) * w
 
                     elif kind == "water":
@@ -215,8 +230,25 @@ class UrbanIndex:
                             w = math.exp(-(((d - half) / 25.0) ** 2))
                         if w > 0.02:
                             lanes = f.get("lanes", 2)
-                            surface_boost += (6.0 + 1.6 * lanes) * w
+                            # Measured Landsat anomaly for THIS road where available. The
+                            # lane-count fallback below is a proxy for road width, which is a
+                            # proxy for exposure -- two inferences deep. The measurement is
+                            # relative to the city's own road median, so a typical road
+                            # contributes 0 and asphalt_uplift_f alone carries it.
+                            if f.get("lst_measured"):
+                                # Clamped at zero, and not for tidiness: a road measuring
+                                # COOLER than the city's road median is almost always cooler
+                                # because it is shaded -- and sky_view_factor already applies
+                                # that shade to the whole spike. Letting the negative through
+                                # would discount the same canopy twice. Positive anomalies
+                                # survive, since those are material (dark, dense, low-albedo
+                                # surface in full sun) and nothing else in the model sees them.
+                                anom_num += max(0.0, f["lst_anomaly_f"]) * w
+                                anom_den += w
+                            else:
+                                surface_boost += (6.0 + 1.6 * lanes) * w
                             uhi += min(0.35 * lanes, 2.5) * w
+                            near_road = max(near_road, w)
                             if lanes >= 4:
                                 on_arterial = max(on_arterial, w)
 
@@ -226,7 +258,11 @@ class UrbanIndex:
                         w = math.exp(-((d / COVERED_NEAR_M) ** 2))
                         if w > 0.05:
                             covered = max(covered, w)
-                            canopy = max(canopy, 0.92 * w)
+                            # A roofed arcade blocks sky regardless of vegetation, so the
+                            # structural 0.92 stands; the measurement only raises it where
+                            # trees overhang the arcade too.
+                            over = max(0.92, f["canopy"]) if f.get("canopy_measured") else 0.92
+                            canopy = max(canopy, over * w)
                             canopy_cool += 5.0 * w
 
                     elif kind == "tree_rows":
@@ -234,21 +270,43 @@ class UrbanIndex:
                         d = self._dist_to_segments(px, py, self._path_xy(f))
                         w = math.exp(-((d / TREE_ROW_NEAR_M) ** 2))
                         if w > 0.05:
-                            canopy = max(canopy, 0.68 * w)
-                            canopy_cool += 3.0 * w
+                            frac = f["canopy"] if f.get("canopy_measured") else 0.68
+                            canopy = max(canopy, frac * w)
+                            canopy_cool += 3.0 * (frac / 0.68) * w
 
-        # Individual street trees: weighted count within TREE_RADIUS_M.
+        # Individual street trees. Two aggregations, because the two data shapes mean
+        # different things:
+        #
+        #   measured   `wgt` is the canopy fraction actually observed within 8 m of that
+        #              trunk, so nearby trees are combined by MAX -- their crowns overlap and
+        #              each measurement already counts its neighbours' shade. Summing would
+        #              count the same pixels once per tree.
+        #   unmeasured `wgt` is a placeholder count, so the old saturating sum stands.
         tree_weight = 0.0
+        measured_canopy = 0.0
         for dr in (-1, 0, 1):
             for dc in (-1, 0, 1):
                 for tlat, tlon, wgt in self._tree_cells.get((cell[0] + dr, cell[1] + dc), ()):
                     tx, ty = _project(tlat, tlon, self._k)
                     d = math.hypot(px - tx, py - ty)
-                    if d <= TREE_RADIUS_M:
-                        tree_weight += wgt * (1.0 - d / TREE_RADIUS_M)
-        if tree_weight > 0:
+                    if d > TREE_RADIUS_M:
+                        continue
+                    prox = 1.0 - d / TREE_RADIUS_M
+                    if wgt is None:
+                        continue
+                    if self._trees_measured:
+                        measured_canopy = max(measured_canopy, wgt * prox)
+                    else:
+                        tree_weight += wgt * prox
+        if measured_canopy > 0:
+            canopy = max(canopy, min(0.85, measured_canopy))
+            canopy_cool += min(TREE_COOLING_CAP_F * measured_canopy / 0.5, TREE_COOLING_CAP_F)
+        elif tree_weight > 0:
             canopy = max(canopy, min(0.85, TREE_CANOPY_PER_TREE * tree_weight))
             canopy_cool += min(TREE_COOLING_PER_TREE * tree_weight, TREE_COOLING_CAP_F)
+
+        if anom_den > 0:
+            surface_boost += anom_num / anom_den
 
         return {
             "canopy_fraction": min(canopy, 0.95),
@@ -259,6 +317,7 @@ class UrbanIndex:
             "water_cooling_f": water_cool,
             "humidity_boost_pct": humidity_boost,
             "arterial": on_arterial,
+            "near_road": near_road,
         }
 
 

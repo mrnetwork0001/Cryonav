@@ -1,14 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { NavigationResult, RiskLevel, Shelter } from "../lib/api";
+import { displacementM, medianAccuracyM, trimWindow, type Fix } from "../lib/geo";
 
 /**
  * Emergency Sentinel live-transit playback.
  *
- * Walks a simulated pedestrian along the actual cool route at ~50x wall speed, streaming
- * position/dwell/displacement telemetry to the REAL `/api/v1/sentinel/monitor` endpoint —
- * the same one a Jetson wearable would call. Every verdict shown comes back from the
- * backend; the only scripted element is the mid-route immobility event (the walker stops,
- * as a heat casualty would), and the Sentinel's escalation to dispatch is its own decision.
+ * Two telemetry sources feed the SAME endpoint, `/api/v1/sentinel/monitor` — the one a
+ * Jetson wearable would call. Every verdict on screen is the backend's, never this file's.
+ *
+ *   LIVE    the device's own GPS via `watchPosition`. Real fixes, real accuracy, real
+ *           elapsed time. Requires a secure context, so over LAN it needs a tunnel.
+ *
+ *   REPLAY  a pedestrian walked along the computed cool route at ~50x wall speed, with a
+ *           mid-route collapse. Positions are synthetic and jittered with Gaussian noise at
+ *           a stated accuracy, so the displacement estimator is genuinely exercised rather
+ *           than handed clean coordinates.
+ *
+ * Both sources measure displacement with the same `displacementM` estimator, so what the
+ * replay demonstrates is what a real phone gets. The scripted part is only *that* the walker
+ * stops; whether that becomes an escalation is the Sentinel's own decision.
  */
 
 export interface SimFrame {
@@ -28,7 +38,15 @@ interface MonitorResponse {
   reading: { risk_level: RiskLevel; air_temp_2m_f: number; exposure_index_f: number };
   nearest_shelters: Shelter[];
   hydration_ml_per_hour: number;
-  escalation_contact: string | null;
+  position_accuracy_m: number | null;
+  notification: {
+    sent: boolean;
+    channel: string;
+    reason?: string;
+    message_id?: string;
+    latency_ms?: number;
+    recipient?: string;
+  } | null;
 }
 
 interface Props {
@@ -40,6 +58,12 @@ interface Props {
 }
 
 const TICK_MS = 200;
+/** Synthetic GPS noise on the replay, so the estimator faces what a real phone faces. */
+const SIM_GPS_ACCURACY_M = 12;
+/** Rolling window the displacement estimator sees, matched to the backend's 8-min test. */
+const FIX_WINDOW_MS = 9 * 60 * 1000;
+/** How often live mode reports to the Sentinel. */
+const LIVE_REPORT_MS = 5000;
 const WALK_WALL_S = 32; // whole route in ~32s of wall time
 const IMMOBILE_AT = 0.62; // freeze the walker at 62% of the route
 const IMMOBILE_SIM_MIN = 11; // simulated minutes of immobility before the phase ends
@@ -49,6 +73,12 @@ const STATUS_COLOR: Record<SimFrame["status"], string> = {
   reroute: "#fb923c",
   dispatch: "#ef4444",
 };
+
+/** Box-Muller. The replay needs plausible GPS noise, not cryptographic randomness. */
+function gaussian(): number {
+  const u = Math.max(Math.random(), 1e-12);
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * Math.random());
+}
 
 interface LogEntry {
   t: number;
@@ -71,7 +101,7 @@ export default function TransitSim({ nav, cityId, hour, profileId, onFrame }: Pr
     t: number; // sim minutes elapsed
     frac: number;
     frozenAt: number | null;
-    history: { t: number; pos: [number, number] }[];
+    fixes: Fix[];
     trail: [number, number][];
     dwellHigh: number;
     lastRisk: RiskLevel;
@@ -81,6 +111,157 @@ export default function TransitSim({ nav, cityId, hour, profileId, onFrame }: Pr
     lastMonitorAt: number;
     dispatched: boolean;
   } | null>(null);
+
+  // ---- live telemetry source ----------------------------------------------------------
+  const [source, setSource] = useState<"replay" | "live">("replay");
+  const [liveOn, setLiveOn] = useState(false);
+  const [liveErr, setLiveErr] = useState<string | null>(null);
+  const [liveFix, setLiveFix] = useState<{ acc: number | null; n: number; moved: number | null } | null>(null);
+  const live = useRef<{
+    watchId: number | null;
+    reporter: ReturnType<typeof setInterval> | null;
+    fixes: Fix[];
+    dwellHigh: number;
+    lastAccrualMs: number;
+    lastRisk: RiskLevel;
+    status: SimFrame["status"];
+    shelter: Shelter | null;
+    trail: [number, number][];
+    inFlight: boolean;
+  } | null>(null);
+
+  const stopLive = useCallback(() => {
+    const l = live.current;
+    if (l?.watchId != null) navigator.geolocation.clearWatch(l.watchId);
+    if (l?.reporter) clearInterval(l.reporter);
+    live.current = null;
+    setLiveOn(false);
+  }, []);
+
+  const startLive = useCallback(() => {
+    setLiveErr(null);
+    setLog([]);
+    setMonitor(null);
+    setLiveFix(null);
+    // Geolocation is gated on a secure context. Served over plain HTTP from anything but
+    // localhost the API is simply absent, so say why instead of failing silently.
+    if (!window.isSecureContext) {
+      setLiveErr(
+        "Live GPS needs HTTPS (or localhost). Open this page over a secure origin — e.g. a " +
+          "`cloudflared tunnel --url` address — and try again.",
+      );
+      return;
+    }
+    if (!("geolocation" in navigator)) {
+      setLiveErr("This browser exposes no Geolocation API.");
+      return;
+    }
+    live.current = {
+      watchId: null,
+      reporter: null,
+      fixes: [],
+      dwellHigh: 0,
+      lastAccrualMs: Date.now(),
+      lastRisk: "moderate",
+      status: "ok",
+      shelter: null,
+      trail: [],
+      inFlight: false,
+    };
+    setLiveOn(true);
+    setLog([{ t: 0, status: "ok", text: "Live GPS watch started — acquiring fixes." }]);
+
+    live.current.watchId = navigator.geolocation.watchPosition(
+      (p) => {
+        const l = live.current;
+        if (!l) return;
+        const now = p.timestamp || Date.now();
+        l.fixes.push({
+          t: now,
+          lat: p.coords.latitude,
+          lon: p.coords.longitude,
+          accuracy: p.coords.accuracy,
+        });
+        l.fixes = trimWindow(l.fixes, now, FIX_WINDOW_MS);
+        const pos: [number, number] = [p.coords.latitude, p.coords.longitude];
+        const last = l.trail[l.trail.length - 1];
+        if (!last || Math.abs(last[0] - pos[0]) + Math.abs(last[1] - pos[1]) > 1e-5) l.trail.push(pos);
+        setLiveFix({
+          acc: medianAccuracyM(l.fixes),
+          n: l.fixes.length,
+          moved: displacementM(l.fixes),
+        });
+      },
+      (err) => {
+        const why: Record<number, string> = {
+          1: "Location permission denied. Grant it in the browser's site settings to run live.",
+          2: "Position unavailable — no GPS or network fix here.",
+          3: "Timed out waiting for a fix.",
+        };
+        setLiveErr(why[err.code] ?? err.message);
+        stopLive();
+      },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 },
+    );
+
+    live.current.reporter = setInterval(() => {
+      const l = live.current;
+      if (!l || l.inFlight || l.fixes.length === 0) return;
+      const now = Date.now();
+      // Dwell accrues in REAL minutes, only while the backend's last reading was high or
+      // extreme. Reaching the eight-minute immobility test therefore takes eight real
+      // minutes standing in real heat — which is the honest cost of a real alert.
+      const elapsedMin = (now - l.lastAccrualMs) / 60000;
+      l.lastAccrualMs = now;
+      if (l.lastRisk === "high" || l.lastRisk === "extreme") l.dwellHigh += elapsedMin;
+
+      const latest = l.fixes[l.fixes.length - 1];
+      const moved = displacementM(l.fixes);
+      const acc = medianAccuracyM(l.fixes);
+      l.inFlight = true;
+      fetch("/api/v1/sentinel/monitor", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          position: { lat: latest.lat, lon: latest.lon },
+          city_id: cityId,
+          hour,
+          profile: profileId,
+          dwell_minutes: Math.round(l.dwellHigh * 10) / 10,
+          ...(moved === null ? {} : { moved_m: Math.round(moved) }),
+          accuracy_m: acc,
+          // Live mode is the real thing: an escalation here sends a real push.
+          notify: true,
+        }),
+      })
+        .then((r) => r.json())
+        .then((m: MonitorResponse) => {
+          l.inFlight = false;
+          l.lastRisk = m.reading.risk_level;
+          setMonitor(m);
+          setDwell(l.dwellHigh);
+          if (m.status !== l.status) {
+            l.status = m.status;
+            setLog((g) => [...g, { t: l.dwellHigh, status: m.status, text: m.action }].slice(-6));
+            if (m.nearest_shelters[0] && (m.status === "reroute" || m.status === "dispatch")) {
+              l.shelter = m.nearest_shelters[0];
+            }
+          }
+          onFrame({
+            pos: [latest.lat, latest.lon],
+            status: l.status,
+            trail: [...l.trail],
+            shelter: l.shelter,
+            phase: m.immobility_suspected ? "immobile" : "walking",
+          });
+        })
+        .catch(() => {
+          l.inFlight = false;
+        });
+    }, LIVE_REPORT_MS);
+  }, [cityId, hour, profileId, onFrame, stopLive]);
+
+  useEffect(() => () => stopLive(), [stopLive]);
 
   const stop = useCallback(
     (final?: SimFrame["phase"]) => {
@@ -125,7 +306,7 @@ export default function TransitSim({ nav, cityId, hour, profileId, onFrame }: Pr
       t: 0,
       frac: 0,
       frozenAt: null,
-      history: [],
+      fixes: [],
       trail: [geo[0]],
       dwellHigh: 0,
       lastRisk: "moderate",
@@ -188,8 +369,19 @@ export default function TransitSim({ nav, cityId, hour, profileId, onFrame }: Pr
     }
 
     const pos = posAt(e.frac);
-    e.history.push({ t: e.t, pos });
-    while (e.history.length > 2 && e.history[0].t < e.t - 9) e.history.shift();
+    // What the walker's phone would actually report: the true position plus isotropic error
+    // at SIM_GPS_ACCURACY_M. Feeding the estimator clean coordinates would prove nothing.
+    const nLat = (gaussian() * SIM_GPS_ACCURACY_M) / 110574;
+    const nLon = (gaussian() * SIM_GPS_ACCURACY_M) / (111320 * Math.cos((pos[0] * Math.PI) / 180));
+    // Fix timestamps are on the SIMULATED clock, so the 9-minute window means nine simulated
+    // minutes — the same span the backend's dwell test uses.
+    e.fixes.push({
+      t: e.t * 60000,
+      lat: pos[0] + nLat,
+      lon: pos[1] + nLon,
+      accuracy: SIM_GPS_ACCURACY_M,
+    });
+    e.fixes = trimWindow(e.fixes, e.t * 60000, FIX_WINDOW_MS);
     const last = e.trail[e.trail.length - 1];
     if (Math.abs(last[0] - pos[0]) + Math.abs(last[1] - pos[1]) > 1e-5) e.trail.push(pos);
 
@@ -207,15 +399,10 @@ export default function TransitSim({ nav, cityId, hour, profileId, onFrame }: Pr
     if (due && !e.inFlight) {
       e.lastMonitorAt = wallNow;
       e.inFlight = true;
-      const old = e.history[0];
-      const kk = Math.cos((pos[0] * Math.PI) / 180);
-      const movedM =
-        ph === "immobile"
-          ? 4
-          : Math.hypot(
-              (pos[1] - old.pos[1]) * 111320 * kk,
-              (pos[0] - old.pos[0]) * 110574,
-            );
+      // Measured from the noisy fix history by the same estimator live mode uses. When the
+      // window is too short to support a claim it returns null, and `moved_m` is omitted so
+      // the backend declines to assert immobility rather than assuming it.
+      const movedM = displacementM(e.fixes);
       fetch("/api/v1/sentinel/monitor", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -225,7 +412,10 @@ export default function TransitSim({ nav, cityId, hour, profileId, onFrame }: Pr
           hour,
           profile: profileId,
           dwell_minutes: Math.round(e.dwellHigh * 10) / 10,
-          moved_m: Math.round(movedM),
+          ...(movedM === null ? {} : { moved_m: Math.round(movedM) }),
+          accuracy_m: medianAccuracyM(e.fixes),
+          // The replay must never fire a real push to a real contact.
+          notify: false,
         }),
       })
         .then((r) => r.json())
@@ -293,9 +483,9 @@ export default function TransitSim({ nav, cityId, hour, profileId, onFrame }: Pr
     <section className="glass rounded-2xl p-4">
       <div className="flex items-center justify-between">
         <h2 className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-          Sentinel · live transit sim
+          Sentinel · transit monitor
         </h2>
-        {running && (
+        {(running || liveOn) && (
           <span className="flex items-center gap-1.5 text-[10px] font-bold tracking-wider" style={{ color: statusColor }}>
             <span className="ping-soft h-1.5 w-1.5 rounded-full" style={{ background: statusColor, color: statusColor }} />
             {(monitor?.status ?? "ok").toUpperCase()}
@@ -303,15 +493,82 @@ export default function TransitSim({ nav, cityId, hour, profileId, onFrame }: Pr
         )}
       </div>
 
-      {!running && phase !== "done" && (
+      <div className="mt-2.5 grid grid-cols-2 gap-1 rounded-lg border border-slate-700/40 bg-slate-950/40 p-0.5">
+        {(["replay", "live"] as const).map((sid) => (
+          <button
+            key={sid}
+            onClick={() => {
+              if (running) reset();
+              if (liveOn) stopLive();
+              setSource(sid);
+              setLog([]);
+              setMonitor(null);
+              setLiveErr(null);
+              onFrame(null);
+            }}
+            className={`rounded-md px-2 py-1.5 text-[10.5px] font-semibold transition ${
+              source === sid
+                ? "bg-slate-700/70 text-white"
+                : "text-slate-500 hover:text-slate-300"
+            }`}
+          >
+            {sid === "replay" ? "Route replay" : "My GPS"}
+          </button>
+        ))}
+      </div>
+
+      {source === "replay" && !running && phase !== "done" && (
         <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
-          Replays a delivery walk along the computed cool route at ~50× speed, streaming live
-          telemetry to the Sentinel — including a mid-route collapse. Every escalation shown is
-          the backend's own verdict.
+          Replays a delivery walk along the computed cool route at ~50× speed, streaming
+          telemetry to the Sentinel — including a mid-route collapse. Positions are synthetic and
+          carry ±{SIM_GPS_ACCURACY_M} m of GPS noise; displacement is measured from them by the
+          same estimator live mode uses. Every escalation shown is the backend's own verdict.
         </p>
       )}
 
-      {(running || phase === "done") && (
+      {source === "live" && !liveOn && (
+        <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
+          Streams this device's real GPS to the Sentinel. Dwell accrues in real time, so the
+          eight-minute immobility test takes eight real minutes — and an escalation sends a
+          real push alert. Needs HTTPS and location permission.
+        </p>
+      )}
+
+      {liveErr && (
+        <div className="mt-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-2.5 text-[11px] leading-relaxed text-amber-300">
+          {liveErr}
+        </div>
+      )}
+
+      {source === "live" && liveOn && (
+        <div className="tnum mt-3 grid grid-cols-3 gap-2 text-center">
+          <Metric label="fixes" value={liveFix ? String(liveFix.n) : "—"} />
+          <Metric
+            label="accuracy"
+            value={liveFix?.acc != null ? `±${liveFix.acc.toFixed(0)} m` : "—"}
+            tone={liveFix?.acc != null && liveFix.acc > 40 ? "#facc15" : undefined}
+          />
+          <Metric
+            label="moved"
+            value={liveFix?.moved != null ? `${liveFix.moved.toFixed(0)} m` : "…"}
+          />
+        </div>
+      )}
+
+      {source === "live" && liveOn && (
+        <div className="tnum mt-2 grid grid-cols-2 gap-2 text-center">
+          <Metric
+            label={`dwell ${monitor?.continuous_exposure_ceiling_min ? `/ ${monitor.continuous_exposure_ceiling_min.toFixed(0)}` : ""}`}
+            value={`${dwell.toFixed(1)} min`}
+          />
+          <Metric
+            label="air here"
+            value={monitor ? `${monitor.reading.air_temp_2m_f.toFixed(0)}°F` : "—"}
+          />
+        </div>
+      )}
+
+      {source === "replay" && (running || phase === "done") && (
         <div className="tnum mt-3 grid grid-cols-3 gap-2 text-center">
           <Metric label="transit" value={`${simMin.toFixed(0)} min`} />
           <Metric
@@ -342,27 +599,56 @@ export default function TransitSim({ nav, cityId, hour, profileId, onFrame }: Pr
         </div>
       )}
 
-      {phase === "done" && monitor?.status === "dispatch" && (
+      {monitor?.status === "dispatch" && (phase === "done" || source === "live") && (
         <div className="mt-3 rounded-lg border border-rose-500/40 bg-rose-500/10 p-2.5 text-[11px] leading-relaxed text-rose-300">
-          Immobility in extreme heat detected. In deployment the Sentinel would notify{" "}
-          <b>{monitor.escalation_contact}</b> with the walker's live position
+          Immobility in extreme heat detected at{" "}
+          {monitor.position_accuracy_m != null ? `±${monitor.position_accuracy_m.toFixed(0)} m` : "unknown"}{" "}
+          accuracy
           {monitor.nearest_shelters[0] ? (
-            <> and nearest refuge (<b>{monitor.nearest_shelters[0].name}</b>)</>
-          ) : null}{" "}
-          — no real dispatch integration exists in this build.
+            <>, nearest refuge <b>{monitor.nearest_shelters[0].name}</b>
+          </>
+          ) : null}
+          .{" "}
+          {monitor.notification?.sent ? (
+            <>
+              Push alert <b>delivered</b> to the nominated emergency contact over{" "}
+              {monitor.notification.channel} in {monitor.notification.latency_ms?.toFixed(0)} ms.
+            </>
+          ) : (
+            <>
+              No alert was sent — <b>{monitor.notification?.reason ?? "notification disabled"}</b>.
+            </>
+          )}{" "}
+          Cryonav alerts a contact the user nominates; it does not and cannot file a 911 call.
         </div>
       )}
 
       <button
-        onClick={running ? reset : phase === "done" ? reset : start}
-        disabled={!nav}
+        onClick={
+          source === "live"
+            ? liveOn
+              ? stopLive
+              : startLive
+            : running || phase === "done"
+              ? reset
+              : start
+        }
+        disabled={source === "replay" && !nav}
         className={`mt-3 w-full rounded-lg border px-3 py-2.5 text-[12px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${
-          running
+          running || liveOn
             ? "border-slate-600 bg-slate-800/60 text-slate-300 hover:text-white"
             : "border-rose-400/50 bg-rose-500/15 text-rose-300 hover:bg-rose-500/25"
         }`}
       >
-        {running ? "■ Stop simulation" : phase === "done" ? "↺ Reset" : "▶ Simulate transit emergency"}
+        {source === "live"
+          ? liveOn
+            ? "■ Stop live monitoring"
+            : "◉ Start live GPS monitoring"
+          : running
+            ? "■ Stop replay"
+            : phase === "done"
+              ? "↺ Reset"
+              : "▶ Replay transit emergency"}
       </button>
     </section>
   );

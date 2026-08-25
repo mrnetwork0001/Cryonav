@@ -30,7 +30,7 @@ check "meta" "$API/meta"
 SCRIPT='import json,sys;d=json.load(sys.stdin);assert d["count"]==3;print(", ".join(c["id"] for c in d["cities"]))'
 check "cities" "$API/cities"
 
-SCRIPT='import json,sys;d=json.load(sys.stdin);s=d["stats"];assert len(d["cells"])==24*24;assert s["max_exposure_f"]-s["min_exposure_f"]>10;print("%s-%sF over %s mi2" % (s["min_exposure_f"], s["max_exposure_f"], d["tile_area_mi2"]))'
+SCRIPT='import json,sys;d=json.load(sys.stdin);s=d["stats"];assert len(d["cells"])==24*24;assert s["max_exposure_f"]-s["min_exposure_f"]>8;print("%s-%sF over %s mi2" % (s["min_exposure_f"], s["max_exposure_f"], d["tile_area_mi2"]))'
 check "thermal grid" "$API/cities/phoenix/grid?hour=15&resolution=24"
 
 SCRIPT='import json,sys;d=json.load(sys.stdin);assert d["count"]==2;assert d["sensing"]["elevation_m"]==2.0;print(d["feed"]["source"],d["feed"]["status_code"],"| peak",d["summary"]["peak_risk_level"])'
@@ -60,9 +60,14 @@ SCRIPT='import json,sys;d=json.load(sys.stdin);e=d["edge"];assert e["payload_byt
 check "edge/jetson-kiosk" -X POST "$API/edge/jetson-kiosk" -H 'content-type: application/json' \
   -d '{"origin":{"lat":33.4485,"lon":-112.0962},"destination":{"lat":33.4576,"lon":-112.0705},"city_id":"phoenix","hour":15,"max_polyline_points":16}'
 
-SCRIPT='import json,sys;d=json.load(sys.stdin);assert d["status"]=="dispatch";print(d["status"],"->",d["escalation_contact"])'
+SCRIPT='import json,sys
+d=json.load(sys.stdin);n=d["notification"]
+assert d["status"]=="dispatch"
+# notify=false below, so the only correct answer is "nothing was sent, and here is why".
+assert n is not None and n["sent"] is False and n["reason"]
+print("dispatch | notification:", n["reason"][:48])'
 check "sentinel immobility alert" -X POST "$API/sentinel/monitor" -H 'content-type: application/json' \
-  -d '{"position":{"lat":33.4520,"lon":-112.0825},"city_id":"phoenix","hour":15,"dwell_minutes":25,"moved_m":3,"profile":"delivery_worker"}'
+  -d '{"position":{"lat":33.4520,"lon":-112.0825},"city_id":"phoenix","hour":15,"dwell_minutes":25,"moved_m":3,"profile":"delivery_worker","accuracy_m":12,"notify":false}'
 
 echo
 echo "  $pass passed, $fail failed"
