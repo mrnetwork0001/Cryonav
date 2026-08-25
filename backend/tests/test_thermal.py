@@ -6,6 +6,7 @@ radiant load, that the diurnal curve peaks with the sun, and that risk banding i
 
 import pytest
 
+import standards
 import thermal
 
 
@@ -127,7 +128,65 @@ class TestDiurnal:
         assert thermal.solar_elevation_factor(23.0) == 0.0
         assert thermal.solar_elevation_factor(15.0) == pytest.approx(1.0, abs=1e-9)
 
-    def test_hydration_scales_with_exposure_and_is_bounded(self):
-        assert thermal.hydration_ml_per_hour(85.0) == 240
-        assert thermal.hydration_ml_per_hour(200.0) == 1200
-        assert thermal.hydration_ml_per_hour(120.0) > thermal.hydration_ml_per_hour(100.0)
+    def test_hydration_matches_niosh_guidance(self):
+        """NIOSH: 1 cup (8 oz) every 15-20 min for moderate work in heat = 710-946 mL/h."""
+        # Below the "workers in heat" band, general baseline (1 cup / 30 min).
+        assert thermal.hydration_ml_per_hour(85.0) == 470
+        # At/above the high band NIOSH's 15-minute rate applies.
+        assert thermal.hydration_ml_per_hour(103.0) == 950
+        assert thermal.hydration_ml_per_hour(130.0) == 950
+        # Monotonic across the interpolated moderate band.
+        assert thermal.hydration_ml_per_hour(120.0) >= thermal.hydration_ml_per_hour(95.0)
+
+    def test_hydration_respects_niosh_hyponatraemia_cap(self):
+        """NIOSH caps intake at 1.5 L/h; a 'drink more' curve without that is unsafe advice."""
+        assert thermal.hydration_ml_per_hour(200.0, 5.0) <= standards.NIOSH_MAX_ML_PER_HOUR
+
+
+class TestPublishedStandards:
+    """Every constant here is a citation; these tests guard the citation, not a preference."""
+
+    def test_risk_bands_are_the_published_osha_niosh_edges(self):
+        """OSHA heat-index employer guide / NIOSH 2016-106 Table C-1: 91 / 103 / 115 F."""
+        assert thermal.RISK_THRESHOLDS_F["moderate"] == 91.0
+        assert thermal.RISK_THRESHOLDS_F["high"] == 103.0
+        assert thermal.RISK_THRESHOLDS_F["extreme"] == 115.0
+
+    def test_work_minutes_follow_niosh_table_6_2(self):
+        """Moderate-work column, verbatim rows."""
+        assert standards.work_minutes_per_hour(95.0) == 60.0    # 90-99 F: normal
+        assert standards.work_minutes_per_hour(100.0) == 45.0
+        assert standards.work_minutes_per_hour(103.0) == 30.0
+        assert standards.work_minutes_per_hour(107.0) == 15.0
+
+    def test_beyond_the_table_is_flagged_as_extrapolated(self):
+        """NIOSH stops giving minute counts above 107 F; the continuation must announce itself."""
+        assert not standards.is_extrapolated(107.0)
+        assert standards.is_extrapolated(110.0)
+        assert standards.work_minutes_per_hour(130.0) >= standards.NIOSH_MINIMUM_WORK_MINUTES
+
+    def test_exposure_ceilings_shrink_with_risk(self):
+        mins = [thermal.SAFE_EXPOSURE_MINUTES[l] for l in thermal.RISK_LEVELS]
+        assert mins == sorted(mins, reverse=True)
+
+    def test_niosh_wbgt_limits_match_the_published_equations(self):
+        """REL = 56.7 - 11.5*log10(M); RAL = 59.9 - 14.1*log10(M), M in watts."""
+        import math
+
+        m = standards.METABOLIC_WATTS_WALKING
+        assert standards.niosh_wbgt_limit_c(m, True) == pytest.approx(56.7 - 11.5 * math.log10(m))
+        assert standards.niosh_wbgt_limit_c(m, False) == pytest.approx(59.9 - 14.1 * math.log10(m))
+        # Unacclimatised limit must be the stricter of the two.
+        assert standards.niosh_wbgt_limit_c(m, False) < standards.niosh_wbgt_limit_c(m, True)
+
+    def test_radiant_adjustment_stays_inside_the_nws_full_sun_envelope(self):
+        """NWS: full sun raises the shade heat index by 'up to 15 F'. That cap is what
+        licenses applying published heat-index bands to Cryonav's composite index."""
+        # An absurd radiant surplus must still not exceed the published envelope.
+        hi = 100.0
+        idx = thermal.exposure_index_f(air_f=100.0, hi_f=hi, mrt_f=400.0)
+        assert idx - hi <= standards.NWS_FULL_SUN_ADJUSTMENT_MAX_F + 1e-9
+
+    def test_every_constant_carries_a_citation(self):
+        for key, c in standards.CITATIONS.items():
+            assert c["source"] and c["applies_to"] and c["url"], key

@@ -22,21 +22,19 @@ from __future__ import annotations
 import math
 from typing import Dict, Tuple
 
+import standards
+
 # --------------------------------------------------------------------------------------
 # Risk banding
 # --------------------------------------------------------------------------------------
 
 RISK_LEVELS = ("low", "moderate", "high", "extreme")
 
-#: Lower bound (inclusive) of `exposure_index_f` for each risk band.
-#: Calibrated so a shaded canopy corridor lands in `moderate` while unshaded asphalt in the
-#: same city block lands in `extreme` -- the contrast the whole product exists to expose.
-RISK_THRESHOLDS_F: Dict[str, float] = {
-    "low": 0.0,
-    "moderate": 95.0,
-    "high": 105.0,
-    "extreme": 115.0,
-}
+#: Lower bound (inclusive) of `exposure_index_f` for each risk band -- PUBLISHED, not tuned.
+#: OSHA "Using the Heat Index: A Guide for Employers" (2012), reproduced as NIOSH 2016-106
+#: Table C-1. See standards.py for the verbatim table and why heat-index bands legitimately
+#: apply to Cryonav's full-sun-corrected index.
+RISK_THRESHOLDS_F: Dict[str, float] = dict(standards.NIOSH_HEAT_INDEX_BANDS_F)
 
 #: Colour tokens shared with the frontend so the map legend and the API never drift apart.
 RISK_COLORS: Dict[str, str] = {
@@ -47,20 +45,20 @@ RISK_COLORS: Dict[str, str] = {
 }
 
 #: Human-facing guidance surfaced on kiosks and the Jetson edge payload.
+#: Human-facing guidance surfaced on kiosks and the Jetson edge payload. Minute figures
+#: quote NIOSH 2016-106 Table 6-2 (moderate work) rather than inventing round numbers.
 RISK_ADVISORY: Dict[str, str] = {
-    "low": "Safe for continuous outdoor transit.",
+    "low": "Safe for continuous outdoor transit (NIOSH: no rest period required).",
     "moderate": "Hydrate before departure; prefer shaded side of street.",
-    "high": "Limit continuous exposure to 20 minutes; use canopy routing.",
-    "extreme": "Asphalt thermal trap. Reroute through shade or shelter immediately.",
+    "high": "NIOSH limits moderate work to 30 min per hour at this heat index; use canopy routing.",
+    "extreme": "Beyond NIOSH's tabulated range. Asphalt thermal trap - reroute through shade or shelter immediately.",
 }
 
-#: Continuous-exposure ceiling in minutes before the Sentinel agent escalates, per band.
-SAFE_EXPOSURE_MINUTES: Dict[str, float] = {
-    "low": 90.0,
-    "moderate": 45.0,
-    "high": 20.0,
-    "extreme": 10.0,
-}
+#: Continuous-exposure ceiling in minutes before the Sentinel escalates, per band.
+#: NIOSH 2016-106 Table 6-2 (work/rest schedules), moderate-work column -- NIOSH classifies
+#: continuous normal walking as moderate work. Derived in standards.py from the table itself
+#: so these can never drift away from the citation.
+SAFE_EXPOSURE_MINUTES: Dict[str, float] = dict(standards.SAFE_EXPOSURE_MINUTES)
 
 # How strongly excess radiant load above air temperature is felt by a standing body.
 # UTCI field studies report sun-vs-shade differences of 15-20 deg C at identical air
@@ -234,7 +232,14 @@ def exposure_index_f(air_f: float, hi_f: float, mrt_f: float) -> float:
     This is what makes a "cool route" possible. Two adjacent city blocks can share an air
     temperature to within 2 deg F yet differ by 20 deg F here, purely from canopy and surface.
     """
-    return hi_f + RADIANT_COUPLING * max(mrt_f - air_f, 0.0)
+    # NWS states the shade-defined heat index rises by "up to 15 F" in full sunshine.
+    # Capping the radiant term there keeps the composite inside the envelope the citation
+    # supports -- and is what licenses applying published heat-index bands to this index.
+    adjustment = min(
+        RADIANT_COUPLING * max(mrt_f - air_f, 0.0),
+        standards.NWS_FULL_SUN_ADJUSTMENT_MAX_F,
+    )
+    return hi_f + adjustment
 
 
 def thermal_stress_score(exposure_f: float) -> float:
@@ -288,6 +293,12 @@ def diurnal_air_temp_f(t_min_f: float, t_max_f: float, hour: float, peak_hour: f
 
 
 def hydration_ml_per_hour(exposure_f: float, profile_multiplier: float = 1.0) -> int:
-    """Rough fluid-replacement guidance surfaced on kiosks (OSHA-style, 240-1200 ml/h)."""
-    base = 240.0 + 12.0 * max(exposure_f - 90.0, 0.0)
-    return int(round(clamp(base * profile_multiplier, 240.0, 1200.0) / 10.0) * 10)
+    """Fluid replacement in mL/h -- NIOSH 2016-106 / OSHA, not an invented curve.
+
+    Delegates to :func:`standards.hydration_ml_per_hour`, which interpolates across NIOSH's
+    own stated interval (one cup every 20 min rising to every 15 min) and hard-caps at
+    NIOSH's 1.5 L/h hyponatraemia limit. The exposure index is passed rather than the shade
+    heat index because a walker in full sun is in the corrected environment the guidance
+    describes.
+    """
+    return standards.hydration_ml_per_hour(exposure_f, profile_multiplier)

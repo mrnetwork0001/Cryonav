@@ -19,6 +19,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+import standards
 import thermal
 from agents import CryonavOrchestrator, EXTREME_AIR_TEMP_F
 from fortyguard_service import (
@@ -289,6 +290,14 @@ def meta() -> Dict[str, Any]:
             "comfort_baseline_f": thermal.COMFORT_BASELINE_F,
             "survival_limit_f": thermal.SURVIVAL_LIMIT_F,
             "extreme_air_temp_f": EXTREME_AIR_TEMP_F,
+        },
+        # Provenance for every safety threshold, so a reader can check the numbers against
+        # the published source rather than taking the app's word for them.
+        "citations": standards.CITATIONS,
+        "niosh_wbgt_limit_f": {
+            "acclimatised": round(standards.niosh_wbgt_limit_f(acclimatised=True), 1),
+            "unacclimatised": round(standards.niosh_wbgt_limit_f(acclimatised=False), 1),
+            "metabolic_watts": standards.METABOLIC_WATTS_WALKING,
         },
     }
 
