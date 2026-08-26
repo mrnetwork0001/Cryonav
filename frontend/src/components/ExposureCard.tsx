@@ -44,6 +44,17 @@ export default function ExposureCard({
   const b = nav.routes.cool.metrics;
   const safety = nav.safety;
 
+  // On some corridors the direct route ALREADY IS the coolest path the network offers, and
+  // the solver returns the same geometry twice. That is a real and honest answer - but
+  // rendering it as two identical rows and a column of "−0.0" reads as a broken product
+  // rather than as a finding, which is exactly how it looked on the default corridor. Say it.
+  const identical =
+    nav.routes.standard.geometry.length === nav.routes.cool.geometry.length &&
+    nav.routes.standard.geometry.every(
+      (pt, i) =>
+        pt[0] === nav.routes.cool.geometry[i][0] && pt[1] === nav.routes.cool.geometry[i][1],
+    );
+
   return (
     <section className="glass rounded-2xl p-4">
       <SectionTitle>Thermal safety & exposure</SectionTitle>
@@ -76,6 +87,15 @@ export default function ExposureCard({
         />
       </div>
 
+      {identical && (
+        <p className="mt-4 rounded-lg border border-slate-700/50 bg-slate-900/40 px-3 py-2 text-[11px] leading-relaxed text-slate-400">
+          On this corridor the direct route <span className="text-slate-200">is</span> the coolest
+          path available - every alternative the network offers costs more heat than it saves, so
+          the agents returned it unchanged. Try another corridor, or enable the cooling-station
+          reroute to trade a short detour for a broken exposure leg.
+        </p>
+      )}
+
       {/* A vs B comparison */}
       <div className="mt-4 space-y-2">
         <RouteRow
@@ -90,7 +110,7 @@ export default function ExposureCard({
         />
         <RouteRow
           accent="#22d3ee"
-          title="Path B · Cryonav Cool Route"
+          title={identical ? "Path B · Cool Route (same as direct)" : "Path B · Cryonav Cool Route"}
           km={b.distance_km}
           min={b.duration_min}
           exposure={b.mean_exposure_index_f}

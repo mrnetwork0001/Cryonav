@@ -428,6 +428,24 @@
       ],
       "presets": [
         {
+          "id": "phx-ballpark",
+          "label": "Civic Space Park \u2192 Chase Field",
+          "origin": {
+            "name": "Civic Space Park",
+            "coords": [
+              33.452,
+              -112.0745
+            ]
+          },
+          "destination": {
+            "name": "Chase Field Gate A",
+            "coords": [
+              33.4452,
+              -112.0669
+            ]
+          }
+        },
+        {
           "id": "phx-delivery-run",
           "label": "Capitol Mall \u2192 Roosevelt Row depot",
           "origin": {
@@ -460,24 +478,6 @@
             "coords": [
               33.4638,
               -112.0729
-            ]
-          }
-        },
-        {
-          "id": "phx-ballpark",
-          "label": "Civic Space Park \u2192 Chase Field",
-          "origin": {
-            "name": "Civic Space Park",
-            "coords": [
-              33.452,
-              -112.0745
-            ]
-          },
-          "destination": {
-            "name": "Chase Field Gate A",
-            "coords": [
-              33.4452,
-              -112.0669
             ]
           }
         }
@@ -867,6 +867,24 @@
       ],
       "presets": [
         {
+          "id": "dxb-canal-walk",
+          "label": "Safa Park \u2192 Burj Park",
+          "origin": {
+            "name": "Safa Park North Gate",
+            "coords": [
+              25.1872,
+              55.2492
+            ]
+          },
+          "destination": {
+            "name": "Burj Park Promenade",
+            "coords": [
+              25.195,
+              55.2742
+            ]
+          }
+        },
+        {
           "id": "dxb-metro-to-mall",
           "label": "Financial Centre Metro \u2192 Dubai Mall",
           "origin": {
@@ -899,24 +917,6 @@
             "coords": [
               25.1892,
               55.2672
-            ]
-          }
-        },
-        {
-          "id": "dxb-canal-walk",
-          "label": "Safa Park \u2192 Burj Park",
-          "origin": {
-            "name": "Safa Park North Gate",
-            "coords": [
-              25.1872,
-              55.2492
-            ]
-          },
-          "destination": {
-            "name": "Burj Park Promenade",
-            "coords": [
-              25.195,
-              55.2742
             ]
           }
         }
@@ -1286,6 +1286,24 @@
       ],
       "presets": [
         {
+          "id": "auh-hosn-walk",
+          "label": "Qasr Al Hosn \u2192 Abu Dhabi Mall",
+          "origin": {
+            "name": "Qasr Al Hosn Plaza",
+            "coords": [
+              24.4816,
+              54.3543
+            ]
+          },
+          "destination": {
+            "name": "Abu Dhabi Mall",
+            "coords": [
+              24.4958,
+              54.3798
+            ]
+          }
+        },
+        {
           "id": "auh-corniche-to-wtc",
           "label": "Corniche \u2192 WTC Mall",
           "origin": {
@@ -1318,24 +1336,6 @@
             "coords": [
               24.4948,
               54.3742
-            ]
-          }
-        },
-        {
-          "id": "auh-hosn-walk",
-          "label": "Qasr Al Hosn \u2192 Abu Dhabi Mall",
-          "origin": {
-            "name": "Qasr Al Hosn Plaza",
-            "coords": [
-              24.4816,
-              54.3543
-            ]
-          },
-          "destination": {
-            "name": "Abu Dhabi Mall",
-            "coords": [
-              24.4958,
-              54.3798
             ]
           }
         }
