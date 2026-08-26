@@ -70,6 +70,17 @@ if [ -e "$AVAIL" ]; then
   ok "existing cryonav vhost backed up to $BACKUP"
 fi
 
+# A certificate that already exists means this host is ALREADY serving HTTPS, and stage 1 is
+# an HTTP-only vhost. Running it anyway takes a working https://cryonav.xyz down to plain
+# HTTP for the length of stage 2 - and if stage 2 then fails for any reason, that downgrade
+# is where the site STAYS, because the rollback trap disarms itself once stage 1 applies.
+# Re-publishing a site must never route through a worse state than the one it started in.
+SKIP_STAGE1=0
+if [ -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
+  SKIP_STAGE1=1
+  ok "certificate already present - going straight to the HTTPS vhost, no HTTP window"
+fi
+
 # Roll back to exactly the configuration that was working when we started.
 rollback() {
   warn "rolling back - your other sites must not be affected by a Cryonav failure"
@@ -112,14 +123,23 @@ apply() {
 }
 
 # Any unexpected failure BEFORE stage 1 is applied must leave the host exactly as found.
-# After stage 1 applies, the configuration is valid and serving, so a later failure (a
-# certificate that could not be issued, say) should LEAVE it up rather than tear it down --
-# HTTP is a working state, and removing it would be the more disruptive choice.
+#
+# After stage 1 applies, whether to keep it depends on what the host had to begin with. For a
+# FIRST publish, HTTP is a working state and better than nothing, so a later failure leaves it
+# up. For a RE-publish of a site that was already on HTTPS, leaving stage 1 in place is a
+# downgrade that outlives the script - so that case restores the backup instead. This used to
+# make no distinction and always kept HTTP.
 STAGE1_OK=0
 cleanup() {
   rc=$?
-  if [ "$rc" -ne 0 ] && [ "$STAGE1_OK" = "0" ]; then
+  [ "$rc" -eq 0 ] && return 0
+  if [ "$STAGE1_OK" = "0" ]; then
     warn "failed before publishing completed"
+    rollback
+  elif [ "$SKIP_STAGE1" = "0" ] && [ "$HAD_VHOST" = "1" ] && [ -n "$BACKUP" ] \
+       && grep -q "listen 443" "$BACKUP" 2>/dev/null; then
+    warn "failed after the HTTP stage, on a host that was already serving HTTPS"
+    warn "restoring the previous vhost rather than leaving the site downgraded"
     rollback
   fi
 }
@@ -127,7 +147,11 @@ trap cleanup EXIT
 
 # ---------------------------------------------------------------------------------------
 # STAGE 1 - HTTP only. Serves the app and the ACME challenge; no certificate referenced.
+# Skipped entirely when a certificate already exists (see SKIP_STAGE1 above).
 # ---------------------------------------------------------------------------------------
+if [ "$SKIP_STAGE1" = "1" ]; then
+  say "Stage 1 skipped - the site is already on HTTPS and will not be downgraded"
+else
 say "Stage 1: publishing over HTTP so the ACME challenge can be answered"
 mkdir -p "$WEBROOT/.well-known/acme-challenge"
 chown -R www-data:www-data "$WEBROOT" 2>/dev/null || true
@@ -172,7 +196,9 @@ NGINX
 ln -sfn "$AVAIL" "$ENABLED"
 apply "stage 1 (HTTP)"
 STAGE1_OK=1
+fi
 
+if [ "$SKIP_STAGE1" = "0" ]; then
 echo "test-$(date +%s)" > "$WEBROOT/.well-known/acme-challenge/cryonav-selftest"
 if curl -fsS --max-time 10 "http://${DOMAIN}/.well-known/acme-challenge/cryonav-selftest" >/dev/null 2>&1; then
   ok "ACME challenge path is reachable from the public internet"
@@ -183,6 +209,7 @@ else
   warn "re-run this script once http://${DOMAIN}/ loads."
 fi
 rm -f "$WEBROOT/.well-known/acme-challenge/cryonav-selftest"
+fi
 
 # ---------------------------------------------------------------------------------------
 # STAGE 2 - certificate, then HTTPS.
@@ -267,6 +294,18 @@ $(printf "$LISTEN_443")
     # /docs is now the SPA documentation site and must fall through to index.html.
     # Swagger and the schema live under /api/, which the block above already proxies.
     location = /openapi.json { return 301 /api/openapi.json; }
+
+    # Compression. Ubuntu's nginx.conf already sets `gzip on`, but nginx's default
+    # gzip_types is text/html ALONE - so the JavaScript bundle, by far the largest asset, went
+    # out uncompressed: 443 KB on the wire where gzip makes it 134 KB. Declared inside this
+    # server block so it applies to Cryonav only and changes nothing for the other vhosts on
+    # this host.
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_min_length 1024;
+    gzip_types application/javascript text/javascript application/json text/css
+               image/svg+xml application/manifest+json;
 
     location /assets/ {
         expires 1y;

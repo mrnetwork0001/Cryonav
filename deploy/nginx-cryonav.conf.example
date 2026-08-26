@@ -82,6 +82,15 @@ server {
     location = /openapi.json { return 301 /api/openapi.json; }
 
     # Hashed asset filenames are content-addressed, so they can be cached hard.
+    # nginx's default gzip_types is text/html alone, so the JS bundle ships uncompressed
+    # without this - 443 KB on the wire against 134 KB gzipped. Scoped to this server block.
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_min_length 1024;
+    gzip_types application/javascript text/javascript application/json text/css
+               image/svg+xml application/manifest+json;
+
     location /assets/ {
         expires 1y;
         add_header Cache-Control "public, immutable";

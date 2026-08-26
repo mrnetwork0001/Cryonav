@@ -7,11 +7,11 @@
 	handle /api/* {
 		reverse_proxy 127.0.0.1:8008
 	}
-	handle /docs* {
-		reverse_proxy 127.0.0.1:8008
-	}
+	# /docs is the product manual, served by the SPA - it is NOT Swagger any more. The API
+	# reference moved under /api/docs, which the /api* handler above already covers. Proxying
+	# /docs* here would shadow a real page with a 404 from the backend.
 	handle /openapi.json {
-		reverse_proxy 127.0.0.1:8008
+		redir /api/openapi.json permanent
 	}
 
 	# Frontend: static build with SPA fallback so /app deep-links resolve
