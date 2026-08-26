@@ -13,6 +13,20 @@
 
 It answers a question no navigation app asks: *not how far, but how hot.*
 
+**Live at [cryonav.xyz](https://cryonav.xyz)** - deployed on a shared VPS behind nginx with
+Let's Encrypt TLS, co-existing with unrelated production services.
+
+| | |
+|---|---|
+| Dashboard | [cryonav.xyz/app](https://cryonav.xyz/app) |
+| Documentation | [cryonav.xyz/docs](https://cryonav.xyz/docs) |
+| API reference | [cryonav.xyz/api/docs](https://cryonav.xyz/api/docs) |
+| Health & provenance | [`/api/v1/health`](https://cryonav.xyz/api/v1/health) · [`/api/v1/meta`](https://cryonav.xyz/api/v1/meta) · [`/api/v1/facts`](https://cryonav.xyz/api/v1/facts) |
+
+`/api/v1/facts` is worth a look: every figure this README and the site quote about Cryonav
+itself is computed there at request time rather than written down, because the written-down
+versions kept going stale.
+
 ---
 
 ## The problem
@@ -48,7 +62,7 @@ Given an origin, a destination and a user profile, Cryonav returns **two routes*
 - **Path A - Standard Direct Route.** Minimises distance. Exactly what a conventional navigator returns, computed the same way, so the comparison is honest rather than a strawman.
 - **Path B - Cryonav Cool Route.** Minimises *thermal dose* - minutes in the sun weighted by how punishing that sun is - subject to a per-profile detour budget.
 
-Measured across all nine demo corridors × three profiles (36 combinations, 15:00 local,
+Measured across all twelve demo corridors x three profiles (36 combinations, 15:00 local,
 **2026-08-24 calibration** - these shift with each day's live data):
 
 | Metric | Range across demo corridors |
@@ -64,6 +78,23 @@ Measured across all nine demo corridors × three profiles (36 combinations, 15:0
 > **On the numbers.** The brief's headline claim is a 35–50 % exposure reduction. Cryonav does not reach it on its headline metrics, and does not round up to it: on mean thermal load the defensible reduction is **up to ~7 °F**; on heat-strain dose, **up to ~27 %** (2026-08-24 calibration). (These are measured against *live* FortyGuard ambient data, which is flatter through the afternoon than the earlier synthetic curve - so the honest numbers came down when real data arrived.)
 >
 > Several zeroes in those ranges are deliberate. When no admissible route beats the direct path on both detour budget and dose, Cryonav returns the direct path and reports zero saving rather than manufacturing a detour. And in Gulf-city afternoons *every* cell on the tile is already in the extreme band, so the band-time metric there is meaningless and can even read negative - a cooler route that takes longer spends more total minutes in a band that covers the whole city. The win in those cities shows up as thermal load and dose instead, which is why the dashboard leads with those.
+
+### Coverage
+
+Four cities, each a tile roughly 5 km on a side. Every layer below is fetched, not authored;
+`scripts/` onboards a fifth in one pass.
+
+| Tile | Green polygons | Heat-retaining polygons | Cooling shelters | FortyGuard raster |
+|---|---|---|---|---|
+| **Phoenix**, USA | 99 | 620 | 27 | yes, 2,407 tiles |
+| **Dubai**, UAE | 115 | 129 | 52 | no US coverage |
+| **Abu Dhabi**, UAE | 146 | 723 | 163 | no US coverage |
+| **San Jose**, USA | 87 | 464 | 57 | yes, 1,920 tiles |
+
+Totals: **65,893 routable OpenStreetMap nodes**, 299 shelters,
+4,327 observed raster cells. Every data source is global except FortyGuard's
+`/v1/heatmap` raster, which is US-only - so the Gulf tiles run the same physics over a modelled
+spatial air field and are labelled as such wherever they appear.
 
 ---
 
