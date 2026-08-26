@@ -409,7 +409,7 @@ export const DOCS: Section[] = [
     "blocks": [
       {
         "kind": "p",
-        "text": "The whole citation layer lives in one file, /Users/mrnetwork/Cryonav/backend/standards.py. Its own header is blunt about the history: Cryonav previously invented its risk bands, exposure ceilings and hydration formula, and an authenticity audit flagged them as \"model choices, not cited medical guidance\". The module replaced them with published values. It also records, for each constant, which quantity the standard is defined on - heat index, WBGT, or air temperature - because applying a WBGT limit to a heat-index number is a category error, and preventing that is the reason the module exists."
+        "text": "The whole citation layer lives in one file, backend/standards.py. Its own header is blunt about the history: Cryonav previously invented its risk bands, exposure ceilings and hydration formula, and an authenticity audit flagged them as \"model choices, not cited medical guidance\". The module replaced them with published values. It also records, for each constant, which quantity the standard is defined on - heat index, WBGT, or air temperature - because applying a WBGT limit to a heat-index number is a category error, and preventing that is the reason the module exists."
       },
       {
         "kind": "h2",
@@ -590,7 +590,7 @@ export const DOCS: Section[] = [
       },
       {
         "kind": "p",
-        "text": "scripts/fetch_canopy.py replaces it by counting pixels. 38 of Phoenix's 39 park polygons now measure a mean canopy fraction of 15.6%, against the 60% the table asserted; the 39th falls outside the measured window, keeps the table's 0.60 and is flagged canopy_measured=false so it cannot be mistaken for a measurement. Harmon Park, 46,376 m2, measures 4.2% canopy with a mean vegetation height of 0.36 m. The highest measured park in the tile reaches 57.4%; the lowest is 0.0%. The whole 25,210,405-pixel city window measures 5.25% canopy."
+        "text": "scripts/fetch_canopy.py replaces it by counting pixels. All 39 of Phoenix's park polygons now measure a mean canopy fraction of 15.6%, against the 60% the table asserted. One of them used to fall outside the window and keep the 0.60 default; the window is now padded 250 m beyond the city bbox precisely so that an edge-straddling polygon is still measured, and across all four cities no green polygon carries a class default. Anything that cannot be measured is flagged canopy_measured=false, and the router refuses to count it as shade rather than falling back to the table. Harmon Park, 46,376 m2, measures 4.2% canopy with a mean vegetation height of 0.36 m. The highest measured park in the tile reaches 57.4%; the lowest is 0.0%. The whole 30,514,512-pixel city window measures 5.15% canopy."
       },
       {
         "kind": "p",
@@ -1102,7 +1102,7 @@ export const DOCS: Section[] = [
       },
       {
         "kind": "p",
-        "text": "There are The count shown on the site is computed by /api/v1/facts from the suite itself, so it cannot go stale. conftest.py builds the session fixture as FortyGuardService(api_key=\"\"), so the default run exercises the deterministic simulation path and touches no network. The guarantees below are assertions, not descriptions."
+        "text": "The count shown on the site is computed by /api/v1/facts from the suite itself, so it cannot go stale. conftest.py builds the session fixture as FortyGuardService(api_key=\"\"), so the default run exercises the deterministic simulation path and touches no network. The guarantees below are assertions, not descriptions."
       },
       {
         "kind": "table",

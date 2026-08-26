@@ -352,7 +352,11 @@ def process(city_id: str) -> None:
         "source": "meta_wri_canopy_height_v6",
         "product": "alsgedi_global_v6_float/chm",
         "tile_quadkey": tiles_for_bbox(data["bbox"])[0],
-        "window": "widened to the extent of the fetched features, not the city bbox",
+        "window": "city bbox padded 250 m, so a polygon straddling the boundary is still measured",
+        # Named precisely because the wrong answer was shipped once. Widening to the
+        # extent of the FETCHED FEATURES ballooned Phoenix to 43146 x 21884 px - Overpass
+        # returns whole road ways running far outside the tile - and measured nothing. A
+        # fixed pad on the bbox is what an edge-straddling polygon actually needs.
         "resolution_m": round(win.px_m, 3),
         "canopy_height_threshold_m": CANOPY_HEIGHT_M,
         "tree_sample_radius_m": TREE_RADIUS_M,

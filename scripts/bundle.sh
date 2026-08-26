@@ -46,10 +46,17 @@ for _flag in --no-mac-metadata --no-xattrs; do
 done
 rm -rf "$_probe"
 
+# demo/ is developer tooling: Playwright plus its browser-side bundles, and the screen
+# recordings it produces. The repo's own .gitignore already declares both are not source, and
+# nothing under backend/, deploy/ or scripts/ references demo/ at runtime. They were 228 of
+# the bundle's 362 entries and 72% of its size - 21 MB shipped where 5.8 MB was needed, then
+# unpacked onto a production host and chowned recursively.
 COPYFILE_DISABLE=1 tar \
   --exclude='.git' \
   --exclude='backend/.venv' \
   --exclude='frontend/node_modules' \
+  --exclude='demo/node_modules' \
+  --exclude='demo/footage' \
   --exclude='.env' \
   --exclude='__pycache__' \
   --exclude='.pytest_cache' \
