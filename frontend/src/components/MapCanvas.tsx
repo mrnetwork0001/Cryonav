@@ -66,23 +66,34 @@ export default function MapCanvas(props: Props) {
     // measured the canopy on each street from the Meta/WRI raster; on imagery a viewer can
     // SEE whether the trees the router routed toward are actually there. A dark cartographic
     // basemap renders every street identically and cannot corroborate anything.
-    const bases: Record<string, L.TileLayer> = {
-      Dark: L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-        attribution: "&copy; OpenStreetMap &copy; CARTO &middot; FortyGuard Temperature API",
-        subdomains: "abcd",
+    // NOT CARTO. Their basemap CDN still answers keyless requests with HTTP 200, but the tile
+    // it returns is stamped "API KEY REQUIRED / carto.com/basemaps/apikey" across the middle -
+    // so nothing errors, no request fails, and the map just quietly fills with watermarks.
+    // Verified against the live tile for Phoenix z14/3091/6574 before switching.
+    //
+    // Esri's ArcGIS Online basemaps are served without a key. Dark Gray Canvas is split into a
+    // base and a reference layer - geometry and labels - so the dark basemap is a group of the
+    // two rather than a single tile layer.
+    const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services";
+    const esriAttr = "Tiles &copy; Esri &middot; FortyGuard Temperature API";
+
+    const bases: Record<string, L.Layer> = {
+      Dark: L.layerGroup([
+        L.tileLayer(`${ESRI}/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}`, {
+          attribution: `${esriAttr} &middot; &copy; OpenStreetMap contributors`,
+          maxZoom: 19,
+        }),
+        L.tileLayer(`${ESRI}/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}`, {
+          maxZoom: 19,
+        }),
+      ]),
+      Satellite: L.tileLayer(`${ESRI}/World_Imagery/MapServer/tile/{z}/{y}/{x}`, {
+        attribution:
+          "Imagery &copy; Esri, Maxar, Earthstar Geographics &middot; FortyGuard Temperature API",
         maxZoom: 19,
       }),
-      Satellite: L.tileLayer(
-        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-        {
-          attribution:
-            "Imagery &copy; Esri, Maxar, Earthstar Geographics &middot; FortyGuard Temperature API",
-          maxZoom: 19,
-        },
-      ),
-      Streets: L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-        attribution: "&copy; OpenStreetMap &copy; CARTO &middot; FortyGuard Temperature API",
-        subdomains: "abcd",
+      Streets: L.tileLayer(`${ESRI}/World_Street_Map/MapServer/tile/{z}/{y}/{x}`, {
+        attribution: `${esriAttr} &middot; &copy; OpenStreetMap contributors`,
         maxZoom: 19,
       }),
     };
