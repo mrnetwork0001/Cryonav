@@ -67,13 +67,28 @@ class TestDeterminism:
 
 
 class TestPhysicalPlausibility:
+    @staticmethod
+    def _uncalibrated(service):
+        """A service with no live calibration, so the reading is the model's alone.
+
+        Tests that assert absolute degrees must not run on the calibrated field: it is
+        refreshed daily from observed weather, so the same assertion passes on one day and
+        fails on the next. Phoenix's 15:00 grid contrast measured 9.5 F one day and 6.1 F the
+        next, purely because the observed peak moved from 15:00 to 16:00. That is real weather,
+        not a regression, and a suite that fails on it is testing the sky.
+        """
+        svc = type(service)(api_key="")
+        svc._calibration = {}
+        return svc
+
     def test_asphalt_is_hotter_than_canopy_at_solar_peak(self, service):
         # The shaded reference is Virginia G. Piper Plaza, the highest MEASURED canopy in the
         # Phoenix file (57% from the Meta/WRI canopy raster). It replaces a point on Central
         # Ave that this test used while canopy was assumed per-class: measurement put Central
         # Ave at 21%, so it was never the shaded control the test believed it was.
-        asphalt = service.sample("phoenix", 33.4520, -112.0825, 15.0)  # Van Buren x 7th Ave
-        canopy = service.sample("phoenix", 33.4508, -112.0691, 15.0)  # Piper Plaza
+        svc = self._uncalibrated(service)
+        asphalt = svc.sample("phoenix", 33.4520, -112.0825, 15.0)  # Van Buren x 7th Ave
+        canopy = svc.sample("phoenix", 33.4508, -112.0691, 15.0)  # Piper Plaza
         assert asphalt.surface_temp_f > canopy.surface_temp_f + 30
         # 8 F, not 10, and the ceiling is why. exposure_index_f caps its radiant term at the
         # NWS full-sun envelope of 15 F, so shade alone can never move the index further than
@@ -150,8 +165,10 @@ class TestGrid:
         below that measurement rather than above it, because the test exists to catch a grid
         that has gone flat, not to assert that every city has shade to offer.
         """
-        for city_id in service.city_ids():
-            s = service.thermal_grid(city_id, 15.0, 24)["stats"]
+        svc = type(service)(api_key="")
+        svc._calibration = {}
+        for city_id in svc.city_ids():
+            s = svc.thermal_grid(city_id, 15.0, 24)["stats"]
             assert s["max_exposure_f"] - s["min_exposure_f"] > 8.0, city_id
 
     def test_resolution_is_clamped(self, service):
@@ -538,3 +555,69 @@ class TestHeatmapRaster:
     def test_raster_grid_absent_raises(self, service):
         with pytest.raises(KeyError):
             service.raster_grid("dubai")
+
+
+class TestNoFixtureLeakage:
+    """Hand-authored fixtures must never be reported as measurement.
+
+    cities.json still carries the canopy_zones / heat_islands arrays from before real OSM
+    geometry was fetched. They remain as a fallback for a city with no urban file, but every
+    city now has one, so nothing should ever surface their length. It did: /api/v1/cities
+    reported 7 canopy zones for Phoenix where 99 green polygons had been measured, and 0 for
+    San Jose, which was onboarded with the arrays left empty.
+    """
+
+    def test_reported_counts_come_from_measured_geometry(self, service):
+        import json
+        import pathlib
+
+        root = pathlib.Path(__file__).resolve().parents[2]
+        for c in service.cities():
+            urban = root / "data" / "urban" / f"{c['id']}.json"
+            if not urban.exists():
+                continue
+            data = json.loads(urban.read_text())
+            assert c["canopy_zone_count"] == len(data["green"]), c["id"]
+            assert c["heat_island_count"] == len(data["hot"]), c["id"]
+            assert c["feature_source"] == "openstreetmap", c["id"]
+
+    def test_counts_exceed_what_any_fixture_could_hold(self, service):
+        """A blunt guard: the fixtures never held more than a handful per city."""
+        for c in service.cities():
+            assert c["canopy_zone_count"] > 20, c["id"]
+            assert c["heat_island_count"] > 20, c["id"]
+
+    def test_a_city_without_an_urban_file_says_so(self, service):
+        """The fallback must still work, and must label itself."""
+        svc = type(service)(api_key="")
+        svc._urban = dict(svc._urban)
+        svc._urban["phoenix"] = None
+        entry = next(c for c in svc.cities() if c["id"] == "phoenix")
+        assert entry["feature_source"] == "fixture"
+
+
+class TestSuiteIsNotWeatherDependent:
+    """A test that reads the live calibration is testing the sky, not the code.
+
+    Two tests asserted absolute degrees against the calibrated field and passed for weeks,
+    then failed when Phoenix's observed peak moved from 15:00 to 16:00 and its 15:00 grid
+    contrast fell from 9.5 F to 6.1 F. Nothing had regressed. This guards the pattern.
+    """
+
+    def test_the_modelled_field_is_stable_across_calls(self, service):
+        svc = type(service)(api_key="")
+        svc._calibration = {}
+        a = svc.thermal_grid("phoenix", 15.0, 16)["stats"]
+        b = svc.thermal_grid("phoenix", 15.0, 16)["stats"]
+        assert a == b
+
+    def test_calibration_genuinely_changes_the_reading(self, service):
+        """The converse: if calibration made no difference, it would not be worth fetching."""
+        modelled = type(service)(api_key="")
+        modelled._calibration = {}
+        bare = modelled.sample("phoenix", 33.4520, -112.0825, 15.0)
+        live = service.sample("phoenix", 33.4520, -112.0825, 15.0)
+        if service._calibration.get("phoenix"):
+            assert bare.air_temp_2m_f != live.air_temp_2m_f, (
+                "the calibrated and modelled fields are identical, so calibration is inert"
+            )

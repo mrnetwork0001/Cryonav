@@ -270,3 +270,49 @@ class TestNoRegressions:
             for c, _pid, o, d, p in all_presets
         )
         assert best >= 2.0, f"best thermal-load saving was only {best} F"
+
+
+class TestNegativeSavingsOnlyFromTheSentinel:
+    """The "zero negative savings" claim is true only when the Sentinel stays out of it.
+
+    A live Dubai route returns thermal_load_reduction_f of -0.2 with the Sentinel engaged: a
+    mandated cooling stop raised mean exposure slightly while cutting the longest UNBROKEN
+    high-risk leg from 49.1 to 33.3 minutes. That is the correct trade - continuous exposure
+    is what causes heat illness, not average exposure - but the landing page stated the
+    guarantee without the exception, so the page contradicted the running system.
+
+    The reroute is an ORCHESTRATOR decision, not a routing-engine one, so these go through
+    navigate() rather than solve().
+    """
+
+    def test_without_the_sentinel_savings_are_never_negative(self, orchestrator, all_presets):
+        bad = []
+        for city_id, pid, origin, dest, profile in all_presets:
+            r = orchestrator.navigate(
+                city_id=city_id, origin=origin, destination=dest,
+                hour=15.0, profile_id=profile, allow_shelter_reroute=False,
+            )
+            c = r["comparison"]
+            if c["thermal_load_reduction_f"] < 0 or c["thermal_dose_reduction_pct"] < 0:
+                bad.append(f"{city_id}/{pid}/{profile}: {c['thermal_load_reduction_f']} F")
+        assert not bad, "negative saving with no Sentinel involvement:\n" + "\n".join(bad)
+
+    def test_when_the_sentinel_intervenes_it_shortens_the_unbroken_leg(self, orchestrator, all_presets):
+        """A shelter stop is only justified if it buys what it claims to buy.
+
+        Without this, "the Sentinel may raise mean exposure" would excuse any regression.
+        """
+        checked = 0
+        for city_id, _pid, origin, dest, profile in all_presets:
+            r = orchestrator.navigate(
+                city_id=city_id, origin=origin, destination=dest,
+                hour=15.0, profile_id=profile, allow_shelter_reroute=True,
+            )
+            sr = r.get("shelter_reroute") or {}
+            if not sr.get("applied"):
+                continue
+            checked += 1
+            assert sr["longest_leg_min_after"] < sr["longest_leg_min_before"], (
+                f"{city_id}/{profile}: shelter stop did not shorten the unbroken leg"
+            )
+        assert checked > 0, "no preset exercised the Sentinel; this guard proved nothing"

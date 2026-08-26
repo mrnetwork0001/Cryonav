@@ -655,10 +655,14 @@ export default function Landing() {
               label="tests"
               desc="Physics, routing, agents, API surface, upstream failure modes - including a no-regression sweep across every corridor and profile combination."
             />
+            {/* The qualifier is not padding. A live Dubai route returns -0.2 F when the
+                Sentinel engages, because a mandated shelter stop trades a slightly higher
+                mean for a much shorter UNBROKEN high-risk leg - 49.1 min down to 33.3. That
+                is the correct safety trade, and the unqualified claim contradicted it. */}
             <ProofCell
               stat="0"
-              label="negative savings"
-              desc="If no admissible route beats the direct path on both dose and peak exposure, Cryonav returns the direct path and reports zero - it never manufactures a detour."
+              label="negative savings, unless the Sentinel intervenes"
+              desc="If no admissible route beats the direct path on both dose and peak exposure, Cryonav returns the direct path and reports zero - it never manufactures a detour. The exception is a mandated cooling stop, which can raise mean exposure to cut the longest unbroken high-risk leg, because continuous exposure is what causes heat illness."
             />
             <ProofCell
               stat="401 / 200"

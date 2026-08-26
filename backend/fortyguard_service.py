@@ -290,11 +290,39 @@ class FortyGuardService:
                         if city["id"] in self._real_shelters
                         else len(city["shelters"])
                     ),
-                    "canopy_zone_count": len(city["canopy_zones"]),
-                    "heat_island_count": len(city["heat_islands"]),
+                    # Counted from the MEASURED OSM geometry, not from the hand-authored
+                    # canopy_zones / heat_islands fixtures that used to back them. Those
+                    # fixtures are only a fallback for a city with no urban file, and every
+                    # city now has one - so reporting their length was reporting the size of
+                    # a lookup table as though it were a survey. Phoenix returned 7 canopy
+                    # zones where 99 green polygons had actually been measured, and San Jose
+                    # returned 0 of each because it was onboarded with the arrays left empty.
+                    **self._measured_feature_counts(city["id"]),
                 }
             )
         return out
+
+    def _measured_feature_counts(self, city_id: str) -> Dict[str, int]:
+        """Green and heat-retaining polygon counts from the fetched OSM geometry.
+
+        Falls back to the hand-authored fixtures only when a city has no urban file, which is
+        the same condition under which terrain() falls back to them - so the reported count
+        always describes whatever the model is actually using.
+        """
+        idx = self._urban.get(city_id)
+        data = getattr(idx, "data", None) if idx is not None else None
+        if data:
+            return {
+                "canopy_zone_count": len(data.get("green") or []),
+                "heat_island_count": len(data.get("hot") or []),
+                "feature_source": "openstreetmap",
+            }
+        city = self._cities.get(city_id, {})
+        return {
+            "canopy_zone_count": len(city.get("canopy_zones") or []),
+            "heat_island_count": len(city.get("heat_islands") or []),
+            "feature_source": "fixture",
+        }
 
     def city(self, city_id: str) -> Dict[str, Any]:
         if city_id not in self._cities:
