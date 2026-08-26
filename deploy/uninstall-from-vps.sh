@@ -34,7 +34,13 @@ for unit in cryonav-api.service cryonav-calibrate.timer cryonav-calibrate.servic
   fi
 done
 sudo systemctl daemon-reload
-sudo systemctl reset-failed 2>/dev/null || true
+# Named units only. A bare `systemctl reset-failed` clears the failed state of EVERY unit on
+# the host - including the operator's other services, whose failures are then invisible to
+# `systemctl --failed` and to anything watching it. An uninstaller must not tidy up after
+# software it did not install.
+for _u in cryonav-api.service cryonav-calibrate.service cryonav-calibrate.timer; do
+  sudo systemctl reset-failed "$_u" 2>/dev/null || true
+done
 
 say "Removing the nginx vhost (only if it is ours)"
 removed_vhost=0
