@@ -693,3 +693,41 @@ class TestNoUnmeasuredCanopyReachesRouting:
             "flagging the polygon unmeasured did not reduce the canopy it contributes, "
             "so the gate in urban.py is inert"
         )
+
+
+class TestAtomicCalibrationWrites:
+    """Calibration files have more than one writer, and they are separate processes.
+
+    The API's startup refresh and the cryonav-calibrate timer both persist here with no lock
+    between them. A plain ``open(path, "w")`` truncates first, so a reader arriving mid-dump
+    gets a short file - and the loaders catch OSError/ValueError and fall back to the
+    synthetic model, which means a torn write shows up as a city QUIETLY losing its real
+    observations rather than as a failure.
+    """
+
+    def test_replaces_atomically_and_leaves_no_temp_file(self, tmp_path):
+        from fortyguard_service import _write_json_atomic
+
+        target = tmp_path / "phoenix.json"
+        _write_json_atomic(target, {"city_id": "phoenix", "air_temp_f": [101.2, 98.85]}, indent=2)
+        assert json.loads(target.read_text())["city_id"] == "phoenix"
+        assert list(tmp_path.iterdir()) == [target], "a .tmp file was left behind"
+
+    def test_a_failed_write_leaves_the_previous_file_intact(self, tmp_path):
+        """The point of the temp-then-rename: a reader sees the old file or the new one.
+
+        Never a truncated one - which is exactly what the plain truncating write produced.
+        """
+        from fortyguard_service import _write_json_atomic
+
+        target = tmp_path / "phoenix.json"
+        _write_json_atomic(target, {"generation": 1})
+
+        class Unserialisable:
+            pass
+
+        with pytest.raises(TypeError):
+            _write_json_atomic(target, {"generation": 2, "bad": Unserialisable()})
+
+        assert json.loads(target.read_text()) == {"generation": 1}
+        assert list(tmp_path.iterdir()) == [target], "a partial .tmp survived the failure"

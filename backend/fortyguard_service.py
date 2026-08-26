@@ -202,6 +202,35 @@ class FeedStatus:
 
 # --------------------------------------------------------------------------------------
 # Service
+def _write_json_atomic(path: Path, payload: Any, *, indent: Optional[int] = None) -> None:
+    """Write JSON so a reader can never observe a half-written file.
+
+    Calibration files have more than one writer: the API's startup refresh and the
+    cryonav-calibrate timer both persist here, and they are separate processes with no lock
+    between them. A plain open(path, "w") truncates first, so a reader arriving mid-dump gets
+    a short file. The loaders catch OSError/ValueError and fall back to the synthetic model,
+    which means the visible symptom of a torn write is a city QUIETLY losing its real
+    observations - harder to notice than a crash would be.
+
+    os.replace is atomic within a filesystem, so a reader sees either the old file or the new
+    one. The temp file is created in the same directory to guarantee that.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+    try:
+        with open(tmp, "w", encoding="utf-8") as fh:
+            json.dump(payload, fh, indent=indent)
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
 # --------------------------------------------------------------------------------------
 
 
@@ -840,10 +869,7 @@ class FortyGuardService:
         }
 
         if persist:
-            CALIBRATION_DIR.mkdir(parents=True, exist_ok=True)
-            path = CALIBRATION_DIR / f"{city_id}.json"
-            with open(path, "w", encoding="utf-8") as fh:
-                json.dump(calibration, fh, indent=2)
+            _write_json_atomic(CALIBRATION_DIR / f"{city_id}.json", calibration, indent=2)
         self._calibration[city_id] = calibration
         return calibration
 
@@ -936,9 +962,7 @@ class FortyGuardService:
                 fc = ((data.get("result") or {}).get("map_data")) or {}
                 compact = self._compact_heatmap(city_id, fc, body["date_time"]["start_date"])
                 if persist:
-                    CALIBRATION_DIR.mkdir(parents=True, exist_ok=True)
-                    with open(CALIBRATION_DIR / f"{city_id}_heatmap.json", "w", encoding="utf-8") as fh:
-                        json.dump(compact, fh)
+                    _write_json_atomic(CALIBRATION_DIR / f"{city_id}_heatmap.json", compact)
                 self._install_heatmap(compact)
                 return compact
             if status.lower() not in ("processing", "pending", "queued", "running", ""):
