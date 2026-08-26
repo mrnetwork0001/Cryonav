@@ -189,7 +189,11 @@ export default function Landing() {
               </button>
               {menuOpen && (
                 <nav className="absolute right-0 top-11 z-50 w-52 rounded-lg border border-slate-700/60 bg-[#0a0e15]/95 p-1.5 text-[10px] font-medium tracking-[0.18em] text-slate-300 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.9)] backdrop-blur">
-                  {([...NAV_LINKS, ["/app", "DASHBOARD"], ["https://github.com/mrnetwork0001/Cryonav", "SOURCE"]] as [string, string][]).map(
+                  {/* Section links only. DASHBOARD and SOURCE were appended here and are
+                      removed: both already have full-width buttons in the hero, which on a
+                      phone is a shorter reach than opening a menu. Repeating them made the
+                      drawer a list of seven where five are the only ones it uniquely offers. */}
+                  {NAV_LINKS.map(
                     ([href, label]) => (
                       <a
                         key={label}
