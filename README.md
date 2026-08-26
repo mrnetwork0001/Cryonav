@@ -33,23 +33,25 @@ versions kept going stale.
 
 At 15:00 in downtown Phoenix in July, two walking routes between the same two points can differ by **20 °F of thermal load** - and every navigation app on the planet will hand you the hotter one, because they optimise metres and minutes.
 
-Here is what Cryonav measures on two Phoenix streets 500 m apart, at the same moment
-*(as of 2026-08-24, on that day's live FortyGuard calibration - rerun the command below for today's values)*:
+Here is what Cryonav measures at two Phoenix locations, at the same moment
+*(sampled live; `/api/v1/facts` returns today's values, and they move with each day's calibration)*:
 
-| | Van Buren St × 7th Ave | Central Ave canopy spine |
+| | Van Buren St x 7th Ave | Virginia G. Piper Plaza |
 |---|---|---|
-| Air temperature @ 2 m | 113.8 °F | 113.7 °F |
-| Asphalt surface temperature | **177.7 °F** | 127.7 °F |
-| Mean radiant temperature | **155.4 °F** | 117.9 °F |
-| **Exposure index (thermal load)** | **122.3 °F** | **110.3 °F** |
-| Risk band | 🔴 EXTREME | 🟠 HIGH |
+| Measured canopy | 0 % | **79 %** |
+| Air temperature @ 2 m | 115.9 °F | 116.1 °F |
+| Surface temperature | **147.9 °F** | 124.8 °F |
+| Mean radiant temperature | **136.7 °F** | 118.9 °F |
+| **Exposure index (thermal load)** | **116.2 °F** | **110.6 °F** |
+| Risk band | EXTREME | HIGH |
 
-Since integrating FortyGuard's observed air raster, the air temperatures are **0.1 °F apart** -
-which is the whole point. The observed 2 m air layer is well mixed and cannot tell these streets
-apart; the **37 °F mean-radiant difference** streaming off the asphalt can, and that is where
-heat illness actually comes from. A weather API sees two identical streets. A body doesn't.
+The air layer separates them by **0.2 °F** - which is the whole point. The
+observed 2 m air layer is well mixed and cannot tell these places apart; the
+**17.8 °F mean-radiant difference** streaming off the asphalt can, and
+that is where heat illness actually comes from. A weather API sees two identical spots. A body
+does not.
 
-*(Reproduce: `cd backend && .venv/bin/python -c "from fortyguard_service import FortyGuardService as F; print(F().sample('phoenix', 33.4520, -112.0825, 15.0))"` - values shift with the daily calibration.)*
+*(Reproduce: `curl -s https://cryonav.xyz/api/v1/facts | python3 -m json.tool`)*
 
 Cryonav fuses the **FortyGuard Temperature API®** (observed hourly series at 2 m above ground level) with measured urban canopy and surface temperature, and routes around it. The "10 mi²" figure this line used to quote was Cryonav's own invention: `/v1/env_params` is a point query with no resolution parameter at all.
 
@@ -130,6 +132,46 @@ Three agents cooperate over a shared blackboard. The third can **revise** the se
 **Why the feedback edge matters.** The Sentinel does not simply append the nearest shelter. It trials up to three candidates as mandatory waypoints, keeps the one that most shortens the **longest unbroken high-risk leg**, and if none improves it, says so and escalates instead of inventing a detour. A 40-minute walk broken by an air-conditioned lobby is materially safer than an unbroken 25-minute one - and only the unbroken leg is comparable to published exposure guidance.
 
 Every agent step is appended to a structured trace that the dashboard renders live, so the reasoning is shown rather than asserted.
+
+---
+
+## The six measured layers
+
+Nothing in the terrain model is inferred from an OpenStreetMap tag. Every layer is fetched by
+a script in `scripts/` and written into the committed city files, with its source, resolution,
+licence and measurement time recorded alongside the values and served at `/api/v1/meta`.
+
+| Layer | Source | Resolution | Licence |
+|---|---|---|---|
+| Ambient temperature | FortyGuard `/v1/env_params` | point query, 24 h hourly | commercial API |
+| Canopy | Meta / WRI Canopy Height Maps v6 | **1.194 m** | CC-BY-4.0 |
+| Surface temperature | USGS/NASA Landsat C2 L2 `ST_B10` | 30 m | public domain |
+| Peak-hour surface | NASA ECOSTRESS `ECO_L2T_LSTE` v003 | 70 m | NASA open data |
+| Street network, urban form, shelters | OpenStreetMap | vector | ODbL |
+| Safety thresholds | NIOSH 2016-106 / OSHA | published tables | public |
+
+**Why canopy had to be measured.** The router's entire claim is that it can find you shade, and
+that rested on a lookup table saying "park = 60% canopy" for every park on earth. Measurement
+puts the 39 Phoenix parks at a mean of **15.6%**. Coffelt-Lamoreaux Park is the
+cautionary one: it straddled the edge of the raster window, kept the 60% default, and so ranked
+as the second-shadiest polygon in the tile. Measured, it is **1.7%** - a
+bare lawn, and one the router would have offered as shade. The window is now padded past the
+city bbox, every polygon in every city is measured, and `urban.py` refuses to let an unmeasured
+canopy influence a route at all.
+
+**Why two surface-temperature sources.** Landsat crosses at about 10:00 local; Cryonav's design
+hour is 15:00. Asphalt and concrete have different thermal inertia, so the morning ranking of
+surfaces is not the afternoon ranking - only correlated with it. ECOSTRESS flies on the ISS,
+whose precessing orbit makes it the only thermal instrument sampling the same ground across the
+whole day, and it covers the 13:00-17:00 window Landsat structurally never sees. Measured
+against the road median, commercial and parking surfaces sit ~11 °F below roads at the Landsat
+overpass and only ~1.7 °F below by mid-afternoon. That lag is why the second source was worth
+the trouble.
+
+Anomalies are referenced to each city's **own road-network median** rather than to an absolute
+temperature, because the sampler's formula already describes a generic sunlit road; anything
+else would double-count. Negative anomalies are clamped away, since a road measuring cooler
+than the median is a shaded road, and sky-view-factor already applies that shade.
 
 ---
 
