@@ -8,13 +8,14 @@
  * ready to narrate over using demo/SCRIPT.md. Segments are recorded at 1920x1080@2x.
  */
 import { chromium } from "playwright";
-import { mkdirSync, renameSync, readdirSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 
 const BASE = process.env.CRYONAV_URL ?? "http://localhost:5180";
 const OUT = new URL("./footage/", import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
 
 const browser = await chromium.launch();
+const failed = [];
 
 async function segment(name, viewport, fn) {
   const ctx = await browser.newContext({
@@ -23,18 +24,34 @@ async function segment(name, viewport, fn) {
     recordVideo: { dir: OUT, size: viewport },
   });
   const page = await ctx.newPage();
+  // Take the video handle BEFORE the page closes. Playwright names the file with random hex,
+  // and this used to be resolved by listing the directory and taking the "newest" - sorted by
+  // FILENAME, not by time. Hex names beginning "00" or "01" sort below an already-renamed
+  // "01-landing.webm", so the recorder would rename a PREVIOUS segment's video onto the
+  // current one, destroying it, and then print a tick. saveAs() asks Playwright which file is
+  // actually this page's, so there is nothing left to guess.
+  const video = page.video();
+  let failure;
   try {
     await fn(page);
+  } catch (err) {
+    // Keep whatever was captured before the failure rather than losing the segment - but do
+    // not let the run claim success. A selector that has drifted must be loud: the last set of
+    // footage was recorded before a redesign and nothing said so.
+    failure = err;
   } finally {
     await page.close();
     await ctx.close();
-    // playwright names videos randomly; rename the newest to the segment name
-    const files = readdirSync(OUT).filter((f) => f.endsWith(".webm") && !f.startsWith(name));
-    const newest = files
-      .map((f) => ({ f, t: f }))
-      .sort((a, b) => (a.f < b.f ? 1 : -1))[0];
-    if (newest) renameSync(OUT + newest.f, `${OUT}${name}.webm`);
-    console.log(`✓ ${name}.webm`);
+    if (video) {
+      await video.saveAs(`${OUT}${name}.webm`);
+      await video.delete();
+    }
+    if (failure) {
+      console.error(`✗ ${name}.webm - captured, but the script failed: ${failure.message}`);
+      failed.push(name);
+    } else {
+      console.log(`✓ ${name}.webm`);
+    }
   }
 }
 
@@ -87,7 +104,7 @@ await segment("03-routing", HD, async (p) => {
 await segment("04-sentinel-emergency", HD, async (p) => {
   await p.goto(BASE + "/app", { waitUntil: "networkidle" });
   await p.waitForTimeout(4500);
-  await p.getByRole("button", { name: /Simulate transit emergency/ }).click();
+  await p.getByRole("button", { name: /Replay transit emergency/ }).click();
   for (let i = 0; i < 45; i++) {
     await p.waitForTimeout(1000);
     if (await p.locator("text=EMERGENCY DISPATCH").first().isVisible().catch(() => false)) break;
@@ -107,5 +124,24 @@ await segment("05-mobile", { width: 390, height: 844 }, async (p) => {
   await p.waitForTimeout(3000);
 });
 
+// ---- 06 · documentation ------------------------------------------------------------------
+// The docs are part of the argument, not an appendix: every layer carries its source and
+// licence, every threshold its citation, and the assumption counter is on the page. Driven by
+// slug so it follows DOCS in frontend/src/lib/docsContent.ts rather than a scroll position.
+await segment("06-docs", HD, async (p) => {
+  await p.goto(BASE + "/docs#data-sources", { waitUntil: "networkidle" });
+  await p.waitForTimeout(4000);
+  await p.evaluate(() => window.scrollTo({ top: 900, behavior: "smooth" }));
+  await p.waitForTimeout(3000);
+  await p.goto(BASE + "/docs#standards", { waitUntil: "networkidle" });
+  await p.waitForTimeout(3500);
+});
+
 await browser.close();
-console.log("\nAll segments in demo/footage/ - narration in demo/SCRIPT.md");
+if (failed.length) {
+  console.error(`\n${failed.length} segment(s) failed: ${failed.join(", ")}. The footage they`);
+  console.error("produced is partial. Fix the selector before using it.");
+  process.exitCode = 1;
+} else {
+  console.log("\nAll segments in demo/footage/ - narration in demo/SCRIPT.md");
+}
