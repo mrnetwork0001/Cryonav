@@ -1,6 +1,8 @@
 """Agent-orchestration and HTTP-surface tests."""
 
 import pytest
+
+import standards
 from fastapi.testclient import TestClient
 
 import thermal
@@ -35,7 +37,10 @@ class TestOrchestration:
 
     def test_sensing_agent_reports_feed_and_radiant_spike(self, orchestrator):
         out = orchestrator.navigate("phoenix", PHX_ORIGIN, PHX_DEST, 15.0)
-        assert out["feed"]["status_code"] == 200
+        # See the note in test_fortyguard_service.py: on this path nothing is fetched, so
+        # the meaningful assertion is that the feed says so rather than showing a green 200.
+        assert out["feed"]["ok"] is True and out["feed"]["degraded"] is False
+        assert out["feed"]["upstream_status_code"] is None
         assert out["sensing"]["resolution"]["canopy_m"] == 1.19
         assert out["sensing"]["elevation_m"] == 2.0
         assert out["risk_vector"]["asphalt_radiation_spike_f"] > 0
@@ -137,7 +142,10 @@ class TestSentinelMonitor:
         out = orchestrator.sentinel.monitor_transit(
             "phoenix", (33.4520, -112.0825), 15.0, dwell_minutes=10.0, moved_m=200.0
         )
-        assert out["hydration_ml_per_hour"] >= 240
+        # 470 mL/h is the function's floor, so the old ">= 240" could never fail. Pin the
+        # NIOSH band this exposure actually falls in, and the published ceiling.
+        assert out["hydration_ml_per_hour"] >= 470
+        assert out["hydration_ml_per_hour"] <= standards.NIOSH_MAX_ML_PER_HOUR
         assert out["nearest_shelters"]
 
 
@@ -365,6 +373,23 @@ class TestFactsAreComputed:
         c = client.get("/api/v1/facts").json()["contrast"]
         assert c["cool"]["canopy_cover_pct"] > c["hot"]["canopy_cover_pct"] + 30
         assert c["radiant_gap_f"] > 10
+
+    def test_assumed_counter_includes_shelter_flags(self, client):
+        """It reported 0 by only reading the urban assumptions blocks, which were emptied.
+
+        Hundreds of shelter fields carry ac_assumed / indoor_temp_assumed in the same repo, and
+        a counter that skips them turns an honest declaration into a false zero.
+        """
+        import json
+        import pathlib
+
+        root = pathlib.Path(__file__).resolve().parents[2]
+        real = 0
+        for path in (root / "data" / "shelters").glob("*.json"):
+            for sh in json.loads(path.read_text()).get("shelters", []):
+                real += sum(1 for k, v in sh.items() if k.endswith("_assumed") and v is True)
+        assert real > 0, "no shelter carries an assumed flag; this guard proves nothing"
+        assert client.get("/api/v1/facts").json()["assumed_constants_remaining"] >= real
 
     def test_resolutions_come_from_the_data_files(self, client):
         res = client.get("/api/v1/facts").json()["resolution"]

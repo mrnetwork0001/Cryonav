@@ -360,6 +360,31 @@ def _street_node_count(city_id: str) -> int:
         return 0
 
 
+@lru_cache(maxsize=8)
+def _shelter_assumed_count(city_id: str) -> int:
+    """Shelter fields explicitly flagged as assumed rather than sourced.
+
+    The OSM and municipal feeds rarely publish air-conditioning or indoor temperature, so the
+    fetcher marks those fields ac_assumed / indoor_temp_assumed rather than inventing a value.
+    They are honest flags, and they must be counted where the site claims a number of remaining
+    assumptions.
+    """
+    path = Path(__file__).resolve().parent.parent / "data" / "shelters" / f"{city_id}.json"
+    if not path.exists():
+        return 0
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            shelters = json.load(fh).get("shelters", [])
+    except Exception:
+        return 0
+    return sum(
+        1
+        for s in shelters
+        for k, v in s.items()
+        if k.endswith("_assumed") and v is True
+    )
+
+
 @lru_cache(maxsize=1)
 def _test_count() -> int:
     """Number of test functions in the suite, counted from the files.
@@ -406,6 +431,11 @@ def facts() -> Dict[str, Any]:
             layers.add("surface_temperature_peak")
         if prov.get("still_estimated"):
             still_assumed += len(prov["still_estimated"])
+        # Shelter records carry their own per-field assumed flags. Counting only the urban
+        # assumptions blocks made this number 0 by construction: those blocks were emptied
+        # when canopy and surface temperature became measured, while hundreds of shelter
+        # fields remained explicitly flagged as assumed in the very same repo.
+        still_assumed += _shelter_assumed_count(cid)
         nodes += _street_node_count(cid)
 
     hour = 15.0

@@ -187,7 +187,14 @@ class TestHeatIntelligence:
         )
         assert out["count"] == 2
         assert len(out["readings"]) == 2
-        assert out["feed"]["status_code"] == 200
+        # status_code is the FEED's status, not an upstream one, and on this path no HTTP
+        # request is made at all. Asserting 200 pinned exactly the "green light for a call that
+        # never happened" behaviour the degraded-feed work removed. Assert what actually
+        # matters: the feed is healthy, undegraded, and honest that nothing came from upstream.
+        assert out["feed"]["ok"] is True
+        assert out["feed"]["degraded"] is False
+        assert out["feed"]["upstream_status_code"] is None
+        assert out["feed"]["live_fields"] == []
         assert out["sensing"]["elevation_m"] == 2.0
         # There is no single resolution: the ambient series is a point query with no spatial
         # parameter, and each derived layer has its own. Asserting one invented number was how
@@ -621,3 +628,68 @@ class TestSuiteIsNotWeatherDependent:
             assert bare.air_temp_2m_f != live.air_temp_2m_f, (
                 "the calibrated and modelled fields are identical, so calibration is inert"
             )
+
+
+class TestNoUnmeasuredCanopyReachesRouting:
+    """An unmeasured polygon must never influence a route.
+
+    Coffelt-Lamoreaux Park straddled the western edge of the Phoenix canopy window, so
+    scripts/fetch_canopy.py could not measure it and it kept the per-class default of 60%.
+    That made it the second-shadiest of 99 green polygons in the tile - and urban.py consumed
+    it without checking the flag, while the covered-way and tree-row branches did check. The
+    router could therefore offer a heat-vulnerable pedestrian shade that had never been
+    measured. Measured properly, the park is 1.7% canopy: the 79th shadiest of 99. A bare lawn.
+    """
+
+    def test_every_polygon_in_every_city_is_measured(self):
+        import json
+        import pathlib
+
+        root = pathlib.Path(__file__).resolve().parents[2]
+        gaps = []
+        for path in sorted((root / "data" / "urban").glob("*.json")):
+            data = json.loads(path.read_text())
+            for group in ("green", "hot"):
+                for f in data.get(group, []):
+                    if f.get("canopy_measured") is False:
+                        gaps.append(f"{path.stem}/{group}/{f.get('name') or f.get('class')}")
+        assert not gaps, (
+            "polygons carrying an unmeasured per-class canopy default:\n" + "\n".join(gaps)
+        )
+
+    def test_the_consumer_ignores_an_unmeasured_canopy_anyway(self):
+        """Defence in depth: even if a gap reappears, it must not reach the sky view factor.
+
+        Built on a minimal synthetic index rather than a real city, so the polygon under test
+        is the ONLY canopy source. Sampling a real park instead let nearby street trees
+        saturate the result at the 0.85 cap, and the assertion passed on both branches while
+        proving nothing about the gate.
+        """
+        from urban import UrbanIndex
+
+        ring = [[33.4500, -112.0800], [33.4500, -112.0790],
+                [33.4510, -112.0790], [33.4510, -112.0800]]
+        base = {
+            "city_id": "probe", "green": [], "trees": [], "tree_rows": [],
+            "covered_ways": [], "water": [], "hot": [], "roads": [],
+            "bbox": {"south": 33.449, "north": 33.452, "west": -112.081, "east": -112.078},
+        }
+        centre = (33.4505, -112.0795)
+
+        measured = dict(base, green=[{
+            "name": "probe", "class": "park", "canopy": 0.8, "area_m2": 10000,
+            "ring": ring, "canopy_measured": True,
+        }])
+        unmeasured = dict(base, green=[{
+            "name": "probe", "class": "park", "canopy": 0.8, "area_m2": 10000,
+            "ring": ring, "canopy_measured": False,
+        }])
+
+        with_flag = UrbanIndex(measured).terrain(*centre)["canopy_fraction"]
+        without_flag = UrbanIndex(unmeasured).terrain(*centre)["canopy_fraction"]
+
+        assert with_flag > 0.5, "the measured polygon should dominate this synthetic tile"
+        assert without_flag < with_flag, (
+            "flagging the polygon unmeasured did not reduce the canopy it contributes, "
+            "so the gate in urban.py is inert"
+        )

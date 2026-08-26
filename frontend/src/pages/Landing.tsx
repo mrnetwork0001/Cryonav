@@ -236,12 +236,31 @@ export default function Landing() {
               FORTYGUARD TEMPERATURE API&reg; &middot; 2 M AGL
             </div>
 
+            {/* The headline used to read "We turn 124F streets into 103F cool routes",
+                asserting a 21 F reduction. No measurement in this repo produces one - the
+                best saving across all 36 corridor-profile combinations is under 7 F, and the
+                live contrast between the two sampled streets is smaller still. It is now
+                drawn from the live sample, so the page cannot promise what the engine does
+                not deliver. */}
             <h1 className="statement mt-7 text-[42px] text-white sm:text-[58px] lg:text-[66px]">
-              We turn 124&deg;F streets
+              Two streets,{" "}
+              {facts ? (
+                <span className="tnum">
+                  {Math.abs(facts.contrast.air_gap_f).toFixed(1)}&deg;F
+                </span>
+              ) : (
+                "no"
+              )}{" "}
+              apart on air.
               <br />
-              into{" "}
               <span className="bg-gradient-to-r from-cyan-300 via-sky-400 to-indigo-400 bg-clip-text text-transparent">
-                103&deg;F cool routes.
+                {facts ? (
+                  <span className="tnum">
+                    {Math.abs(facts.contrast.radiant_gap_f).toFixed(0)}&deg;F apart on radiant load.
+                  </span>
+                ) : (
+                  "Worlds apart on radiant load."
+                )}
               </span>
             </h1>
 
@@ -402,23 +421,34 @@ export default function Landing() {
               from orbit or from the street.
             </h2>
             <p className="mt-6 max-w-md text-[14px] leading-[1.75] text-slate-400">
-              Canopy used to be a lookup table that called every park 60% shaded. Measurement put
-              Phoenix parks at a mean of 16%, and one 4.6-hectare park at 4.2% - a bare lawn the
-              router would once have sent people to for shade.
+              Canopy used to be a lookup table that called every park 60% shaded. Measurement
+              put Phoenix parks at a mean of 15.6%. Coffelt-Lamoreaux Park sat just outside the
+              raster window and kept the 60% default, which made it the second-shadiest polygon
+              in the tile; measured, it is 1.7% - a bare lawn the router would have offered as
+              shade. The remaining declared assumptions are shelter air-conditioning and
+              opening hours, which no feed publishes and which are flagged per field rather
+              than guessed.
             </p>
           </div>
           <div className="cell-grid reveal mt-12 grid grid-cols-2 lg:mt-0 lg:grid-cols-3">
             <BigStat value={facts ? `${facts.resolution.canopy_m} m` : "-"} label="canopy resolution" />
             <BigStat value={facts ? String(facts.cities) : "-"} label="cities onboarded" />
             <BigStat value={facts ? String(facts.measured_layers) : "-"} label="measured layers" />
-            <BigStat value={facts ? String(facts.tests) : "-"} label="tests passing" />
+            {/* "tests passing" was wrong twice over: the figure counts test FUNCTIONS from
+                the source, and no test is run to produce it. */}
+            <BigStat value={facts ? String(facts.tests) : "-"} label="tests in the suite" />
             <BigStat
               value={facts ? `${facts.resolution.surface_peak_m ?? facts.resolution.surface_m} m` : "-"}
               label="surface temperature"
             />
+            {/* This read "0 assumed constants left", and was 0 by construction: the counter
+                only inspected the urban files' assumptions blocks, which were emptied when
+                canopy and surface temperature became measured. Hundreds of shelter fields are
+                still explicitly flagged assumed in the same repo. Counting them is the point -
+                a flag that is declared and counted is honest; a zero that skips them is not. */}
             <BigStat
               value={facts ? String(facts.assumed_constants_remaining) : "-"}
-              label="assumed constants left"
+              label="declared assumptions, all flagged"
             />
           </div>
         </div>
@@ -443,7 +473,7 @@ export default function Landing() {
               Glyph={IconSensing}
               color="#facc15"
               name="Thermal Sensing"
-              role="Polls the FortyGuard feed for the corridor, classifies microclimate risk low to extreme, and flags asphalt radiation spikes - surface running 60 &deg;F above the air a weather app reports."
+              role="Polls the FortyGuard feed for the corridor, classifies microclimate risk low to extreme, and flags asphalt radiation spikes - the trap fires when a surface runs 35 &deg;F or more above the air a weather app reports."
               trace="poll_fortyguard / flag_asphalt_trap"
             />
             <AgentCell
@@ -608,18 +638,18 @@ export default function Landing() {
               the payload and compute figures are measured server-side.
             </p>
             <div className="cell-grid mt-10 grid grid-cols-3">
-              <BigStat value="~1.7 KB" label="payload" />
-              <BigStat value="~280 ms" label="solve" />
+              <BigStat value="~2.2 KB" label="payload" />
+              <BigStat value="~0.9 s" label="solve" />
               <BigStat value="OPTIONAL" label="uplink" />
             </div>
           </div>
           <div className="cell cell-grid reveal min-w-0 p-6 font-mono text-[12px] leading-relaxed text-slate-400">
             <div className="eyebrow">POST /api/v1/edge/jetson-kiosk</div>
             <pre className="mt-4 overflow-x-auto whitespace-pre text-[11px]">{`{
-  "now":    { "air_f": 109, "surface_f": 164, "risk": "extreme" },
+  "now":    { "air_f": 115, "surface_f": 159, "risk": "extreme" },
   "route":  { "distance_m": 3018, "minutes": 47, "shade_pct": 54 },
   "savings":{ "thermal_load_f": 1.2, "heat_stress_pct": 5.0 },
-  "shelter":{ "name": "Justa Center Respite", "walk_min": 5.1 },
+  "shelter":{ "name": "20 W Jackson", "walk_min": 5.2 },
   "instruction": "COOL ROUTE: 3.02 km, 47 min. ...
                   Carry 555 ml water.",
   "edge": {

@@ -37,7 +37,7 @@ heat illness actually comes from. A weather API sees two identical streets. A bo
 
 *(Reproduce: `cd backend && .venv/bin/python -c "from fortyguard_service import FortyGuardService as F; print(F().sample('phoenix', 33.4520, -112.0825, 15.0))"` - values shift with the daily calibration.)*
 
-Cryonav fuses the **FortyGuard Temperature API®** (10 mi² microclimate resolution, 2 m above ground level) with urban canopy GIS, and routes around it.
+Cryonav fuses the **FortyGuard Temperature API®** (observed hourly series at 2 m above ground level) with measured urban canopy and surface temperature, and routes around it. The "10 mi²" figure this line used to quote was Cryonav's own invention: `/v1/env_params` is a point query with no resolution parameter at all.
 
 ---
 
@@ -48,7 +48,7 @@ Given an origin, a destination and a user profile, Cryonav returns **two routes*
 - **Path A - Standard Direct Route.** Minimises distance. Exactly what a conventional navigator returns, computed the same way, so the comparison is honest rather than a strawman.
 - **Path B - Cryonav Cool Route.** Minimises *thermal dose* - minutes in the sun weighted by how punishing that sun is - subject to a per-profile detour budget.
 
-Measured across all nine demo corridors × three profiles (27 combinations, 15:00 local,
+Measured across all nine demo corridors × three profiles (36 combinations, 15:00 local,
 **2026-08-24 calibration** - these shift with each day's live data):
 
 | Metric | Range across demo corridors |
@@ -195,7 +195,7 @@ git clone <this-repo> && cd Cryonav
 Open **http://localhost:5180**. No API key and no Mapbox token required - basemap tiles come from CARTO, thermal data from the built-in simulation.
 
 ```bash
-cd backend && .venv/bin/pytest -q     # 130 tests
+cd backend && .venv/bin/pytest -q     # 156 tests
 ./scripts/smoke_test.sh               # 9 end-to-end API checks
 ./scripts/verify_fortyguard.sh        # probe the real FortyGuard API (works without a key)
 python scripts/calibrate.py           # pull today's real ambient curve for every tile
@@ -223,7 +223,7 @@ Ports are `8008` / `5180` (overridable via `CRYONAV_API_PORT` / `CRYONAV_WEB_POR
 | `GET` | `/api/v1/cities/{id}/grid` | Heat grid (`source=model` \| `fortyguard` for the raw observed raster) |
 | `GET` | `/api/v1/cities/{id}/layers` | Real OSM heat/canopy features, shelters + provenance |
 | `GET` | `/api/v1/cities/{id}/report.pdf` | Cached daily FortyGuard analyst report |
-| `POST` | `/api/v1/fortyguard/heat-intelligence` | FortyGuard proxy (`/v1/heat_intelligence`) + mock generator |
+| `POST` | `/api/v1/fortyguard/heat-intelligence` | FortyGuard proxy. The live path calls **`/v1/env_params`**, not `/v1/heat_intelligence` - the latter returns an analyst PDF and cannot drive a reading. Falls back to the calibrated field, labelled degraded. |
 | `POST` | `/api/v1/navigate/cool-route` | **Path A vs Path B + full agent trace** |
 | `GET` | `/api/v1/shelters/nearby` | Cooling centres, hydration, cooled transit |
 | `POST` | `/api/v1/edge/jetson-kiosk` | Bandwidth-optimised edge payload |
@@ -249,7 +249,7 @@ Smart-city pedestrian kiosks and delivery-worker headsets sit on metered uplinks
 
 ```
    ┌─────────────────────────────────────────────────────────────────────────┐
-   │  MUNICIPAL EDGE TIER - NVIDIA Jetson Orin Nano (1024-core Ampere, 32 TOPS)│
+   │  MUNICIPAL EDGE TIER - NVIDIA Jetson Orin Nano (simulated; no TOPS quoted)│
    │                                                                          │
    │   ┌──────────────┐   ┌──────────────┐   ┌───────────────────────────┐   │
    │   │ Pedestrian   │   │ Delivery     │   │ Bus-shelter / crossing    │   │
@@ -259,7 +259,7 @@ Smart-city pedestrian kiosks and delivery-worker headsets sit on metered uplinks
    │          └──────────────────┼─────────────────────────┘                 │
    │                             ▼                                           │
    │              ┌────────────────────────────────┐                         │
-   │              │  Cached 10 mi² thermal tile    │  ← offline_capable      │
+   │              │  Cached thermal tile           │  ← offline_capable      │
    │              │  + OSM street graph (25k nodes)│    survives uplink loss │
    │              └───────────────┬────────────────┘                         │
    └──────────────────────────────┼──────────────────────────────────────────┘
@@ -272,7 +272,7 @@ Smart-city pedestrian kiosks and delivery-worker headsets sit on metered uplinks
                                   ▼
    ┌─────────────────────────────────────────────────────────────────────────┐
    │  FortyGuard Temperature API®  ·  /v1/env_params + /v1/heatmap (daily)    │
-   │  10 mi² microclimate resolution  ·  2 m above ground level               │
+   │  canopy 1.19 m · surface 30-70 m · ambient 2 m above ground level        │
    └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -284,7 +284,7 @@ The Jetson tier is **simulated** in this build - the endpoint, payload shape and
 
 Dark-mode glassmorphism UI (`#0B0F17`), built with Vite + React + TypeScript + Tailwind v4 + Leaflet.
 
-- **Top metrics bar** - FortyGuard feed status (`200 OK`, 10 mi², 2 m AGL, latency), current temperature, surface temperature, WBGT, and a risk meter spanning comfort (88 °F) to survival limit (140 °F).
+- **Top metrics bar** - FortyGuard feed status (live or calibrated, 2 m AGL, latency), current temperature, surface temperature, WBGT, and a risk meter spanning comfort (88 °F) to survival limit (140 °F).
 - **Map canvas** - thermal grid painted at one pixel per FortyGuard cell and scaled by the browser for free bilinear interpolation; Path A in rose, Path B in animated cyan, pulsing red markers on asphalt traps, cooling shelters, and an explicit dashed **coverage-tile boundary** so the map never implies data it does not have.
 - **Exposure score card** - thermal load, heat stress, shade gain, time cost, A/B breakdown, and the Sentinel's verdict against the continuous-exposure ceiling.
 - **1-click cooling-station reroute** - toggles the Sentinel's shelter-waypoint intervention.
@@ -304,7 +304,7 @@ backend/
   agents.py               the three agents + orchestrator + blackboard
   main.py                 FastAPI surface incl. Jetson edge endpoint
   urban.py                real OSM urban form: spatial index + terrain oracle
-  tests/                  130 tests
+  tests/                  156 tests
 frontend/
   src/components/         MapCanvas, TopMetricsBar, ExposureCard, ControlPanel, AgentTrace
   src/lib/api.ts          typed client + exposure colour ramp
@@ -325,7 +325,7 @@ Add a city by editing `data/cities.json` - heat corridors, canopy corridors, she
 - ~~Cooling-shelter hours are static fixtures~~ **Phoenix shelters are the official Maricopa Association of Governments Heat Relief Network** (public ArcGIS feed; 27 active 2026 sites in the tile with per-day hours, attribution and MAG's accuracy disclaimer stored alongside). Gulf shelters are real OSM POIs - mosques, malls, cooled Dubai Metro stations, drinking water - with category-default hours/AC where OSM carries no tags (measured coverage: 2–6%), flagged `assumed` per field.
 - **The Jetson tier is simulated**, as described above.
 - **The upstream FortyGuard *response* schema is still unconfirmed.** The endpoint path, auth header and error envelope are verified against the live API, but auth gates every route so the per-location field names cannot be read without a key. `_reading_from_live` accepts several plausible spellings and `feed.live_fields` reports which ones actually arrived.
-- **Observation vs model, per layer:** ambient hourly curves are live FortyGuard for all tiles; Phoenix's spatial 2 m air field additionally comes from the observed `/v1/heatmap` raster (dated on the map; Gulf tiles model it). The radiant/surface layer - what a body absorbs from canopy and asphalt - is Cryonav's physics over real OSM geometry, with per-class coefficients declared in the data files' `assumptions` blocks. Safety thresholds (risk bands, exposure ceilings, hydration) are model choices, not cited medical guidance.
+- **Observation vs model, per layer:** ambient hourly curves are live FortyGuard for all tiles; Phoenix's spatial 2 m air field additionally comes from the observed `/v1/heatmap` raster (dated on the map; Gulf tiles model it). The radiant/surface layer - what a body absorbs from canopy and asphalt - is Cryonav's physics over real OSM geometry, with per-class coefficients declared in the data files' `assumptions` blocks. Safety thresholds (risk bands, exposure ceilings, hydration) are cited to NIOSH 2016-106 and OSHA, and served with their citations at /api/v1/meta.
 
 ---
 

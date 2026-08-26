@@ -212,8 +212,38 @@ def _haversine_m(a: Sequence[float], b: Sequence[float]) -> float:
     return math.hypot((b[1] - a[1]) * 111320.0 * k, (b[0] - a[0]) * 110574.0)
 
 
-def load_window(bbox: Dict[str, float]) -> CanopyWindow:
-    tiles = tiles_for_bbox(bbox)
+def padded_bounds(bbox: Dict[str, float], margin_m: float = 250.0) -> Dict[str, float]:
+    """The city bbox with a margin, so edge-straddling polygons are measured whole.
+
+    Overpass returns any polygon that INTERSECTS the query box, so a park on the boundary
+    comes back complete while a window stopping at the boundary cannot measure it.
+    Coffelt-Lamoreaux Park extended 109 m west of the Phoenix window and therefore kept the
+    per-class default of 60% canopy - which made it the second-shadiest polygon in the tile,
+    on a number nobody measured.
+
+    The margin is deliberately a fixed pad on the BBOX rather than the extent of the features.
+    An earlier attempt used the feature extent and ballooned the window to 43146 x 21884 px,
+    because OSM returns whole road ways that run far outside the tile; at that size nothing
+    was measured at all. A few hundred metres is all an edge-straddling polygon needs.
+    """
+    dlat = margin_m / 110574.0
+    mid = (bbox["south"] + bbox["north"]) / 2.0
+    dlon = margin_m / (111320.0 * max(0.2, math.cos(math.radians(mid))))
+    return {
+        "south": bbox["south"] - dlat, "north": bbox["north"] + dlat,
+        "west": bbox["west"] - dlon, "east": bbox["east"] + dlon,
+    }
+
+
+def load_window(bbox: Dict[str, float], tile_bbox: Optional[Dict[str, float]] = None) -> CanopyWindow:
+    """Read `bbox` from the CHM tile that covers `tile_bbox` (default: bbox itself).
+
+    The two differ because the read window is widened to the features' extent while the tile
+    is still chosen by the city. Selecting the tile from the widened box put one CORNER over a
+    tile boundary and aborted the run, even though every feature sat inside a single tile -
+    a margin of a few hundred metres should not change which tile a city is in.
+    """
+    tiles = tiles_for_bbox(tile_bbox or bbox)
     if len(tiles) > 1:
         # Every current city fits one zoom-9 tile (they are ~78 km across at these
         # latitudes). Mosaicking is real work; refuse loudly rather than silently sampling
@@ -242,7 +272,9 @@ def process(city_id: str) -> None:
     data = json.loads(path.read_text())
     print(f"\n{city_id}")
     started = time.time()
-    win = load_window(data["bbox"])
+    # Widened to the features' own extent: a polygon Overpass returned whole must be measured
+    # whole, or it silently keeps its per-class default.
+    win = load_window(padded_bounds(data["bbox"]), tile_bbox=data["bbox"])
     total_px = win.h.size
     print(
         f"    window {win.h.shape[1]} x {win.h.shape[0]} px @ {win.px_m:.2f} m"
@@ -320,6 +352,7 @@ def process(city_id: str) -> None:
         "source": "meta_wri_canopy_height_v6",
         "product": "alsgedi_global_v6_float/chm",
         "tile_quadkey": tiles_for_bbox(data["bbox"])[0],
+        "window": "widened to the extent of the fetched features, not the city bbox",
         "resolution_m": round(win.px_m, 3),
         "canopy_height_threshold_m": CANOPY_HEIGHT_M,
         "tree_sample_radius_m": TREE_RADIUS_M,

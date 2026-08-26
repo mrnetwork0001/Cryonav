@@ -187,7 +187,13 @@ class UrbanIndex:
                             d = self._dist_to_segments(px, py, xy + xy[:1])
                             w = math.exp(-((d / GREEN_EDGE_DECAY_M) ** 2))
                         if w > 0.02:
-                            canopy = max(canopy, f["canopy"] * w)
+                            # Defence in depth: only a MEASURED canopy may pull the sky view
+                            # factor down. An unmeasured polygon still carries its per-class
+                            # default, and routing someone toward shade nobody measured is the
+                            # exact failure this project exists to avoid. The covered-way and
+                            # tree-row branches below already gate this way.
+                            if f.get("canopy_measured", True):
+                                canopy = max(canopy, f["canopy"] * w)
                             # Bigger parks cool harder; ln keeps a pocket park honest.
                             strength = min(2.0 + 1.1 * math.log1p(f["area_m2"] / 2000.0), 8.5)
                             canopy_cool += strength * w

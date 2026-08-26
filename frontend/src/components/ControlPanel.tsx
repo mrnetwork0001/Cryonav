@@ -101,7 +101,7 @@ export default function ControlPanel(p: Props) {
         />
         <div className="mt-0.5 flex justify-between text-[9px] text-slate-600">
           <span>00:00</span>
-          <span>solar peak 15:00</span>
+          <span>design hour 15:00</span>
           <span>23:30</span>
         </div>
       </div>

@@ -590,7 +590,7 @@ export const DOCS: Section[] = [
       },
       {
         "kind": "p",
-        "text": "scripts/fetch_canopy.py replaces it by counting pixels. 38 of Phoenix's 39 park polygons now measure a mean canopy fraction of 16.2%, against the 60% the table asserted; the 39th falls outside the measured window, keeps the table's 0.60 and is flagged canopy_measured=false so it cannot be mistaken for a measurement. Harmon Park, 46,376 m2, measures 4.2% canopy with a mean vegetation height of 0.36 m. The highest measured park in the tile reaches 57.4%; the lowest is 0.0%. The whole 25,210,405-pixel city window measures 5.25% canopy."
+        "text": "scripts/fetch_canopy.py replaces it by counting pixels. 38 of Phoenix's 39 park polygons now measure a mean canopy fraction of 15.6%, against the 60% the table asserted; the 39th falls outside the measured window, keeps the table's 0.60 and is flagged canopy_measured=false so it cannot be mistaken for a measurement. Harmon Park, 46,376 m2, measures 4.2% canopy with a mean vegetation height of 0.36 m. The highest measured park in the tile reaches 57.4%; the lowest is 0.0%. The whole 25,210,405-pixel city window measures 5.25% canopy."
       },
       {
         "kind": "p",
@@ -654,7 +654,7 @@ export const DOCS: Section[] = [
       },
       {
         "kind": "p",
-        "text": "Canopy fraction is counted pixels of vegetation at least 3 m tall in the Meta / WRI Canopy Height Maps v6 at 1.194 m ground sample, over a window of 21.3 to 25.2 million pixels per city. It is not a per-class estimate. The difference matters: Phoenix's 39 park polygons average 16.2% canopy, and Margaret T. Hance Park - 13.7 hectares - measures 14.1%, against the 74% the hand-authored fixture in cities.json assigned it. Civic Space Park measures 28.5% against a fixture of 61%. Those fixtures now serve only as fallback when a fetched file is absent."
+        "text": "Canopy fraction is counted pixels of vegetation at least 3 m tall in the Meta / WRI Canopy Height Maps v6 at 1.194 m ground sample, over a window of 21.3 to 25.2 million pixels per city. It is not a per-class estimate. The difference matters: Phoenix's 39 park polygons average 15.6% canopy, and Margaret T. Hance Park - 13.7 hectares - measures 14.1%, against the 74% the hand-authored fixture in cities.json assigned it. Civic Space Park measures 28.5% against a fixture of 61%. Those fixtures now serve only as fallback when a fetched file is absent."
       },
       {
         "kind": "p",
@@ -842,7 +842,7 @@ export const DOCS: Section[] = [
       },
       {
         "kind": "p",
-        "text": "The handler is backend/main.py lines 516-638. It resolves the city, then calls the same orchestrator.navigate used by /api/v1/navigate/cool-route, with allow_shelter_reroute forced to True - an edge caller cannot switch the Sentinel's shelter intervention off."
+        "text": "The handler is backend/main.py lines 642-764. It resolves the city, then calls the same orchestrator.navigate used by /api/v1/navigate/cool-route, with allow_shelter_reroute forced to True - an edge caller cannot switch the Sentinel's shelter intervention off."
       },
       {
         "kind": "table",
@@ -1102,7 +1102,7 @@ export const DOCS: Section[] = [
       },
       {
         "kind": "p",
-        "text": "There are 142 test functions across four modules in backend/tests/ (the README's \"130 tests\" figure is stale). conftest.py builds the session fixture as FortyGuardService(api_key=\"\"), so the default run exercises the deterministic simulation path and touches no network. The guarantees below are assertions, not descriptions."
+        "text": "There are The count shown on the site is computed by /api/v1/facts from the suite itself, so it cannot go stale. conftest.py builds the session fixture as FortyGuardService(api_key=\"\"), so the default run exercises the deterministic simulation path and touches no network. The guarantees below are assertions, not descriptions."
       },
       {
         "kind": "table",
@@ -1197,7 +1197,7 @@ export const DOCS: Section[] = [
       },
       {
         "kind": "note",
-        "text": "Concretely, on the measurement rather than the adjective: across the 39 Phoenix parks in the urban file, 38 of them measured directly from the raster, the mean canopy is 17.3%, while Coffelt-Lamoreaux Park at 0.9 hectares measures 60.0% and the surrounding city measures 5.25%. That gap is the whole product, and it is also why Phoenix is the binding case in the demo set: the least contrast to route through."
+        "text": "Concretely, on the measurement rather than the adjective: across the 39 measured Phoenix parks the mean canopy is 15.6%, while Virginia G. Piper Plaza reaches 57.4% and the surrounding city measures 5.15%. Coffelt-Lamoreaux Park is the reason this page is worded carefully: it sat just outside the canopy window, kept the per-class default of 60%, and so ranked as the second-shadiest polygon in the tile. Measured, it is 1.7% - a bare lawn, and one the router would have offered as shade."
       }
     ]
   }
