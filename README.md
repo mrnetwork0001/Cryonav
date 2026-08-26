@@ -257,6 +257,54 @@ not die on conference wifi, but it should never pretend a 401 was a 200.
 
 ---
 
+## Acting on the world
+
+Two parts of Cryonav do something rather than describe something, and both were built to be
+real or not shipped at all.
+
+### Emergency dispatch
+
+When the Sentinel sees immobility in extreme heat - no meaningful movement in eight minutes
+while the air is at or above 110 °F - it sends an actual push notification to a
+user-nominated contact, carrying position, GPS accuracy, the current readings and the nearest
+air-conditioned refuge with its walking distance. Measured delivery from the deployed server:
+**116 ms**.
+
+It does **not** claim to call emergency services. No public API lets a civilian application
+file an emergency call, and vendors say so explicitly - Twilio, verbatim: *"You should not rely
+on Twilio Programmable SMS if you require delivery of SMS communications to emergency services
+such as 911 or E911."* Notifying a nominated contact is the legitimate, implementable version.
+
+Transport is [ntfy](https://ntfy.sh): open-source, no account, no per-message cost, and
+self-hostable, so a municipality could run its own rather than depend on a third party. With
+`CRYONAV_NTFY_TOPIC` unset the Sentinel still detects immobility and the API states plainly
+that nothing was sent, rather than implying an alert went out.
+
+### Live GPS telemetry
+
+The dashboard's Sentinel panel can read the device's own GPS through `watchPosition`, feeding
+real fixes to the same endpoint a wearable would call.
+
+Consumer GPS degrades badly between tall buildings - exactly where a heat casualty is most
+likely to be - so displacement is estimated by **median-of-thirds** rather than by comparing
+the first fix to the last. The window is split into three equal-time thirds, each reduced to a
+component-wise median, and displacement is the largest separation among those anchors.
+
+Monte Carlo over 20,000 motionless walkers, 8-minute window at 1 Hz, 25 m threshold
+(`scripts/bench/displacement_montecarlo.mjs`, which imports the shipped estimator):
+
+| GPS accuracy | naive first-vs-last | median-of-thirds |
+|---|---|---|
+| 10 m | misses **22.0 %** of collapses | misses 0.0 % |
+| 20 m | misses **69.1 %** | misses 0.0 % |
+| 40 m | misses **91.2 %** | misses 0.0 % |
+
+A low miss-rate is worthless if bought by never reporting movement, so the control matters:
+false-immobility is 0.0 % at a normal walk and at a slow shuffle, at both 10 m and 40 m
+accuracy. Live GPS needs HTTPS, since browsers gate the Geolocation API on a secure context.
+
+---
+
 ## Quickstart
 
 ```bash
