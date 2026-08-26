@@ -1,5 +1,6 @@
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useDismiss } from "../lib/useDismiss";
 import {
   api,
   fetchFacts,
@@ -94,6 +95,11 @@ const NAV_LINKS: [string, string][] = [
 
 export default function Landing() {
   const [menuOpen, setMenuOpen] = useState(false);
+  // The dropdown and its toggle live inside this element, so a pointerdown anywhere else
+  // is a dismissal. Including the toggle matters: otherwise tapping it would close from
+  // the document handler and reopen from onClick, and the menu would never appear.
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
   const [cities, setCities] = useState<CitySummary[]>([]);
   const [nav, setNav] = useState<NavigationResult | null>(null);
   const [cals, setCals] = useState<Record<string, CalSummary>>({});
@@ -127,6 +133,7 @@ export default function Landing() {
       .catch(() => setOffline(true));
   }, []);
 
+  useDismiss(menuRef, menuOpen, closeMenu);
   useScrollReveal([cities.length, !!nav, !!facts]);
 
   const pathALoad = nav?.routes.standard.metrics.mean_exposure_index_f ?? FALLBACK.pathA_load_f;
@@ -176,7 +183,7 @@ export default function Landing() {
             ))}
           </nav>
           <div className="flex items-center gap-2 md:hidden">
-            <div className="relative">
+            <div className="relative" ref={menuRef}>
               <button
                 onClick={() => setMenuOpen((v) => !v)}
                 aria-label="Menu"

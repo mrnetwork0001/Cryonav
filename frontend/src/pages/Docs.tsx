@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchFacts, type Facts } from "../lib/api";
+import { useDismiss } from "../lib/useDismiss";
 import { DOCS, type Block, type Section } from "../lib/docsContent";
 
 /**
@@ -27,6 +28,11 @@ export default function Docs() {
     return DOCS.some((s) => s.slug === hash) ? hash : DOCS[0].slug;
   });
   const [menuOpen, setMenuOpen] = useState(false);
+  // The docs sidebar REPLACES the content on a phone rather than overlaying it, so there
+  // is no outside to tap. Escape still applies - a keyboard user otherwise has no way out
+  // except finding the toggle again.
+  const shellRef = useRef<HTMLDivElement | null>(null);
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
 
   // The hash is the source of truth for deep links, so back/forward work without a router.
   useEffect(() => {
@@ -37,6 +43,8 @@ export default function Docs() {
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
+
+  useDismiss(shellRef, menuOpen, closeMenu);
 
   const go = (slug: string) => {
     setActive(slug);
@@ -102,7 +110,7 @@ export default function Docs() {
         <div className="ticker h-px w-full opacity-70" aria-hidden />
       </header>
 
-      <div className="mx-auto flex max-w-[1400px] gap-0 px-6">
+      <div className="mx-auto flex max-w-[1400px] gap-0 px-6" ref={shellRef}>
         {/* ---- sidebar ---------------------------------------------------------------- */}
         <aside
           className={`${
