@@ -33,23 +33,26 @@ versions kept going stale.
 
 At 15:00 in downtown Phoenix in July, two walking routes between the same two points can differ by **20 °F of thermal load** - and every navigation app on the planet will hand you the hotter one, because they optimise metres and minutes.
 
-Here is what Cryonav measures at two Phoenix locations, at the same moment
-*(sampled live; `/api/v1/facts` returns today's values, and they move with each day's calibration)*:
+Here is what Cryonav measures at two Phoenix locations, at the same moment:
 
 | | Van Buren St x 7th Ave | Virginia G. Piper Plaza |
 |---|---|---|
-| Measured canopy | 0 % | **79 %** |
-| Air temperature @ 2 m | 115.9 °F | 116.1 °F |
-| Surface temperature | **147.9 °F** | 124.8 °F |
-| Mean radiant temperature | **136.7 °F** | 118.9 °F |
-| **Exposure index (thermal load)** | **116.2 °F** | **110.6 °F** |
+| Measured canopy | 0.0 % | **78.4 %** |
+| Air temperature @ 2 m | 115.5 °F | 115.7 °F |
+| Surface temperature | **159.2 °F** | 127.9 °F |
+| Mean radiant temperature | **143.9 °F** | 119.7 °F |
+| **Exposure index (thermal load)** | **119.0 °F** | **111.3 °F** |
 | Risk band | EXTREME | HIGH |
 
-The air layer separates them by **0.2 °F** - which is the whole point. The
-observed 2 m air layer is well mixed and cannot tell these places apart; the
-**17.8 °F mean-radiant difference** streaming off the asphalt can, and
-that is where heat illness actually comes from. A weather API sees two identical spots. A body
-does not.
+The air layer separates them by **0.2 °F**, and separates them the *wrong way* -
+the shaded plaza reads marginally hotter. That is the whole point. The observed
+2 m air layer is well mixed and cannot tell these places apart; the **24.2 °F
+mean-radiant difference** streaming off the asphalt can, and that is where heat illness
+actually comes from. A weather API sees two identical spots. A body does not.
+
+Those figures are a reading, not a constant. They were sampled at 15:00 on 2026-08-26 and
+they move with the weather; `/api/v1/facts` recomputes them on every request, and it - not
+this table - is the source of truth.
 
 *(Reproduce: `curl -s https://cryonav.xyz/api/v1/facts | python3 -m json.tool`)*
 
@@ -441,12 +444,66 @@ Add a city by editing `data/cities.json` - heat corridors, canopy corridors, she
 
 ## Honest limitations
 
-- ~~The street network is synthetic~~ **Routes now run on the real OpenStreetMap pedestrian network** (Phoenix 25k nodes / 34k edges; Dubai and Abu Dhabi similar), fetched by `scripts/fetch_streets.py`, cached in `data/streets/`, largest-connected-component filtered, A*-searched. Map data © OpenStreetMap contributors (ODbL).
-- ~~Canopy GIS is hand-authored~~ **Urban thermal form is now real OSM geometry**: 360 park/green polygons, 9,733 individual street trees (8,613 in Phoenix), covered walkways, tree rows, 1,472 surface-parking/industrial polygons and 2,748 lane-counted road ribbons (`scripts/fetch_urban.py`, cached in `data/urban/`). Per-class canopy density and surface-boost coefficients remain modelled - OSM records where a park is, not its leaf density - and are declared in each data file's `assumptions` block.
-- ~~Cooling-shelter hours are static fixtures~~ **Phoenix shelters are the official Maricopa Association of Governments Heat Relief Network** (public ArcGIS feed; 27 active 2026 sites in the tile with per-day hours, attribution and MAG's accuracy disclaimer stored alongside). Gulf shelters are real OSM POIs - mosques, malls, cooled Dubai Metro stations, drinking water - with category-default hours/AC where OSM carries no tags (measured coverage: 2–6%), flagged `assumed` per field.
-- **The Jetson tier is simulated**, as described above.
-- **The upstream FortyGuard *response* schema is still unconfirmed.** The endpoint path, auth header and error envelope are verified against the live API, but auth gates every route so the per-location field names cannot be read without a key. `_reading_from_live` accepts several plausible spellings and `feed.live_fields` reports which ones actually arrived.
-- **Observation vs model, per layer:** ambient hourly curves are live FortyGuard for all tiles; Phoenix's spatial 2 m air field additionally comes from the observed `/v1/heatmap` raster (dated on the map; Gulf tiles model it). The radiant/surface layer - what a body absorbs from canopy and asphalt - is Cryonav's physics over real OSM geometry, with per-class coefficients declared in the data files' `assumptions` blocks. Safety thresholds (risk bands, exposure ceilings, hydration) are cited to NIOSH 2016-106 and OSHA, and served with their citations at /api/v1/meta.
+Everything that was hand-authored at the start has since been replaced by measurement:
+the street network, the urban thermal form, the canopy, the surface temperature and the
+cooling shelters are all fetched from named sources and cached in `data/`. What follows is
+what is *still* true, and most of it was found by auditing the running system rather than
+by reading the code.
+
+**793 fields are still assumed, and they are counted.** OpenStreetMap records that a
+building is a mall; it does not record whether the mall is air-conditioned or how cold it
+is kept. Where a tag is absent the fetcher writes a category default and flags the field
+`ac_assumed` or `indoor_temp_assumed` instead of inventing a value silently. `/api/v1/facts`
+reports the running total. It used to report zero - not because there were none, but because
+the counter read only the urban assumption blocks, which had been emptied when canopy and
+surface became measured, while 793 shelter fields sat flagged in the same repo. A declared,
+counted assumption is honest; a zero that skips them is not.
+
+**Per-class canopy and surface coefficients are modelled.** The 1.194 m canopy raster gives
+real cover fraction per polygon, but how much a given cover fraction cuts mean radiant
+temperature is a coefficient, declared in each data file's `assumptions` block. A park whose
+canopy could not be measured is now refused as shade outright rather than falling back to a
+default - which is how an audit found Coffelt-Lamoreaux Park, a 1.7 %-canopy lawn ranked
+second-shadiest of 99 Phoenix green polygons because it straddled the raster window edge and
+kept the 60 % class default.
+
+**The Sentinel can raise mean exposure, and this is deliberate.** One live Dubai route
+returns a saving of -0.2 °F: the Sentinel mandates a cooling stop at a real OSM mosque, which
+lifts mean exposure slightly while cutting the longest *unbroken* high-risk leg from 49.1 to
+33.3 minutes. Continuous exposure is what causes heat illness, not average exposure. Two tests
+pin both halves - no preset produces a negative saving without the Sentinel, and whenever the
+Sentinel does intervene it provably shortens the unbroken leg. Without the second test,
+"the Sentinel may raise mean exposure" would excuse any regression.
+
+**Live upstream calls are off by default.** `/v1/env_params` is asynchronous - a POST returns
+an `activity_id` and the result is collected from `/v1/status/{id}` - and measured round-trip
+went from 22 s to over 120 s during development. Routes therefore serve from the daily
+calibration by default, which is real observation, just fetched on a schedule rather than in
+the request. `prefer_live=true` still makes the call, capped at four points, and the response
+says which path served it.
+
+**Two of six layers do not cover the Gulf.** The FortyGuard `/v1/heatmap` raster and the
+Landsat/ECOSTRESS surface products vary in coverage; Phoenix and San Jose carry the observed
+raster, Dubai and Abu Dhabi model that layer. The response declares which per tile rather
+than presenting them as equivalent.
+
+**ECOSTRESS passes are rejected by physics, not by a cloud mask.** A pass whose scene minimum
+falls below the city's calibrated minimum air temperature is reading cloud-top, not ground, so
+it is discarded. This is a floor test, not a per-pixel mask: a partly-clouded scene whose
+minimum still sits above the floor is accepted whole.
+
+**The Jetson tier is simulated.** The edge payload, its size and its solve are real and measured
+on the deployed VPS; the hardware is not present, and the README quotes no TOPS figure for a
+board nobody here has run.
+
+**`tests` counts test functions, not passing ones.** The label says "tests in the suite" for
+that reason. The suite runs in CI; the counter reads the source.
+
+**The suite no longer asserts against the weather.** Two tests once compared absolute degrees
+to the calibrated field and failed the day Phoenix's observed peak moved 15:00 → 16:00.
+Nothing had regressed. Assertions about the model now run against the modelled field, and a
+paired test checks the converse - that calibration genuinely changes the reading - because if
+it did not, it would not be worth fetching.
 
 ---
 
