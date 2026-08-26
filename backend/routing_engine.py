@@ -20,6 +20,7 @@ from __future__ import annotations
 import heapq
 import json
 import math
+from collections import OrderedDict
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
@@ -282,6 +283,13 @@ class Route:
 # --------------------------------------------------------------------------------------
 
 
+#: Upper bound on built street graphs held in memory at once. Each costs ~25 MB measured on
+#: the Phoenix network (25,072 nodes / 34,387 edges), so this caps the cache near 200 MB per
+#: worker. Sized to cover a full slider sweep for one city plus a couple of neighbours, which
+#: is the real access pattern; beyond that a rebuild is cheaper than the resident cost.
+MAX_CACHED_GRAPHS = 8
+
+
 class RoutingEngine:
     """Graph construction, thermal weighting and dual-path solving."""
 
@@ -294,7 +302,8 @@ class RoutingEngine:
         self.service = service
         self.resolution = resolution
         self.streets_dir = streets_dir
-        self._graphs: Dict[Tuple[str, float], StreetGraph] = {}
+        #: Built graphs, most-recently-used last. BOUNDED - see MAX_CACHED_GRAPHS.
+        self._graphs: "OrderedDict[Tuple[str, float], StreetGraph]" = OrderedDict()
         #: Raw OSM street data per city, loaded once.
         self._streets: Dict[str, Optional[Dict[str, Any]]] = {}
         #: Terrain per street edge midpoint, computed once per city and replayed across
@@ -309,11 +318,35 @@ class RoutingEngine:
         return round(clamp(hour, 0.0, 23.99) * 2.0) / 2.0
 
     def graph(self, city_id: str, hour: float = 15.0) -> StreetGraph:
+        """Return the street graph for a city at an hour bucket, building it on a miss.
+
+        The cache is BOUNDED, and that bound is a availability control rather than a tidiness
+        one. ``hour`` is a caller-supplied field on the public, unauthenticated
+        /api/v1/navigate/cool-route, and the key is (city, 30-minute bucket) - so a client can
+        mint 48 distinct keys per city just by varying a number the OpenAPI schema advertises.
+        Measured with an unbounded dict: 48 plain POSTs for one city cached 51 graphs and took
+        the process from 81 MB to 1360 MB, about 25 MB per graph. Across four cities that is
+        ~192 keys per worker, and the unit runs two workers with Restart=always.
+
+        Nothing owns that memory: this host also runs the operator's other production
+        services, so the kernel OOM killer - which scores by RSS - would have reached for
+        THEIR processes to pay for a fault entirely inside Cryonav. cryonav-api.service now
+        also sets MemoryMax so the cgroup absorbs it, but a service should not rely on being
+        contained; it should not grow without limit in the first place.
+
+        An LRU is the right shape rather than a per-city slot: the dashboard's hour slider
+        sweeps buckets for ONE city, so recency is exactly the access pattern, while a
+        per-city cap would evict on every drag.
+        """
         key = (city_id, self._hour_bucket(hour))
         cached = self._graphs.get(key)
-        if cached is None:
-            cached = self._build_graph(city_id, key[1])
-            self._graphs[key] = cached
+        if cached is not None:
+            self._graphs.move_to_end(key)
+            return cached
+        cached = self._build_graph(city_id, key[1])
+        self._graphs[key] = cached
+        while len(self._graphs) > MAX_CACHED_GRAPHS:
+            self._graphs.popitem(last=False)
         return cached
 
     def _streets_for(self, city_id: str) -> Optional[Dict[str, Any]]:

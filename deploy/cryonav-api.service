@@ -1,5 +1,5 @@
-# Cryonav backend - FastAPI behind Caddy.
-# Installed to /etc/systemd/system/cryonav-api.service by deploy/deploy.sh
+# Cryonav backend - FastAPI behind the host's existing nginx.
+# Installed to /etc/systemd/system/cryonav-api.service by deploy/install-on-vps.sh
 [Unit]
 Description=Cryonav thermal-navigation API
 After=network-online.target
@@ -12,9 +12,26 @@ Group=cryonav
 WorkingDirectory=/opt/cryonav/backend
 # FORTYGUARD_API_KEY lives here (0600, root-owned). Never in the repo.
 EnvironmentFile=/etc/cryonav/env
-ExecStart=/opt/cryonav/backend/.venv/bin/uvicorn main:app --host 127.0.0.1 --port 8008 --workers 2
+# ONE worker, deliberately. The workload is I/O-light, and uvicorn workers are separate
+# processes: the street-graph cache is per-process, so a second worker doubled resident
+# memory for no throughput. It also ran the startup hook twice - two independent sets of
+# FortyGuard calibration jobs, and two unsynchronised writers on the same calibration
+# files. Raise this only alongside a cross-process guard on that hook.
+ExecStart=/opt/cryonav/backend/.venv/bin/uvicorn main:app --host 127.0.0.1 --port 8008 --workers 1
 Restart=always
 RestartSec=3
+
+# Resource ceiling. This host also runs the operator's other production services, and the
+# kernel OOM killer scores by RSS - so an unbounded Cryonav would get THEIR processes killed
+# to pay for its own fault. cgroup v2 is default on Ubuntu 24.04, so these apply to this
+# unit's cgroup alone and cannot affect anything else on the box.
+#
+# Sizing: warm boot is ~215 MB, and the graph cache is now capped at 8 x ~25 MB. MemoryHigh
+# throttles and reclaims first; MemoryMax is the hard kill, and Restart=always brings the
+# service back rather than leaving it down.
+MemoryHigh=900M
+MemoryMax=1200M
+TasksMax=256
 
 # Light hardening
 NoNewPrivileges=true

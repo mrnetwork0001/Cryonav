@@ -316,3 +316,53 @@ class TestNegativeSavingsOnlyFromTheSentinel:
                 f"{city_id}/{profile}: shelter stop did not shorten the unbroken leg"
             )
         assert checked > 0, "no preset exercised the Sentinel; this guard proved nothing"
+
+
+class TestGraphCacheIsBounded:
+    """The graph cache is an availability control, not a tidiness one.
+
+    ``hour`` is a caller-supplied field on the public, unauthenticated cool-route endpoint and
+    the cache key is (city, 30-minute bucket), so a client can mint 48 distinct keys per city
+    from a number the OpenAPI schema advertises. Unbounded, 48 plain POSTs for one city took
+    the process from 81 MB to 1360 MB. This host also runs other production services, and the
+    OOM killer scores by RSS - so the memory Cryonav did not bound would have been paid for by
+    somebody else's process.
+    """
+
+    def test_cache_never_exceeds_the_cap(self, engine: RoutingEngine):
+        from routing_engine import MAX_CACHED_GRAPHS
+
+        engine._graphs.clear()
+        # Every distinct half-hour bucket in a day: the full space one city can be driven to.
+        for i in range(48):
+            engine.graph("phoenix", i / 2.0)
+            assert len(engine._graphs) <= MAX_CACHED_GRAPHS, (
+                f"cache grew to {len(engine._graphs)} after {i + 1} distinct hours"
+            )
+        assert len(engine._graphs) == MAX_CACHED_GRAPHS
+
+    def test_eviction_is_least_recently_used(self, engine: RoutingEngine):
+        """LRU rather than a per-city slot, because the slider sweeps buckets for ONE city.
+
+        Without this, the obvious 'keep one graph per city' fix would evict on every drag and
+        rebuild a 25k-node graph per frame.
+        """
+        from routing_engine import MAX_CACHED_GRAPHS
+
+        engine._graphs.clear()
+        first = engine.graph("phoenix", 0.0)
+        for i in range(1, MAX_CACHED_GRAPHS):
+            engine.graph("phoenix", i / 2.0)
+        # Touch the oldest so it becomes the most recent, then overflow by one.
+        assert engine.graph("phoenix", 0.0) is first
+        engine.graph("phoenix", 20.0)
+        assert ("phoenix", 0.0) in engine._graphs, "a just-used graph was evicted"
+        assert ("phoenix", 0.5) not in engine._graphs, "the true LRU entry survived"
+
+    def test_a_cached_graph_is_not_rebuilt(self, engine: RoutingEngine):
+        """The bound must not cost correctness: a hit still returns the same object."""
+        engine._graphs.clear()
+        a = engine.graph("phoenix", 15.0)
+        b = engine.graph("phoenix", 15.0)
+        assert a is b
+        assert len(engine._graphs) == 1
