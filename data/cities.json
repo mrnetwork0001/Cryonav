@@ -1,6 +1,6 @@
 {
   "schema_version": "1.2.0",
-  "notes": "Cryonav microclimate fixtures. Each city defines a ~10 mi2 FortyGuard coverage tile with urban-heat-island sources, canopy/water cooling sinks, municipal cooling infrastructure and demo route presets. Radii are metres, intensities are degrees Fahrenheit.",
+  "notes": "Cryonav city tiles. Each defines a ~9.6 mi2 (5 km square) coverage tile - CRYONAV's own choice of how much city to fetch and model, NOT a FortyGuard coverage tile: /v1/env_params is a point query with no resolution parameter. Carries urban-heat-island sources, canopy/water cooling sinks, municipal cooling infrastructure and demo route presets. Measured urban form in data/urban/ supersedes the fallback fixtures here. Radii are metres, intensities are degrees Fahrenheit.",
   "cities": [
     {
       "id": "phoenix",

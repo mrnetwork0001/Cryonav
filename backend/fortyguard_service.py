@@ -1,21 +1,36 @@
 """
 FortyGuard Temperature API(R) integration layer.
 
-Two interchangeable data paths behind one interface:
+THREE data paths behind one interface, in descending order of directness:
 
-  1. **Live**  -- ``POST {FORTYGUARD_BASE_URL}/v1/heat_intelligence`` when ``FORTYGUARD_API_KEY``
-     is present, authenticated with an ``api-key`` request header. Requests 2 m above-ground-level
-     readings at 10 mi^2 microclimate resolution.
-  2. **Mock**  -- a deterministic physical simulation of the same payload, so the entire stack
-     (routing, agents, dashboard, tests, live demo) runs offline with zero API budget.
+  1. **Live**  -- ``POST {FORTYGUARD_BASE_URL}/v1/env_params`` when ``FORTYGUARD_API_KEY`` is
+     present and the caller passes ``prefer_live``, authenticated with an ``api-key`` request
+     header (NOT ``Authorization: Bearer``, which the host silently ignores). It is
+     asynchronous: the POST returns an ``activity_id`` and the result is collected from
+     ``GET /v1/status/{id}``. Capped at four points per request.
+  2. **Calibrated** -- the DEFAULT, and what the deployment serves. The same endpoint is
+     called once a day by the calibrate timer and cached to ``data/calibration/``, so public
+     traffic can never burn API quota and no request waits on an async upstream job that has
+     been measured at 22 s and at over 120 s. This is still observation; only the fetch is
+     scheduled.
+  3. **Mock**  -- a deterministic physical simulation of the same payload, so the stack runs
+     offline with no key at all.
+
+``/v1/heat_intelligence`` is NOT the live path despite the name: it takes ~145 s and returns a
+PDF report, so it cannot drive routing. An earlier version of this module called it, and this
+docstring described it, for longer than it should have.
+
+Nor is there a resolution parameter. Earlier revisions of the docs claimed "10 mi^2 microclimate
+resolution"; ``/v1/env_params`` is a POINT query and takes no such argument. The figure was
+Cryonav's own invention and is not repeated anywhere.
 
 The mock is not noise. It is a small urban-climate model: a diurnal air-temperature curve,
 Gaussian urban-heat-island sources, canopy and water cooling sinks, a solar-driven asphalt
-surface-temperature term, and the radiant/humidity coupling from :mod:`thermal`. That is what
-makes the demo defensible -- the cool routes it finds are the routes real shade would produce.
+surface-temperature term, and the radiant/humidity coupling from :mod:`thermal`. It exists so
+the project is runnable without a key, and it labels itself as simulated everywhere it appears.
 
-Determinism matters: every reading is a pure function of (city, lat, lon, hour). Screenshots
-and tests reproduce byte-for-byte.
+Determinism matters: every mock reading is a pure function of (city, lat, lon, hour). Tests
+reproduce byte-for-byte.
 """
 
 from __future__ import annotations
@@ -362,7 +377,13 @@ class FortyGuardService:
         return sorted(self._cities)
 
     def bounds(self, city_id: str) -> Dict[str, float]:
-        """Bounding box of the ~10 mi^2 FortyGuard coverage tile."""
+        """Bounding box of the city tile - CRYONAV's own, not FortyGuard's.
+
+        Roughly 5 km on a side, which measures 9.6 mi^2 for Phoenix and 8.4 for San Jose. The
+        size is a Cryonav choice about how much city to fetch and model; ``/v1/env_params`` is a
+        point query and has no coverage tile or resolution of its own. Calling this "the
+        FortyGuard coverage tile" is what produced the invented 10 mi^2 claim.
+        """
         city = self.city(city_id)
         (lat, lon) = city["center"]
         dlat, dlon = city["tile_half_extent_deg"]

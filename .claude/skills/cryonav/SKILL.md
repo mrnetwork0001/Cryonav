@@ -9,10 +9,10 @@ Hyperlocal thermal navigation & microclimate cool-routing engine. Full brief: [d
 
 ## What it is
 
-Standard navigation optimizes distance/time. Cryonav optimizes **pedestrian thermal exposure at 2 m above ground**, using FortyGuard Temperature API® 10 mi² microclimate intelligence fused with urban canopy GIS, and returns two routes side by side:
+Standard navigation optimizes distance/time. Cryonav optimizes **pedestrian thermal exposure at 2 m above ground**, fusing the FortyGuard Temperature API® observed ambient series with six measured layers (canopy, Landsat and ECOSTRESS surface temperature, OSM urban form and street network, NIOSH/OSHA thresholds), and returns two routes side by side:
 
 - **Path A - Standard Direct Route**: shortest distance, crosses unshaded asphalt heat traps.
-- **Path B - Cryonav Cool Route**: canopy-shaded corridor avoiding heat islands. Measured 2026-08-24: 0–6.7 °F thermal load / 0–27.4% heat-strain dose. Ranges DRIFT with the daily calibration - always re-measure before quoting; never restate the brief's 35–50% claim as met.
+- **Path B - Cryonav Cool Route**: canopy-shaded corridor avoiding heat islands. Ranges DRIFT with the daily calibration, so never quote a remembered figure - run `scripts/bench/corridor_sweep.py`, which prints the current table across all 36 corridor x profile combinations. On 2026-08-27 it gave 0.0-3.4 °F thermal load for routing alone and up to 4.7 °F with a Sentinel refuge. Never restate the brief's 35-50% claim as met.
 
 ## Repo layout
 
@@ -29,8 +29,8 @@ docs/        PROJECT_SPEC.md
 ```bash
 ./scripts/setup.sh        # venv (python3.12) + pip install + npm install
 ./scripts/dev.sh          # backend :8008 + frontend :5180 together
-./scripts/smoke_test.sh   # 9 end-to-end curl checks against a running backend
-cd backend && .venv/bin/pytest -q      # 130 unit + integration tests
+./scripts/smoke_test.sh   # end-to-end curl checks against a running backend
+cd backend && .venv/bin/pytest -q      # 162 unit + integration tests
 ```
 
 Backend alone: `cd backend && .venv/bin/uvicorn main:app --reload --port 8008`
@@ -39,8 +39,8 @@ Ports are **8008 / 5180**, not 8000 / 5173 - both defaults were already occupied
 
 ## Conventions that matter
 
-- **Python 3.9 compatible syntax** - the system python is 3.9.6. Use `typing.Optional[...]` / `typing.List[...]`, never `X | None`. The venv targets `/opt/homebrew/bin/python3.12`.
-- **No network required for a demo.** `FORTYGUARD_API_KEY` unset ⇒ `fortyguard_service.py` serves the deterministic physical mock (diurnal curve + UHI gaussians + canopy cooling + WBGT). Set the key and it proxies `POST /v1/heat_intelligence` live (auth via the `api-key` header), falling back to the mock on failure and flagging it as `degraded`. Never hardcode a key.
+- **Python 3.9 compatible syntax** - keep `typing.Optional[...]` / `typing.List[...]`, never `X | None`, so the tree stays importable on an older system python. The venv and the deployed service both run 3.12.
+- **Three data paths, not two.** `FORTYGUARD_API_KEY` unset ⇒ the deterministic physical mock (diurnal curve + UHI gaussians + canopy cooling + WBGT). With a key the DEFAULT is the *calibrated* field: `scripts/calibrate.py` pulls `/v1/env_params` once daily into `data/calibration/` so public traffic never burns quota. `prefer_live=true` calls `/v1/env_params` in-request, capped at four points. `/v1/heat_intelligence` is NOT the live path - it takes ~145 s and returns a PDF. Failures degrade with a reason and are flagged `degraded`. Never hardcode a key.
 - **Determinism**: the mock is seeded by (city, lat, lon, hour) so screenshots and tests reproduce exactly. Don't introduce unseeded randomness.
 - **Agents are explicit classes** in `agents.py` (ThermalSensingAgent, CoolRouteOptimizationAgent, EmergencyThermalSentinelAgent) coordinated by `CryonavOrchestrator` over a shared blackboard. Every agent step appends to `trace[]` - the frontend renders that trace live, so keep trace messages short and demo-legible.
 - **Routing**: `routing_engine.py` loads the real OSM pedestrian network from `data/streets/<city>.json` (fetch anew with `scripts/fetch_streets.py`; synthetic lattice only as fallback when the file is missing), then runs A* twice - once on pure distance (Path A) and once on a thermal-weighted cost (Path B). Profile sensitivity (`pedestrian` / `delivery_worker` / `elderly_vulnerable`) scales the thermal penalty.
@@ -56,8 +56,8 @@ Verified against the live host on day 1 of the hackathon - `./scripts/verify_for
 - Other endpoints: `/v1/env_params`, `/v1/heatmap` (useful for the grid overlay), `/v1/satellite`, `/v1/streetview`, `/v1/status/`. Paths came from the docs Angular bundle (`main.*.js`) - the docs site itself is an empty SPA shell that renders nothing without a browser and carries no OpenAPI spec.
 - Envelope: `{"error": bool, "status_code": int, "data"|"details": …}`. Failure is in-body, so HTTP 200 + `error: true` must not be read as success.
 - `GET /health` needs no key: `1.0.1-beta`, `mode: PROD`.
-- **Response field names remain unconfirmed** - auth gates every route. `feed.live_fields` reports which requested metrics actually arrived.
-- **Coverage is global.** The dashboard's "U.S. states only" onboarding gates dashboard access, NOT API coverage - Phoenix, Dubai and Abu Dhabi all calibrate live.
+- **Response schema is confirmed** and parsed by `_parse_env_series` - 24 hourly values across 15 parameters, all Celsius. `feed.live_fields` still reports which requested metrics actually arrived.
+- **Coverage is global.** The dashboard's "U.S. states only" onboarding gates dashboard access, NOT API coverage - Phoenix, Dubai, Abu Dhabi and San Jose all calibrate live. The one genuinely US-only surface is the `/v1/heatmap` raster.
 - **Enterprise endpoints are ASYNC**: POST returns `activity_id`, then `GET /v1/status/{activity_id}` (path param - a query param 400s) until status is `Completed`.
 - **`/v1/heat_intelligence` returns a PDF**, not data, and takes ~145 s. Despite the name it cannot drive routing. Body: `latitude`, `longitude`, `temperature`, `date` (string), `analysis` (list of `geographic`/`environmental`/`urban`/`events`/`anthropogenic`).
 - **`/v1/heatmap` raster**: fetched+cached by calibrate.py (US-only - Gulf AOIs return empty; Phoenix ~2,407 tiles), integrated as the observed 2 m air anomaly (its presence DISABLES the synthetic UHI/canopy air offsets), and can be days older than the ambient calibration when its fetch fails - the raster carries its own date; surface it wherever quoted.
@@ -74,7 +74,7 @@ These were each found by a failing test or a wrong-looking screenshot, not by de
 - **UHI/canopy solar modulations must stay shallow.** They are offsets riding on the diurnal curve; if their dusk-to-peak swing exceeds the curve's amplitude, air temperature climbs after sunset. Current weights: UHI `0.55 + 0.45*(1-solar)`, canopy `0.65 + 0.35*solar`.
 - **The thermal penalty must stay convex** (`surplus ** 2.5`). Linear pricing never justifies a detour and the cool route silently degenerates into the standard route.
 - **Path A must never be re-solved through the Sentinel's waypoints** - pass `baseline=` to `solve()`, or the scoreboard compares a detour against itself.
-- **`solve()` only accepts a candidate that lowers thermal dose** (unless a stop is mandated). `tests/test_routing_engine.py::TestNoRegressions` enforces that no headline metric ever goes negative across all 27 corridor × profile combinations.
+- **`solve()` only accepts a candidate that lowers thermal dose** (unless a stop is mandated). `tests/test_routing_engine.py::TestNoRegressions` enforces that no headline metric goes negative across the corridor x profile matrix *without* the Sentinel. WITH a mandated refuge, dose and time legitimately go negative - that trade breaks the longest unbroken high-risk leg, and a separate test pins it.
 - **The Sentinel's assessment always runs**; only its reroute *action* is gated on `allow_shelter_reroute`. Gating the whole agent leaves the UI with no `safety` block.
 - **The live path must fail loudly.** `FeedStatus.degraded` / `upstream_status_code` carry the real upstream status; never report a 401 or a schema mismatch as a green 200. An unrecognised envelope, a record-count mismatch, or a non-JSON body all raise `FortyGuardUpstreamError` so the caller degrades with a reason.
 - **Frontend deltas derive their own sign** (`delta()` in `ExposureCard.tsx`). A mandated shelter stop legitimately increases dose, and a hardcoded `−` prefix renders `−−10.9%`.
@@ -82,7 +82,7 @@ These were each found by a failing test or a wrong-looking screenshot, not by de
 ## Frontend layout
 
 - **`/` is the marketing landing** (`src/pages/Landing.tsx`), **`/app` is the dashboard** - a pathname switch in `main.tsx`, no router dependency. The landing's product card runs a REAL cool-route solve on mount and renders whatever the agents did (falls back to last measured values, marked OFFLINE, when the backend is down). Keep it honest: never hardcode impressive numbers there.
-- Landing style: blueprint grid (`.bg-blueprint`), gradient headline, mono stat strip, live Sentinel card. Derived from a Syntura-style reference the user supplied.
+- Landing style: an operations-console idiom - hairline-ruled cells (`.cell`, `.cell-grid`), `.eyebrow`, `.statement`, `.horizon`, `.cta-band`, near-black `#05070b`. The risk palette (cyan -> amber -> red) is SEMANTIC and must never be reused as chrome.
 
 ## Real-data pipeline (all fixtures replaced)
 
@@ -102,6 +102,6 @@ These were each found by a failing test or a wrong-looking screenshot, not by de
 
 ## Gotchas
 
-- Leaflet is driven directly via `useEffect` (no react-leaflet) to dodge peer-dep churn. Map tiles come from CARTO dark_matter (no token needed); Mapbox is an optional upgrade behind `VITE_MAPBOX_TOKEN`.
+- Leaflet is driven directly via `useEffect` (no react-leaflet) to dodge peer-dep churn. **Basemaps are Esri ArcGIS Online, NOT CARTO.** CARTO now stamps "API KEY REQUIRED" across every keyless tile while still returning HTTP 200, so it fails invisibly - the map filled with watermarks and nothing errored. Dark Gray Canvas needs both its Base and Reference layers or street labels vanish.
 - The thermal grid overlay is painted to an offscreen `<canvas>` at one pixel per FortyGuard cell, then handed to Leaflet as an `L.imageOverlay` over the tile bounds. The browser scales it, giving free bilinear interpolation and correct reprojection on pan/zoom with no move handlers. Do not rewrite it as a map-pane canvas - that was tried and is what needs manual reprojection.
 - `data/cities.json` is the single source of truth for heat islands, canopy polygons, shelters and demo presets. Add a city there, not in code.
