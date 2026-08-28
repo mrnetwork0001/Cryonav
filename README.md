@@ -9,7 +9,7 @@
         powered by the FortyGuard Temperature API®
 ```
 
-**Cryonav** is an open-source, agentic thermal-navigation and urban-climate-safety platform built for the **FortyGuard Hackathon '26 - "Building the World's Temperature AI."**
+**Cryonav** is an open-source, agentic thermal-navigation and urban-climate-safety platform built for the **FortyGuard Global AI Hackathon '26 - "Building the World's Temperature AI"**, entered solo in **Track 01, Resilient Cities & Infrastructure**. Submission pack: [docs/SUBMISSION.md](docs/SUBMISSION.md).
 
 It answers a question no navigation app asks: *not how far, but how hot.*
 
