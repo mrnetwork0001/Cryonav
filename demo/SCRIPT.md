@@ -14,12 +14,12 @@ contrast figures move with the weather.
 ## 01-landing (≈20 s)
 
 > "During extreme heat events, navigation apps still optimize for distance - not for the
-> asphalt under your feet, which this afternoon in Phoenix is running at 159 degrees.
+> asphalt under your feet, which on a Phoenix afternoon runs past 150 degrees.
 > **Cryonav** routes pedestrians by the heat their body actually absorbs."
 >
 > *(problem cards)* "Two Phoenix locations, a kilometre apart. The weather report puts them
 > within two tenths of a degree of each other - and gets the direction wrong. Measure the
-> radiant load and they are 24 degrees apart."
+> radiant load and they are more than twenty degrees apart."
 >
 > *(agents)* "Three agents - sensing, optimization, and an emergency sentinel that can
 > overrule them both."
@@ -28,10 +28,14 @@ contrast figures move with the weather.
 > daily, fused with five more measured layers - canopy, surface temperature, and the street
 > network itself."
 
-<sub>159.2 °F surface and the 24.2 °F radiant gap: `/api/v1/facts`, Van Buren St × 7th Ave vs
-Virginia G. Piper Plaza, 15:00 on 2026-08-26. The air gap is −0.2 °F: the *shaded* site reads
-marginally hotter, which is the point. Six layers: FortyGuard, Meta/WRI canopy, Landsat,
-ECOSTRESS, OpenStreetMap, NIOSH/OSHA.</sub>
+<sub>`/api/v1/facts`, Van Buren St × 7th Ave vs Virginia G. Piper Plaza at 15:00. **These two
+figures move with the weather**, which is why the narration says "past 150" and "more than
+twenty" rather than a decimal: on 2026-08-26 it was 159.2 °F surface and a 24.2 °F radiant gap,
+on 2026-08-27 it was 153.5 °F and 22.8 °F. Both readings support both phrasings, and will keep
+doing so while Phoenix is in an August afternoon - so the video does not go stale between
+recording and judging. The air gap is −0.2 °F: the *shaded* site reads marginally hotter, which
+is the point. Six layers: FortyGuard, Meta/WRI canopy, Landsat, ECOSTRESS, OpenStreetMap,
+NIOSH/OSHA.</sub>
 
 ## 02-dashboard-raster (≈17 s)
 
@@ -51,10 +55,13 @@ claim it for Dubai.</sub>
 > real cooling centre from Maricopa County's official Heat Relief Network."
 
 <sub>25,072 nodes / 34,387 edges: `data/streets/phoenix.json`. 27 active 2026 MAG sites:
-`data/shelters/phoenix.json`. Do not quote a headline degrees-saved figure - the best saving
-across all 36 corridor-profile combinations is under 7 °F, and one Dubai route is
-deliberately *negative* because the Sentinel's mandated cooling stop cuts the longest
-unbroken high-risk leg from 49 minutes to 33.</sub>
+`data/shelters/phoenix.json`. If you quote a saving, the reproducible figures from
+`scripts/bench/corridor_sweep.py` on 2026-08-27 are **0.0-3.4 °F** for thermal routing alone
+and up to **4.7 °F** once the Sentinel may insert a refuge - re-run it on the day you record.
+Do not quote a single headline number as though it were universal: ten of the 36
+corridor-profile combinations correctly return the direct route unchanged, and with a refuge
+permitted some go deliberately negative on dose because breaking the longest unbroken
+high-risk leg is worth more than average exposure.</sub>
 
 ## 04-sentinel-emergency (≈45 s)
 
