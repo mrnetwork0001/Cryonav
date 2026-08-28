@@ -681,7 +681,7 @@ export default function Landing() {
 
           <div className="cell-grid reveal mt-14 grid sm:grid-cols-2 lg:grid-cols-4">
             <ProofCell
-              stat="142"
+              stat={facts ? String(facts.tests) : "-"}
               label="tests"
               desc="Physics, routing, agents, API surface, upstream failure modes - including a no-regression sweep across every corridor and profile combination."
             />

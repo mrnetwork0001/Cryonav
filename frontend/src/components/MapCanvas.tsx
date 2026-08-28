@@ -483,10 +483,15 @@ export default function MapCanvas(props: Props) {
         <div className="pointer-events-none absolute top-3 left-1/2 z-[1001] -translate-x-1/2 rounded-lg border border-rose-500/60 bg-rose-950/95 px-4 py-2 text-center shadow-[0_0_40px_rgba(239,68,68,0.45)]">
           <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold tracking-[0.18em] text-rose-300">
             <IconAlert className="h-3.5 w-3.5" />
+            {/* "responders" is the one word this banner must never say. No public API lets a
+                civilian application file an emergency call - Twilio says so in writing - and the
+                Sentinel notifies a USER-NOMINATED CONTACT. The README, the docs and the narration
+                script all disown the stronger claim; this banner was still making it, on the map,
+                at the exact moment the demo peaks. */}
             EMERGENCY DISPATCH · SIMULATED
           </div>
           <div className="tnum mt-0.5 text-[10px] text-rose-400/90">
-            immobility in extreme heat · would relay live position to responders
+            immobility in extreme heat · alerts the nominated emergency contact
           </div>
         </div>
       )}

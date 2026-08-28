@@ -191,9 +191,16 @@ hour is 15:00. Asphalt and concrete have different thermal inertia, so the morni
 surfaces is not the afternoon ranking - only correlated with it. ECOSTRESS flies on the ISS,
 whose precessing orbit makes it the only thermal instrument sampling the same ground across the
 whole day, and it covers the 13:00-17:00 window Landsat structurally never sees. Measured
-against the road median, commercial and parking surfaces sit ~11 °F below roads at the Landsat
-overpass and only ~1.7 °F below by mid-afternoon. That lag is why the second source was worth
-the trouble.
+against the road median across Phoenix's 620 heat-retaining polygons, parking and commercial
+surfaces sit **0.66 °F below roads at the Landsat overpass and 1.23 °F below by mid-afternoon**
+(`lst_anomaly_f` against `lst_peak_anomaly_f` in `data/urban/phoenix.json`). Retail moves
+furthest, from +0.39 °F to −1.07 °F: it is *hotter* than the road median in the morning and
+cooler by the afternoon, which a single Landsat pass would have ranked exactly backwards. That
+re-ordering, not the size of the gap, is why the second source was worth the trouble.
+
+An earlier revision of this paragraph claimed ~11 °F falling to ~1.7 °F. Neither figure is in
+the data, and the direction was inverted - the shipped anomalies widen slightly through the
+day rather than collapsing. The docs page had the right number (0.66 °F) the whole time.
 
 Anomalies are referenced to each city's **own road-network median** rather than to an absolute
 temperature, because the sampler's formula already describes a generic sunlit road; anything
@@ -340,10 +347,10 @@ git clone <this-repo> && cd Cryonav
 ./scripts/dev.sh          # backend :8008 + dashboard :5180
 ```
 
-Open **http://localhost:5180**. No API key and no Mapbox token required - basemap tiles come from CARTO, thermal data from the built-in simulation.
+Open **http://localhost:5180**. No API key and no Mapbox token required - basemap tiles come from Esri ArcGIS Online (keyless; CARTO was dropped because it now watermarks every keyless tile while still returning HTTP 200), thermal data from the built-in simulation.
 
 ```bash
-cd backend && .venv/bin/pytest -q     # 156 tests
+cd backend && .venv/bin/pytest -q     # 162 tests
 ./scripts/smoke_test.sh               # 9 end-to-end API checks
 ./scripts/verify_fortyguard.sh        # probe the real FortyGuard API (works without a key)
 python scripts/calibrate.py           # pull today's real ambient curve for every tile
@@ -377,7 +384,7 @@ Ports are `8008` / `5180` (overridable via `CRYONAV_API_PORT` / `CRYONAV_WEB_POR
 | `POST` | `/api/v1/edge/jetson-kiosk` | Bandwidth-optimised edge payload |
 | `POST` | `/api/v1/sentinel/monitor` | Live wearable/kiosk telemetry check |
 
-Interactive docs at `http://localhost:8008/docs`.
+Interactive docs at `http://localhost:8008/api/docs` (Swagger moved there when the product manual took `/docs`; the schema is at `/api/openapi.json`).
 
 ```bash
 curl -X POST localhost:8008/api/v1/navigate/cool-route \
@@ -411,7 +418,7 @@ Smart-city pedestrian kiosks and delivery-worker headsets sit on metered uplinks
    │              │  + OSM street graph (25k nodes)│    survives uplink loss │
    │              └───────────────┬────────────────┘                         │
    └──────────────────────────────┼──────────────────────────────────────────┘
-                                  │  ~2 KB JSON  ·  ~272 ms
+                                  │  ~2.4 KB JSON  ·  ~1.0 s
                                   ▼
    ┌─────────────────────────────────────────────────────────────────────────┐
    │  CRYONAV SERVICE TIER (FastAPI)                                          │
@@ -452,7 +459,7 @@ backend/
   agents.py               the three agents + orchestrator + blackboard
   main.py                 FastAPI surface incl. Jetson edge endpoint
   urban.py                real OSM urban form: spatial index + terrain oracle
-  tests/                  156 tests
+  tests/                  162 tests
 frontend/
   src/components/         MapCanvas, TopMetricsBar, ExposureCard, ControlPanel, AgentTrace
   src/lib/api.ts          typed client + exposure colour ramp
@@ -506,10 +513,14 @@ calibration by default, which is real observation, just fetched on a schedule ra
 the request. `prefer_live=true` still makes the call, capped at four points, and the response
 says which path served it.
 
-**Two of six layers do not cover the Gulf.** The FortyGuard `/v1/heatmap` raster and the
-Landsat/ECOSTRESS surface products vary in coverage; Phoenix and San Jose carry the observed
-raster, Dubai and Abu Dhabi model that layer. The response declares which per tile rather
-than presenting them as equivalent.
+**One of six layers does not cover the Gulf.** Only the FortyGuard `/v1/heatmap` raster is
+US-only: Phoenix and San Jose carry that observed spatial air field, Dubai and Abu Dhabi model
+that one layer. The Landsat and ECOSTRESS surface products are global and all four tiles carry
+both - `data/urban/*.json` shows `surface_temperature` and `surface_temperature_peak` populated
+for every city. An earlier revision of this section said "two of six" and lumped the surface
+products in with the raster, which understated the project's own coverage. The response
+declares the per-tile provenance either way, rather than presenting modelled and observed as
+equivalent.
 
 **ECOSTRESS passes are rejected by physics, not by a cloud mask.** A pass whose scene minimum
 falls below the city's calibrated minimum air temperature is reading cloud-top, not ground, so
