@@ -533,5 +533,16 @@ it did not, it would not be worth fetching.
 
 ## Licence
 
-MIT. Built for the FortyGuard Hackathon '26.
-FortyGuard and Temperature API are trademarks of their respective owner; this project is an independent integration.
+Cryonav's source is **MIT** - see [LICENSE](LICENSE). Built for the FortyGuard Hackathon '26.
+
+The MIT grant covers the code, not the datasets cached under `data/`, which keep their own
+terms and attribution obligations: OpenStreetMap is **ODbL** (share-alike, attributed on every
+map view), the Meta/WRI canopy raster is **CC-BY-4.0**, Landsat is public domain, ECOSTRESS is
+NASA open data, and the Phoenix shelters come from MAG's public feed with their accuracy
+disclaimer preserved. Each data file names its own licence in a `license` field, and
+[LICENSE](LICENSE) sets out what each one requires of a redistributor.
+
+No FortyGuard data or credential is redistributed here: the API key lives only in an untracked
+`.env`, and calibration outputs are regenerated with the consumer's own key. FortyGuard and
+Temperature API are trademarks of their respective owner; this project is an independent
+integration and is not endorsed by or affiliated with FortyGuard.
