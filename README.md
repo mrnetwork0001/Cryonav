@@ -31,26 +31,26 @@ versions kept going stale.
 
 ## The problem
 
-At 15:00 in downtown Phoenix in July, two walking routes between the same two points can differ by **20 °F of thermal load** - and every navigation app on the planet will hand you the hotter one, because they optimise metres and minutes.
+At 15:00 in downtown Phoenix, two points a kilometre apart sit **more than 20 °F apart in the heat a body actually absorbs**, while the weather report puts them within a fifth of a degree of each other - and every navigation app on the planet will route you through the hotter one, because they optimise metres and minutes.
 
 Here is what Cryonav measures at two Phoenix locations, at the same moment:
 
 | | Van Buren St x 7th Ave | Virginia G. Piper Plaza |
 |---|---|---|
-| Measured canopy | 0.0 % | **78.4 %** |
-| Air temperature @ 2 m | 115.5 °F | 115.7 °F |
-| Surface temperature | **159.2 °F** | 127.9 °F |
-| Mean radiant temperature | **143.9 °F** | 119.7 °F |
-| **Exposure index (thermal load)** | **119.0 °F** | **111.3 °F** |
+| Measured canopy | 0.0 % | **79.2 %** |
+| Air temperature @ 2 m | 112.6 °F | 112.8 °F |
+| Surface temperature | **153.5 °F** | 123.9 °F |
+| Mean radiant temperature | **139.2 °F** | 116.4 °F |
+| **Exposure index (thermal load)** | **118.5 °F** | **111.3 °F** |
 | Risk band | EXTREME | HIGH |
 
 The air layer separates them by **0.2 °F**, and separates them the *wrong way* -
 the shaded plaza reads marginally hotter. That is the whole point. The observed
-2 m air layer is well mixed and cannot tell these places apart; the **24.2 °F
+2 m air layer is well mixed and cannot tell these places apart; the **22.8 °F
 mean-radiant difference** streaming off the asphalt can, and that is where heat illness
 actually comes from. A weather API sees two identical spots. A body does not.
 
-Those figures are a reading, not a constant. They were sampled at 15:00 on 2026-08-26 and
+Those figures are a reading, not a constant. They were sampled at 15:00 on 2026-08-27 and
 they move with the weather; `/api/v1/facts` recomputes them on every request, and it - not
 this table - is the source of truth.
 
@@ -67,20 +67,44 @@ Given an origin, a destination and a user profile, Cryonav returns **two routes*
 - **Path A - Standard Direct Route.** Minimises distance. Exactly what a conventional navigator returns, computed the same way, so the comparison is honest rather than a strawman.
 - **Path B - Cryonav Cool Route.** Minimises *thermal dose* - minutes in the sun weighted by how punishing that sun is - subject to a per-profile detour budget.
 
-Measured across all twelve demo corridors x three profiles (36 combinations, 15:00 local,
-**2026-08-24 calibration** - these shift with each day's live data):
+Measured across all twelve demo corridors x three profiles - 36 combinations, 15:00 local,
+2026-08-27 calibration. Regenerate any time with
+[`scripts/bench/corridor_sweep.py`](scripts/bench/corridor_sweep.py), which drives the
+deployed API and prints this table; these shift with each day's live data.
+
+**Thermal routing alone** (`--no-shelter`) - what the Cool Route agent achieves on its own:
 
 | Metric | Range across demo corridors |
 |---|---|
-| Thermal load reduction | **0 – 6.7 °F** |
-| Heat-stress reduction | **0 – 21.9 %** |
-| Heat-strain dose reduction | **0 – 27.4 %** |
-| Shade coverage gained | **−0.1 – +46.9 %** |
-| Added walking time | **−3.0 to +5.7 min** |
+| Thermal load reduction | **0.0 – 3.4 °F** |
+| Heat-stress reduction | **0.0 – 11.4 %** |
+| Heat-strain dose reduction | **0.0 – 10.1 %** |
+| Shade coverage gained | **−0.2 – +35.0 %** |
+| Added walking time | **−1.1 to +2.6 min** |
+
+Nothing here is negative on load, stress or dose, and that is a guarantee rather than luck:
+when no admissible route beats the direct path, Cryonav returns the direct path. Ten of the 36
+combinations do exactly that.
+
+**With the Sentinel's shelter reroute on** - the mode the dashboard defaults to:
+
+| Metric | Range across demo corridors |
+|---|---|
+| Thermal load reduction | **−0.5 – 4.7 °F** |
+| Heat-stress reduction | **−1.3 – 12.7 %** |
+| Heat-strain dose reduction | **−30.8 – 6.4 %** |
+| Shade coverage gained | **−0.8 – +35.0 %** |
+| Added walking time | **−0.1 to +47.9 min** |
+
+The negatives are the point, not a regression. A mandated stop inside an air-conditioned refuge
+raises total dose and total minutes while breaking the longest *unbroken* high-risk leg, and
+continuous exposure is what causes heat illness. The 47.9-minute case is Safa Park → Burj Park
+for an elderly walker in a Dubai afternoon, where the nearest refuge is genuinely far - Cryonav
+offers it and says what it costs, rather than hiding the trade.
 
 *(Real OpenStreetMap pedestrian network, real OSM urban form, live FortyGuard ambient data.)*
 
-> **On the numbers.** The brief's headline claim is a 35–50 % exposure reduction. Cryonav does not reach it on its headline metrics, and does not round up to it: on mean thermal load the defensible reduction is **up to ~7 °F**; on heat-strain dose, **up to ~27 %** (2026-08-24 calibration). (These are measured against *live* FortyGuard ambient data, which is flatter through the afternoon than the earlier synthetic curve - so the honest numbers came down when real data arrived.)
+> **On the numbers.** The brief's headline claim is a 35–50 % exposure reduction. Cryonav does not reach it on its headline metrics, and does not round up to it: on 2026-08-27 the defensible figures are **up to 3.4 °F** of mean thermal load and **up to 11.4 %** of heat stress from thermal routing alone, rising to **4.7 °F** when the Sentinel may insert a refuge. (These are measured against *live* FortyGuard ambient data, which is flatter through the afternoon than the earlier synthetic curve - so the honest numbers came down when real data arrived, and they move again with every day's calibration. Re-run the sweep rather than trusting this paragraph.)
 >
 > Several zeroes in those ranges are deliberate. When no admissible route beats the direct path on both detour budget and dose, Cryonav returns the direct path and reports zero saving rather than manufacturing a detour. And in Gulf-city afternoons *every* cell on the tile is already in the extreme band, so the band-time metric there is meaningless and can even read negative - a cooler route that takes longer spends more total minutes in a band that covers the whole city. The win in those cities shows up as thermal load and dose instead, which is why the dashboard leads with those.
 
@@ -369,7 +393,7 @@ curl -X POST localhost:8008/api/v1/navigate/cool-route \
 
 Smart-city pedestrian kiosks and delivery-worker headsets sit on metered uplinks and small panels. `POST /api/v1/edge/jetson-kiosk` runs the identical routing core but returns a stripped payload: polylines decimated to the panel's usable resolution, per-segment telemetry and the agent trace dropped, and one pre-rendered instruction string so kiosk firmware never does unit conversion.
 
-**Measured 2026-08-24: 2,070 bytes, ~272 ms warm server-side compute** for the full three-agent solve on the 25k-node OSM network. (Contrast: the full dashboard response is ~100 KB.)
+**Measured 2026-08-27 against the deployed server: 2,379 bytes, ~1.0 s warm server-side compute** for the full three-agent solve on the 25k-node OSM network. (Contrast: the full dashboard response for the same corridor is 102,733 bytes - the edge payload is 1/43rd of it.) The compute figure is the median round-trip to `/api/v1/edge/jetson-kiosk` (1.66 s) minus the median round-trip to `/api/v1/health` (0.63 s), which does no routing - so it excludes the network path rather than pretending there is none. An earlier revision quoted 272 ms; that was measured on a laptop, not on the shared VPS that actually serves it.
 
 ```
    ┌─────────────────────────────────────────────────────────────────────────┐
