@@ -134,7 +134,13 @@ the counter was skipping them.</sub>
 **Submission checklist:** trim/join segments (e.g. `ffmpeg -f concat`), record narration,
 export ≤3 min. Keep the dispatch sequence intact - it is the demo's peak.
 
-**Before re-recording:** the existing footage in `demo/footage/` predates the operations-console
-redesign and the Cryonav wordmark, so it shows a UI that no longer exists. Re-record against
-the deployed site with `CRYONAV_URL=https://cryonav.xyz npm run record`, which also proves the
-demo is the real deployment rather than a laptop.
+**To read aloud, use [VOICEOVER.md](VOICEOVER.md), not this file.** This one is the annotated
+reference: the margin notes under each beat name the file or endpoint every figure comes from,
+so a claim can be re-checked rather than trusted. VOICEOVER.md is the same narration with the
+notes stripped and the wording trimmed to fit - the full script here runs at 197 words per
+minute against the cut, which is not speakable.
+
+**State of the footage:** re-recorded 2026-08-29 against the deployed https://cryonav.xyz, so
+what is on screen is the live system. `cd demo && CRYONAV_URL=https://cryonav.xyz npm run
+record` regenerates it; the recorder exits non-zero if any selector has drifted, so a silent
+half-capture is not possible.
