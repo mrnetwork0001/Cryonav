@@ -1176,7 +1176,16 @@ class FortyGuardService:
             pdf = httpx.get(link, timeout=60.0)
             pdf.raise_for_status()
         except httpx.HTTPError as exc:
-            raise FortyGuardUpstreamError(f"report download failed: {exc}") from exc
+            # NEVER interpolate the exception directly. httpx renders the failing URL into its
+            # string form - "Client error '403 Forbidden' for url '<link>'" - and this link
+            # carries the API key in its object path. That message would then travel into a
+            # FortyGuardUpstreamError and on into journalctl, putting the key in the system log
+            # of a shared host. Report only the status, which is the part that helps.
+            status = getattr(getattr(exc, "response", None), "status_code", None)
+            raise FortyGuardUpstreamError(
+                f"report download failed: {type(exc).__name__}"
+                + (f" (HTTP {status})" if status else "")
+            ) from None
         if not pdf.content.startswith(b"%PDF"):
             raise FortyGuardUpstreamError(
                 f"report is not a PDF ({pdf.headers.get('content-type', 'unknown')})"

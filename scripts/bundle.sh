@@ -80,19 +80,50 @@ name="$(basename "$ROOT")"
 tar tzf "$OUT" | grep -qx "${name}/.env" && { echo "ABORT: .env is inside the bundle" >&2; exit 2; }
 tar tzf "$OUT" | grep -qx "${name}/frontend/dist/index.html" \
   || { echo "ABORT: built frontend missing from the bundle" >&2; exit 2; }
-if [ -f "$ROOT/.env" ]; then
+# The secret scan. Three things here were wrong and are worth naming, because each made the
+# check pass while proving less than it appeared to.
+#
+# 1. It was wrapped in `if [ -f .env ]`, so on a machine without a .env the scan was skipped
+#    ENTIRELY - and the script still printed "no secrets". A check that cannot run must not
+#    report success; it now says loudly that it could not verify.
+# 2. `while read < file` drops the final line when the file has no trailing newline, so the
+#    last variable in .env was never scanned. Reading via a printf that appends one fixes it.
+# 3. It grepped for the literal value only. A credential that got base64-encoded or
+#    percent-encoded on its way into a build artifact would sail through. Each value is now
+#    searched in those forms too.
+if [ ! -f "$ROOT/.env" ]; then
+  echo "    WARNING: no .env on this machine - the bundle was NOT scanned for secrets." >&2
+  echo "             Build where .env lives, or verify by hand before publishing." >&2
+else
   work="$(mktemp -d)"; tar xzf "$OUT" -C "$work"
+  scanned=0
+  # printf guarantees a trailing newline so the last line is never silently dropped.
   while IFS= read -r line; do
     case "$line" in ''|'#'*) continue ;; esac
     val="${line#*=}"
+    val="${val%\"}"; val="${val#\"}"; val="${val%\'}"; val="${val#\'}"
     [ ${#val} -lt 12 ] && continue
-    if grep -rqF -- "$val" "$work" 2>/dev/null; then
-      rm -rf "$work"; echo "ABORT: a secret value from .env appears inside the bundle" >&2; exit 2
-    fi
-  done < "$ROOT/.env"
+    scanned=$((scanned + 1))
+    b64=$(printf '%s' "$val" | base64 | tr -d '\n')
+    url=$(printf '%s' "$val" | sed 's|/|%2F|g; s|+|%2B|g; s|=|%3D|g')
+    for form in "$val" "$b64" "$url"; do
+      if grep -rqF -- "$form" "$work" 2>/dev/null; then
+        rm -rf "$work"
+        echo "ABORT: a secret value from .env appears inside the bundle" >&2
+        exit 2
+      fi
+    done
+  done <<EOF
+$(cat "$ROOT/.env")
+EOF
   rm -rf "$work"
+  if [ "$scanned" -eq 0 ]; then
+    echo "ABORT: .env exists but yielded no scannable values - refusing to claim 'no secrets'." >&2
+    exit 2
+  fi
+  echo "    scanned $scanned secret value(s) x3 encodings against every file in the bundle"
 fi
-echo "    no secrets, frontend built, $(du -h "$OUT" | cut -f1)"
+echo "    frontend built, $(du -h "$OUT" | cut -f1)"
 
 if [ "${1:-}" = "--release" ]; then
   echo "==> Publishing to $REPO release $TAG"
