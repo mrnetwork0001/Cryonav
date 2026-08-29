@@ -101,9 +101,49 @@ await segment("03-routing", HD, async (p) => {
 });
 
 // ---- 04 · Sentinel emergency ------------------------------------------------------------
+// CITY AND HOUR ARE SET DELIBERATELY, and this is the one place it matters.
+//
+// Dispatch needs the walker in the EXTREME band (or air >=110 F), and which conditions qualify
+// moves with the daily calibration. On a cooler day Phoenix at the 15:00 default sits in HIGH,
+// the Sentinel correctly does not escalate, and the segment records a non-event - the app even
+// prints "Sentinel did NOT escalate within the immobility window - safety gap". Honest
+// behaviour, useless footage, and narrating a dispatch over it would be a lie.
+//
+// There is a subtler trap. Phoenix at 14:00 DOES dispatch when the monitor endpoint is probed
+// at the corridor's origin - but the replay still only reaches "reroute", because the walker
+// collapses part-way along the COOL route, which is by construction the shadier one. The
+// feature works; the demo route is the wrong place to look for it.
+//
+// So the Sentinel segment runs where the whole tile is genuinely extreme. Verified 2026-08-29:
+// Abu Dhabi at 13:00 walks the full ladder ok -> advisory -> reroute -> dispatch, with the
+// banner up at t=24s. Re-probe on the day you record - drive the replay and watch
+// /api/v1/sentinel/monitor for a "dispatch" status - and override with
+// CRYONAV_SENTINEL_CITY / CRYONAV_SENTINEL_HOUR rather than editing this file.
+const SENTINEL_CITY = process.env.CRYONAV_SENTINEL_CITY ?? "Abu Dhabi";
+const SENTINEL_HOUR = Number(process.env.CRYONAV_SENTINEL_HOUR ?? 13);
+
 await segment("04-sentinel-emergency", HD, async (p) => {
   await p.goto(BASE + "/app", { waitUntil: "networkidle" });
   await p.waitForTimeout(4500);
+
+  if (SENTINEL_CITY) {
+    await p.getByRole("button", { name: new RegExp(SENTINEL_CITY) }).click();
+    await p.waitForTimeout(5000);
+  }
+
+  // Drive the time slider with a native input event so React's onChange fires.
+  await p.evaluate((h) => {
+    const el = document.querySelector('input[type="range"]');
+    if (!el) return;
+    const setter = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype, "value",
+    ).set;
+    setter.call(el, String(h));
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+    el.dispatchEvent(new Event("change", { bubbles: true }));
+  }, SENTINEL_HOUR);
+  await p.waitForTimeout(4000);
+
   await p.getByRole("button", { name: /Replay transit emergency/ }).click();
   for (let i = 0; i < 45; i++) {
     await p.waitForTimeout(1000);

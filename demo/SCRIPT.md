@@ -1,7 +1,7 @@
 # Cryonav demo - narration script
 
 Record voiceover against the segments in `demo/footage/` (regenerate with `npm run record`;
-total runtime 2:16). Lines are timed to each segment's beats.
+total runtime 2:28). Lines are timed to each segment's beats.
 
 **Every figure below is checkable.** The sources are named in the margin notes, and the live
 ones come from `https://cryonav.xyz/api/v1/facts`, which recomputes them per request. An
@@ -11,7 +11,7 @@ contrast figures move with the weather.
 
 ---
 
-## 01-landing - 0:00–0:20 (20.1 s)
+## 01-landing - 0:00-0:20 (20.2 s)
 
 > "During extreme heat events, navigation apps still optimize for distance - not for the
 > asphalt under your feet, which on a Phoenix afternoon runs past 150 degrees.
@@ -37,7 +37,7 @@ recording and judging. The air gap is −0.2 °F: the *shaded* site reads margin
 is the point. Six layers: FortyGuard, Meta/WRI canopy, Landsat, ECOSTRESS, OpenStreetMap,
 NIOSH/OSHA.</sub>
 
-## 02-dashboard-raster - 0:20–0:41 (21.2 s)
+## 02-dashboard-raster - 0:20-0:41 (21.1 s)
 
 > "This is the FortyGuard heat raster - 2,407 observed hundred-metre tiles over Phoenix. And
 > this is Cryonav's exposure model on top: the radiant load a walker actually feels, street
@@ -47,7 +47,7 @@ NIOSH/OSHA.</sub>
 is US-only, so Phoenix and San Jose carry it and the Gulf tiles model that layer - do not
 claim it for Dubai.</sub>
 
-## 03-routing - 0:41–1:04 (22.6 s)
+## 03-routing - 0:41-1:04 (22.3 s)
 
 > "Every route is solved twice on the real OpenStreetMap network - twenty-five thousand
 > walkable nodes in Phoenix alone. The red path is what any navigator gives you. The cyan path
@@ -69,15 +69,17 @@ corridor-profile combinations correctly return the direct route unchanged, and w
 permitted some go deliberately negative on dose because breaking the longest unbroken
 high-risk leg is worth more than average exposure.</sub>
 
-## 04-sentinel-emergency - 1:04–1:48 (44.2 s)
+## 04-sentinel-emergency - 1:04-1:51 (47.0 s)
 
-> "Now the part that matters. A delivery worker walks the route - Cryonav streams their
-> position, dwell time and movement to the Sentinel, the same endpoint a smart-city kiosk
-> would call."
+> "Now the part that matters, and we cross to Abu Dhabi for it - a hundred and eleven degrees,
+> eighty-four per cent of the tile in the extreme band. A delivery worker walks the route, and
+> Cryonav streams their position, dwell time and movement to the Sentinel - the same endpoint a
+> smart-city kiosk would call."
 >
 > *(escalations appear)* "Exposure climbs - advisory. Ceiling exceeded - divert to shelter."
 >
-> *(walker stops)* "Then they stop moving. Eleven minutes, motionless, above 110 degrees."
+> *(walker stops)* "Then they stop moving. Eleven minutes, motionless, in an extreme-heat
+> zone."
 >
 > *(dispatch banner)* "The Sentinel alerts the walker's nominated emergency contact with
 > their live position, their GPS accuracy, and the nearest air-conditioned refuge. This is a
@@ -86,7 +88,16 @@ high-risk leg is worth more than average exposure.</sub>
 > and sixteen milliseconds out of the server. That's the difference between a maps app and a
 > safety system."
 
-<sub>**Do not say "that notification is real" over the replay.** TransitSim.tsx sends
+<sub>**This segment runs in ABU DHABI at 13:00, deliberately.** Dispatch needs the walker in
+the EXTREME band, and on a cooler Phoenix day the Sentinel correctly does not escalate - the app
+then prints "Sentinel did NOT escalate within the immobility window - safety gap", which is
+honest behaviour and unusable footage. Subtler: Phoenix at 14:00 dispatches when the monitor
+endpoint is probed at the corridor origin, yet the replay still only reaches "reroute", because
+the walker collapses along the COOL route, which is by construction the shadier one. Abu Dhabi
+at 13:00 walks the whole ladder - ok, advisory, reroute, dispatch, banner up at t=24s. Re-probe
+on the day you record; override with CRYONAV_SENTINEL_CITY / CRYONAV_SENTINEL_HOUR.
+
+**Do not say "that notification is real" over the replay.** TransitSim.tsx sends
 `notify: false` on the replay path and `notify: true` only in live-GPS mode - the comment reads
 "the replay must never fire a real push to a real contact". Narrating a real send over footage
 that sends nothing is the same class of overclaim as "responders". 116 ms is the measured
@@ -97,7 +108,7 @@ emergency contact", never "emergency services"** - no public API lets a civilian
 file an emergency call, and Twilio says so in writing. 116 ms is the measured ntfy delivery
 from the deployed server.</sub>
 
-## 05-mobile - 1:48–2:03 (15.1 s)
+## 05-mobile - 1:51-2:13 (22.6 s)
 
 > "It ships responsive and kiosk-ready, and it can read the device's own GPS - estimating
 > movement by median-of-thirds, because between tall buildings the naive method misses nine
@@ -107,7 +118,7 @@ from the deployed server.</sub>
 20,000 runs, which imports the shipped estimator. **Do not say "offline-capable"** as though
 the hardware ships - the Jetson edge tier is simulated, and the README says so.</sub>
 
-## 06-docs - 2:03–2:16 (12.4 s)
+## 06-docs - 2:13-2:28 (14.5 s)
 
 > "And all of it is documented and auditable - every layer with its source, resolution and
 > licence, every threshold with its citation, and seven hundred and ninety-three remaining
