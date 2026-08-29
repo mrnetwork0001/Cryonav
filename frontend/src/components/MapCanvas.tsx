@@ -78,12 +78,22 @@ export default function MapCanvas(props: Props) {
     const esriAttr = "Tiles &copy; Esri &middot; FortyGuard Temperature API";
 
     const bases: Record<string, L.Layer> = {
+      // maxNativeZoom, not maxZoom. Dark Gray Canvas has real tiles only to z16 over these
+      // downtowns; ask for z17 and it returns a light-grey "Map data not yet available"
+      // placeholder - HTTP 200, valid PNG, no error, exactly the CARTO failure again. One
+      // zoom-in click turned the whole basemap grey. maxNativeZoom keeps the layer requesting
+      // z16 and lets Leaflet upscale it for z17-19, so zoom still works and the map stays real
+      // (slightly soft) instead of vanishing. Verified per zoom: z16 10,272 B of real tile,
+      // z17/18/19 all 2,521 B of placeholder. Imagery and Streets have genuine data to z19 and
+      // are left alone.
       Dark: L.layerGroup([
         L.tileLayer(`${ESRI}/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}`, {
           attribution: `${esriAttr} &middot; &copy; OpenStreetMap contributors`,
+          maxNativeZoom: 16,
           maxZoom: 19,
         }),
         L.tileLayer(`${ESRI}/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}`, {
+          maxNativeZoom: 16,
           maxZoom: 19,
         }),
       ]),
