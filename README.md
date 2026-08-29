@@ -551,7 +551,7 @@ terms and attribution obligations: OpenStreetMap is **ODbL** (share-alike, attri
 map view), the Meta/WRI canopy raster is **CC-BY-4.0**, Landsat is public domain, ECOSTRESS is
 NASA open data, and the Phoenix shelters come from MAG's public feed with their accuracy
 disclaimer preserved. Each data file names its own licence in a `license` field, and
-[LICENSE](LICENSE) sets out what each one requires of a redistributor.
+[NOTICE](NOTICE) sets out what each one requires of a redistributor.
 
 No FortyGuard data or credential is redistributed here: the API key lives only in an untracked
 `.env`, and calibration outputs are regenerated with the consumer's own key. FortyGuard and
