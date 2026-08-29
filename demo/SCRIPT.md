@@ -50,10 +50,15 @@ claim it for Dubai.</sub>
 ## 03-routing - 0:41–1:04 (22.6 s)
 
 > "Every route is solved twice on the real OpenStreetMap network - twenty-five thousand
-> walkable nodes in Phoenix alone. The red path is what any navigator gives you. The cyan
-> path trades a few minutes for shade - and for a vulnerable walker, the Sentinel inserts a
-> real cooling centre from the Maricopa Association of Governments' official Heat Relief
-> Network."
+> walkable nodes in Phoenix alone. The red path is what any navigator gives you. The cyan path
+> more than doubles the shade, from twelve per cent to twenty-seven."
+>
+> *(the Sentinel engages)* "And for an elderly walker it does something a navigator never
+> would: it routes them through a real cooling centre from the Maricopa Association of
+> Governments' Heat Relief Network. Look at the cost - twenty-two minutes longer, and the
+> total heat dose actually goes UP. Cryonav shows you that, because the thing it just fixed
+> matters more: the longest stretch without relief drops from sixty-six minutes to under
+> three. Continuous exposure is what puts people in hospital, not the average."
 
 <sub>25,072 nodes / 34,387 edges: `data/streets/phoenix.json`. 27 active 2026 MAG sites:
 `data/shelters/phoenix.json`. If you quote a saving, the reproducible figures from
@@ -75,11 +80,18 @@ high-risk leg is worth more than average exposure.</sub>
 > *(walker stops)* "Then they stop moving. Eleven minutes, motionless, above 110 degrees."
 >
 > *(dispatch banner)* "The Sentinel alerts the walker's nominated emergency contact with
-> their live position, their GPS accuracy, and the nearest air-conditioned refuge. That
-> notification is real - it left the server in a hundred and sixteen milliseconds. That's the
-> difference between a maps app and a safety system."
+> their live position, their GPS accuracy, and the nearest air-conditioned refuge. This is a
+> replay, so it deliberately sends nothing - the code refuses to page a real person from a
+> demo. Switch it to live GPS and the same escalation fires a real push, measured at a hundred
+> and sixteen milliseconds out of the server. That's the difference between a maps app and a
+> safety system."
 
-<sub>Thresholds: 8 minutes, under 25 m of movement, air ≥110 °F or an extreme band
+<sub>**Do not say "that notification is real" over the replay.** TransitSim.tsx sends
+`notify: false` on the replay path and `notify: true` only in live-GPS mode - the comment reads
+"the replay must never fire a real push to a real contact". Narrating a real send over footage
+that sends nothing is the same class of overclaim as "responders". 116 ms is the measured
+server-side ntfy POST, not end-to-end delivery to a handset; say "out of the server".
+Thresholds: 8 minutes, under 25 m of movement, air ≥110 °F or an extreme band
 (`backend/agents.py`). The simulation holds 11 minutes (`IMMOBILE_SIM_MIN`). **Say "nominated
 emergency contact", never "emergency services"** - no public API lets a civilian application
 file an emergency call, and Twilio says so in writing. 116 ms is the measured ntfy delivery

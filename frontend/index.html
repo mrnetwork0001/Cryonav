@@ -6,10 +6,24 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-32.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/brand/favicon-180.png" />
     <meta name="theme-color" content="#05070b" />
+    <!-- Social card. The image must be an ABSOLUTE url: scrapers do not resolve a relative
+         path against the page, so a shared link rendered no image at all. It was also the
+         506x128 wordmark, well under the 600x315 that summary_large_image requires - the card
+         it declares. og-card.png is a real 1200x630 capture of the dashboard, so the preview a
+         judge sees in Slack or a submission form is the actual product. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Cryonav" />
+    <meta property="og:url" content="https://cryonav.xyz/" />
     <meta property="og:title" content="Cryonav - Thermal Navigation Engine" />
     <meta property="og:description" content="Routes pedestrians by the heat their body actually absorbs, on live FortyGuard microclimate data fused with measured urban canopy." />
-    <meta property="og:image" content="/brand/cryonav-wordmark.png" />
+    <meta property="og:image" content="https://cryonav.xyz/brand/og-card.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="The Cryonav dashboard: a Phoenix heat map with a standard route and a cooler alternative, and the exposure scoreboard comparing them." />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Cryonav - Thermal Navigation Engine" />
+    <meta name="twitter:description" content="Routes pedestrians by the heat their body actually absorbs, on live FortyGuard microclimate data fused with measured urban canopy." />
+    <meta name="twitter:image" content="https://cryonav.xyz/brand/og-card.png" />
     <title>Cryonav - Thermal Navigation</title>
     <meta name="description" content="Hyperlocal thermal navigation and microclimate cool-routing powered by the FortyGuard Temperature API." />
   </head>

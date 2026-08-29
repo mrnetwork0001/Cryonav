@@ -113,14 +113,32 @@ await segment("04-sentinel-emergency", HD, async (p) => {
 });
 
 // ---- 05 · mobile ------------------------------------------------------------------------
+// This used to open the drawer and sit on it, so the whole segment was a static control panel:
+// no map, no route, no scoreboard - under narration about routing on a phone. The drawer is
+// the least interesting thing on the screen. Open it, use it, CLOSE it, and let the map and the
+// scoreboard carry the segment, which is what the narration actually describes.
 await segment("05-mobile", { width: 390, height: 844 }, async (p) => {
   await p.goto(BASE + "/app", { waitUntil: "networkidle" });
-  await p.waitForTimeout(4000);
-  await p.locator('button[aria-label="Open route controls"]').tap?.().catch(() => p.locator('button[aria-label="Open route controls"]').click());
-  await p.waitForTimeout(2000);
+  await p.waitForTimeout(5000);
+
+  const drawer = p.locator('button[aria-label="Open route controls"]');
+  await drawer.tap?.().catch(() => drawer.click());
+  await p.waitForTimeout(1800);
   await p.getByRole("button", { name: /Dubai/ }).click();
-  await p.waitForTimeout(4000);
-  await p.evaluate(() => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }));
+  await p.waitForTimeout(2200);
+
+  // Close it so the map is visible while the route solves - the drawer auto-closes on some
+  // actions but not on a city switch, and the point of this segment is the map.
+  const close = p.locator('button[aria-label="Close controls"]');
+  if (await close.count()) await close.click();
+  else await p.mouse.click(195, 760);
+  await p.waitForTimeout(4500);
+
+  // Scroll the scoreboard into view: the A/B comparison and the Sentinel verdict are what make
+  // this a safety tool rather than a map, and they were never on camera in the mobile cut.
+  await p.evaluate(() => window.scrollTo({ top: 620, behavior: "smooth" }));
+  await p.waitForTimeout(3500);
+  await p.evaluate(() => window.scrollTo({ top: 1250, behavior: "smooth" }));
   await p.waitForTimeout(3000);
 });
 

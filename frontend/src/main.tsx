@@ -34,4 +34,14 @@ const page = path.startsWith("/app") ? (
   <Landing />
 );
 
+// One index.html serves all three routes, so every tab, bookmark and shared link carried the
+// landing page's title - /app and /docs were indistinguishable from / and from each other. The
+// document title is the only per-route metadata a client-rendered SPA can correct after load;
+// og: tags are read by scrapers before any JS runs and stay as the site-level defaults.
+document.title = path.startsWith("/app")
+  ? "Cryonav Dashboard - live thermal routing"
+  : path.startsWith("/docs")
+    ? "Cryonav Docs - data, physics and API"
+    : "Cryonav - Thermal Navigation";
+
 createRoot(document.getElementById("root")!).render(<StrictMode>{page}</StrictMode>);

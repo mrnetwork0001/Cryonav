@@ -18,6 +18,11 @@ interface Props {
 function delta(reduction: number, unit: string, digits = 1): { text: string; worse: boolean } {
   const worse = reduction < 0;
   const magnitude = Math.abs(reduction).toFixed(digits);
+  // A sign on a rounded-to-zero magnitude is nonsense the reader has to decode. Exactly zero
+  // rendered as "−0°F", and any value small enough to round away rendered a sign that its own
+  // digits contradicted - "Peak surface −0°F" was on the dashboard's DEFAULT view, and in the
+  // demo footage. When nothing survives the rounding, say nothing.
+  if (Number(magnitude) === 0) return { text: `0${unit}`, worse: false };
   return { text: `${worse ? "+" : "−"}${magnitude}${unit}`, worse };
 }
 
@@ -145,13 +150,28 @@ export default function ExposureCard({
               safety.ceiling_exceeded ? "text-rose-400" : "text-emerald-400"
             }`}
           >
-            {safety.longest_high_risk_leg_min.toFixed(1)} / {safety.continuous_exposure_ceiling_min}{" "}
-            min
+            {/* Both numbers are rounded for display, and when they round to the same figure
+                the panel read "22.5 / 22.5 min ... exceeds the 22.5 min ceiling" - which looks
+                like broken arithmetic. The comparison upstream is on the unrounded values and
+                is correct; it is the display that hid the difference. Show the extra digit
+                only in that case, so the claim and the numbers agree on screen. */}
+            {safety.longest_high_risk_leg_min.toFixed(
+              safety.longest_high_risk_leg_min.toFixed(1) ===
+                Number(safety.continuous_exposure_ceiling_min).toFixed(1)
+                ? 2
+                : 1,
+            )}{" "}
+            / {safety.continuous_exposure_ceiling_min} min
           </span>
         </div>
         <p className="mt-1.5 text-[11px] leading-relaxed text-slate-400">
           {safety.ceiling_exceeded
-            ? `Longest unbroken high-risk leg exceeds the ${safety.continuous_exposure_ceiling_min} min ceiling for ${nav.profile.label}.`
+            ? `Longest unbroken high-risk leg ${
+                safety.longest_high_risk_leg_min.toFixed(1) ===
+                Number(safety.continuous_exposure_ceiling_min).toFixed(1)
+                  ? "has reached"
+                  : "exceeds"
+              } the ${safety.continuous_exposure_ceiling_min} min ceiling for ${nav.profile.label}.`
             : `Longest unbroken high-risk leg is within the ${safety.continuous_exposure_ceiling_min} min ceiling.`}{" "}
           {safety.advisory}
         </p>
